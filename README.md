@@ -12,8 +12,8 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
   - **Alt**: Draw from center outward
   - **Spacebar**: Reposition while drawing (cursor hidden)
   - **Cmd/Ctrl (drawing)**: Constrain to horizontal/vertical axis
-  - **Cmd/Ctrl (over rectangle)**: Click and drag to reposition (hold Shift to constrain axis)
-  - **Alt (over rectangle)**: Click and drag to duplicate (hold Shift to constrain axis)
+  - **Cmd/Ctrl (over rectangle)**: Shows move cursor on hover; click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
+  - **Alt (over rectangle)**: Click and drag to duplicate (cursor hidden while dragging, hold Shift to constrain axis)
   - **Shift**: Multi-rectangle mode
 - 🔄 Press ESC to exit drawing mode
 - 🔒 Privacy-focused (no data collection)
@@ -81,15 +81,16 @@ box-highlight/
 2. Your cursor changes to a crosshair
 3. Click and drag anywhere on the page to draw a rectangle
 4. **Hold Alt** while dragging to draw from center outward
-5. **Hold Spacebar** while dragging to reposition the rectangle without resizing
+5. **Hold Spacebar** while dragging to reposition the rectangle without resizing (cursor hidden)
 6. **Hold Cmd/Ctrl** during drawing to constrain to horizontal or vertical axis
 7. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
-8. **Hold Alt** and click any rectangle to duplicate it (drag to reposition, hold Shift to constrain axis)
-9. Release spacebar/alt to continue normal resizing
-10. Release mouse to place the rectangle
-11. Click without Shift to clear all rectangles and draw a new one
-12. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
-13. Press **Alt+C** again to also exit drawing mode
+8. **Hold Cmd/Ctrl** and hover over a rectangle to see the move cursor, then click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
+9. **Hold Alt** and click any rectangle to duplicate it (cursor hidden while dragging, hold Shift to constrain axis)
+10. Release spacebar/alt/cmd to continue normal resizing
+11. Release mouse to place the rectangle
+12. Click without Shift to clear all rectangles and draw a new one
+13. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
+14. Press **Alt+C** again to also exit drawing mode
 
 No permanent page modifications are made—just visual overlays using positioned div elements.
 
