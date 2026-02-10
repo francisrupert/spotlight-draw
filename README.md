@@ -7,6 +7,7 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 - ✏️ Draw custom rectangles anywhere on any webpage
 - ⌨️ Activate with **Alt+C** keyboard shortcut (Option+C on Mac)
 - 🎨 Orange border with 20% opacity orange background
+- 🛡️ Click-safe: prevents accidental navigation/clicks while drawing
 - ⚡ Click-and-drag interface with modifier keys:
   - **Alt**: Draw from center outward
   - **Spacebar**: Reposition while drawing

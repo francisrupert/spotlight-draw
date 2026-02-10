@@ -156,6 +156,18 @@ function handleMouseUp(event) {
   event.preventDefault();
 }
 
+// Click handler - prevent all clicks when in drawing mode
+function handleClick(event) {
+  if (!isDrawingMode) {
+    return;
+  }
+
+  // Prevent click from triggering page actions (links, buttons, etc.)
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
 // Spacebar keydown - enter pan mode during drawing
 function handleSpacebarDown(event) {
   if (event.key === " " || event.keyCode === 32) {
@@ -234,6 +246,7 @@ function enableDrawingMode() {
   document.addEventListener("mousedown", handleMouseDown, true);
   document.addEventListener("mousemove", handleMouseMove, true);
   document.addEventListener("mouseup", handleMouseUp, true);
+  document.addEventListener("click", handleClick, true);
   document.addEventListener("keydown", handleKeyDown, true);
   document.addEventListener("keyup", handleKeyUp, true);
 }
@@ -253,6 +266,7 @@ function disableDrawingMode() {
   document.removeEventListener("mousedown", handleMouseDown, true);
   document.removeEventListener("mousemove", handleMouseMove, true);
   document.removeEventListener("mouseup", handleMouseUp, true);
+  document.removeEventListener("click", handleClick, true);
   document.removeEventListener("keydown", handleKeyDown, true);
   document.removeEventListener("keyup", handleKeyUp, true);
 
