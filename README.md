@@ -73,12 +73,13 @@ box-highlight/
 1. Press **Alt+C** (Option+C on Mac) to activate drawing mode
 2. Your cursor changes to a crosshair
 3. Click and drag anywhere on the page to draw a rectangle
-4. **Hold Spacebar** while dragging to reposition the rectangle without resizing
-5. Release spacebar to continue resizing
-6. Release mouse to place the rectangle
-7. Click anywhere to clear and redraw a rectangle
-8. Press **ESC** to exit drawing mode (clears rectangle and restores normal cursor)
-9. Press **Alt+C** again to also exit drawing mode
+4. **Hold Alt** while dragging to draw from center outward
+5. **Hold Spacebar** while dragging to reposition the rectangle without resizing
+6. Release spacebar/alt to continue normal resizing
+7. Release mouse to place the rectangle
+8. Click anywhere to clear and redraw a rectangle
+9. Press **ESC** to exit drawing mode (clears rectangle and restores normal cursor)
+10. Press **Alt+C** again to also exit drawing mode
 
 No permanent page modifications are made—just visual overlays using positioned div elements.
 

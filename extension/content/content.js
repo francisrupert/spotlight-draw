@@ -2,6 +2,7 @@
 var isDrawingMode = false;
 var isCurrentlyDrawing = false;
 var isSpacebarHeld = false;
+var isAltHeld = false;
 var startX = 0;
 var startY = 0;
 var currentMouseX = 0;
@@ -43,10 +44,24 @@ function updateRectangle(rect, x, y, width, height) {
 
 // Calculate rectangle coordinates from start and current mouse position
 function calculateRectCoords(currentX, currentY) {
-  var x = Math.min(startX, currentX);
-  var y = Math.min(startY, currentY);
-  var width = Math.abs(currentX - startX);
-  var height = Math.abs(currentY - startY);
+  var x, y, width, height;
+
+  if (isAltHeld) {
+    // Alt held: draw from center outward
+    var halfWidth = Math.abs(currentX - startX);
+    var halfHeight = Math.abs(currentY - startY);
+    x = startX - halfWidth;
+    y = startY - halfHeight;
+    width = halfWidth * 2;
+    height = halfHeight * 2;
+  } else {
+    // Normal: draw from corner to corner
+    x = Math.min(startX, currentX);
+    y = Math.min(startY, currentY);
+    width = Math.abs(currentX - startX);
+    height = Math.abs(currentY - startY);
+  }
+
   return { x: x, y: y, width: width, height: height };
 }
 
@@ -69,6 +84,7 @@ function handleMouseDown(event) {
 
   isCurrentlyDrawing = true;
   isSpacebarHeld = false; // Reset spacebar state
+  isAltHeld = event.altKey; // Capture initial Alt state
   startX = event.clientX;
   startY = event.clientY;
 
@@ -89,13 +105,16 @@ function handleMouseMove(event) {
     return;
   }
 
+  // Update Alt state during drawing
+  isAltHeld = event.altKey;
+
   if (isSpacebarHeld) {
     // Pan mode: move the entire rectangle without resizing
     var newX = currentMouseX + panOffsetX;
     var newY = currentMouseY + panOffsetY;
     updateRectangle(currentRectangle, newX, newY, panModeWidth, panModeHeight);
   } else {
-    // Normal mode: resize the rectangle
+    // Normal/Alt mode: resize the rectangle (from corner or center)
     var coords = calculateRectCoords(currentMouseX, currentMouseY);
     updateRectangle(currentRectangle, coords.x, coords.y, coords.width, coords.height);
   }
@@ -111,6 +130,7 @@ function handleMouseUp(event) {
 
   isCurrentlyDrawing = false;
   isSpacebarHeld = false; // Reset spacebar state
+  isAltHeld = false; // Reset Alt state
 
   // Keep the rectangle if it has some size
   if (currentRectangle) {
@@ -222,6 +242,7 @@ function disableDrawingMode() {
 
   isDrawingMode = false;
   isSpacebarHeld = false;
+  isAltHeld = false;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
 
   // Remove event listeners
