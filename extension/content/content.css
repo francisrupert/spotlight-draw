@@ -16,13 +16,22 @@ html.box-highlight-pan-mode * {
   cursor: none !important;
 }
 
-/* Repositioning mode - move cursor */
+/* Repositioning mode - move cursor (hover only) */
 html.box-highlight-repositioning-mode {
   cursor: move !important;
 }
 
 html.box-highlight-repositioning-mode * {
   cursor: move !important;
+}
+
+/* Dragging mode - hide cursor (when actively dragging) */
+html.box-highlight-dragging-mode {
+  cursor: none !important;
+}
+
+html.box-highlight-dragging-mode * {
+  cursor: none !important;
 }
 
 /* Rectangle style */

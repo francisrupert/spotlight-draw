@@ -44,6 +44,7 @@ var repositionAxisLocked = null; // "horizontal" or "vertical"
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
 var PAN_MODE_CLASS = "box-highlight-pan-mode";
 var REPOSITIONING_MODE_CLASS = "box-highlight-repositioning-mode";
+var DRAGGING_MODE_CLASS = "box-highlight-dragging-mode";
 var RECTANGLE_CLASS = "box-highlight-rectangle";
 
 // Create a rectangle element
@@ -159,6 +160,9 @@ function handleMouseDown(event) {
     if (rectUnderMouse) {
       isDuplicating = true;
 
+      // Hide cursor during duplication drag
+      document.documentElement.classList.add(DRAGGING_MODE_CLASS);
+
       // Create a duplicate of the rectangle under mouse
       var rectLeft = parseInt(rectUnderMouse.style.left, 10);
       var rectTop = parseInt(rectUnderMouse.style.top, 10);
@@ -189,8 +193,9 @@ function handleMouseDown(event) {
       isRepositioning = true;
       repositioningRectangle = rectUnderMouse;
 
-      // Add repositioning mode class to change cursor
-      document.documentElement.classList.add(REPOSITIONING_MODE_CLASS);
+      // Remove move cursor and hide cursor during drag
+      document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+      document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Calculate offset from cursor to rectangle top-left
       var rectLeft = parseInt(rectUnderMouse.style.left, 10);
@@ -371,6 +376,7 @@ function handleMouseUp(event) {
     duplicatingRectangle = null;
     isDuplicating = false;
     duplicateAxisLocked = null;
+    document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
     event.preventDefault();
     return;
   }
@@ -380,7 +386,7 @@ function handleMouseUp(event) {
     isRepositioning = false;
     repositioningRectangle = null;
     repositionAxisLocked = null;
-    document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+    document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
     event.preventDefault();
     return;
   }
@@ -545,6 +551,7 @@ function disableDrawingMode() {
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
   document.documentElement.classList.remove(PAN_MODE_CLASS);
   document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+  document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
 
   // Remove event listeners
   document.removeEventListener("mousedown", handleMouseDown, true);
