@@ -66,10 +66,8 @@ box-highlight/
 │   ├── content/            # Content scripts
 │   │   ├── content.js      # Page interaction logic
 │   │   └── content.css     # Highlighting styles
-│   └── popup/              # Extension popup UI
-│       ├── popup.html
-│       ├── popup.js
-│       └── popup.css
+│   └── icons/              # Extension icons
+│       └── convert-icon.html
 └── docs/                   # Documentation
     ├── plans/              # Project plans
     └── *.md                # Guides and documentation

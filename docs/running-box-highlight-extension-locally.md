@@ -14,7 +14,7 @@ The extension source lives under the `extension/` directory at the root of this 
 - `extension/manifest.json`
 - `extension/background.js`
 - `extension/content/` (content script JavaScript and CSS)
-- `extension/popup/` (popup HTML, CSS, and JavaScript)
+- `extension/icons/` (extension icons)
 
 You will point Chrome to this `extension/` directory when loading the extension.
 
