@@ -1,6 +1,7 @@
 // State management
 var isDrawingMode = false;
 var isCurrentlyDrawing = false;
+var isDuplicating = false;
 var isSpacebarHeld = false;
 var isAltHeld = false;
 var isCmdCtrlHeld = false;
@@ -9,6 +10,7 @@ var startY = 0;
 var currentMouseX = 0;
 var currentMouseY = 0;
 var currentRectangle = null;
+var duplicatingRectangle = null;
 var placedRectangles = []; // Array to hold multiple rectangles (when Shift is used)
 
 // Axis constraint state (when Cmd/Ctrl is held during drawing)
@@ -21,6 +23,13 @@ var panModeWidth = 0;
 var panModeHeight = 0;
 var panOffsetX = 0;
 var panOffsetY = 0;
+
+// Duplication state (when Alt+D is pressed)
+var duplicateOffsetX = 0;
+var duplicateOffsetY = 0;
+var duplicateStartX = 0;
+var duplicateStartY = 0;
+var duplicateAxisLocked = null; // "horizontal" or "vertical"
 
 // CSS class names
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
@@ -111,9 +120,19 @@ function clearAllRectangles() {
   placedRectangles = [];
 }
 
-// Mouse down handler - start drawing
+// Mouse down handler - start drawing or finalize duplication
 function handleMouseDown(event) {
   if (!isDrawingMode) {
+    return;
+  }
+
+  // If duplicating, finalize the duplicate placement
+  if (isDuplicating && duplicatingRectangle) {
+    placedRectangles.push(duplicatingRectangle);
+    duplicatingRectangle = null;
+    isDuplicating = false;
+    duplicateAxisLocked = null;
+    event.preventDefault();
     return;
   }
 
@@ -142,6 +161,42 @@ function handleMouseMove(event) {
   // Always track mouse position
   currentMouseX = event.clientX;
   currentMouseY = event.clientY;
+
+  // Handle duplication drag mode
+  if (isDuplicating && duplicatingRectangle) {
+    var newX = currentMouseX + duplicateOffsetX;
+    var newY = currentMouseY + duplicateOffsetY;
+
+    // Handle Shift for axis locking during duplication
+    if (event.shiftKey) {
+      // Determine axis lock if not already set
+      if (!duplicateAxisLocked) {
+        var deltaX = Math.abs(newX - duplicateStartX);
+        var deltaY = Math.abs(newY - duplicateStartY);
+
+        if (deltaX > deltaY) {
+          duplicateAxisLocked = "horizontal";
+        } else {
+          duplicateAxisLocked = "vertical";
+        }
+      }
+
+      // Apply axis constraint
+      if (duplicateAxisLocked === "horizontal") {
+        newY = duplicateStartY; // Lock Y, only move X
+      } else if (duplicateAxisLocked === "vertical") {
+        newX = duplicateStartX; // Lock X, only move Y
+      }
+    } else {
+      // Shift released, clear axis lock
+      duplicateAxisLocked = null;
+    }
+
+    duplicatingRectangle.style.left = newX + "px";
+    duplicatingRectangle.style.top = newY + "px";
+    event.preventDefault();
+    return;
+  }
 
   if (!isDrawingMode || !isCurrentlyDrawing || !currentRectangle) {
     return;
@@ -288,11 +343,56 @@ function handleSpacebarUp(event) {
   }
 }
 
+// Alt+D handler - duplicate last rectangle
+function handleDuplicateShortcut(event) {
+  // Check for Alt+D using event.code (more reliable with modifiers)
+  if (event.altKey && (event.code === "KeyD" || event.key === "d" || event.key === "D")) {
+    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && placedRectangles.length > 0) {
+      // Get the last placed rectangle
+      var lastRect = placedRectangles[placedRectangles.length - 1];
+
+      // Create a duplicate
+      var rectLeft = parseInt(lastRect.style.left, 10);
+      var rectTop = parseInt(lastRect.style.top, 10);
+      var rectWidth = parseInt(lastRect.style.width, 10);
+      var rectHeight = parseInt(lastRect.style.height, 10);
+
+      duplicatingRectangle = createRectangle(rectLeft, rectTop, rectWidth, rectHeight);
+      document.body.appendChild(duplicatingRectangle);
+
+      // Calculate offset from cursor to rectangle top-left
+      duplicateOffsetX = rectLeft - currentMouseX;
+      duplicateOffsetY = rectTop - currentMouseY;
+
+      // Store starting position for axis locking
+      duplicateStartX = rectLeft;
+      duplicateStartY = rectTop;
+      duplicateAxisLocked = null;
+
+      isDuplicating = true;
+
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+}
+
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
   if (event.key === "Escape" || event.keyCode === 27) {
+    // If duplicating, cancel duplication
+    if (isDuplicating && duplicatingRectangle) {
+      if (duplicatingRectangle.parentNode) {
+        duplicatingRectangle.parentNode.removeChild(duplicatingRectangle);
+      }
+      duplicatingRectangle = null;
+      isDuplicating = false;
+      event.preventDefault();
+      return;
+    }
     disableDrawingMode();
   } else {
+    handleDuplicateShortcut(event);
     handleSpacebarDown(event);
   }
 }
@@ -329,6 +429,7 @@ function disableDrawingMode() {
   isSpacebarHeld = false;
   isAltHeld = false;
   isCmdCtrlHeld = false;
+  isDuplicating = false;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
   document.documentElement.classList.remove(PAN_MODE_CLASS);
 
@@ -347,6 +448,12 @@ function disableDrawingMode() {
     currentRectangle.parentNode.removeChild(currentRectangle);
     currentRectangle = null;
     isCurrentlyDrawing = false;
+  }
+
+  // Clear duplicating rectangle if any
+  if (duplicatingRectangle && duplicatingRectangle.parentNode) {
+    duplicatingRectangle.parentNode.removeChild(duplicatingRectangle);
+    duplicatingRectangle = null;
   }
 }
 
