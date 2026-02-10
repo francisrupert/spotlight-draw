@@ -13,8 +13,8 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
   - **Spacebar**: Reposition while drawing (cursor hidden)
   - **Cmd/Ctrl (drawing)**: Constrain to horizontal/vertical axis
   - **Cmd/Ctrl (over rectangle)**: Click and drag to reposition (hold Shift to constrain axis)
+  - **Alt (over rectangle)**: Click and drag to duplicate (hold Shift to constrain axis)
   - **Shift**: Multi-rectangle mode
-  - **Alt+D**: Duplicate and reposition last rectangle
 - 🔄 Press ESC to exit drawing mode
 - 🔒 Privacy-focused (no data collection)
 - 🚀 Lightweight and fast (Manifest V3)
@@ -84,7 +84,7 @@ box-highlight/
 5. **Hold Spacebar** while dragging to reposition the rectangle without resizing
 6. **Hold Cmd/Ctrl** during drawing to constrain to horizontal or vertical axis
 7. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
-8. Press **Alt+D** to duplicate the last rectangle and reposition it with your mouse (hold Shift to constrain to axis)
+8. **Hold Alt** and click any rectangle to duplicate it (drag to reposition, hold Shift to constrain axis)
 9. Release spacebar/alt to continue normal resizing
 10. Release mouse to place the rectangle
 11. Click without Shift to clear all rectangles and draw a new one

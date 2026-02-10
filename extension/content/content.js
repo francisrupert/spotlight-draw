@@ -147,20 +147,39 @@ function getRectangleAtPosition(x, y) {
   return null;
 }
 
-// Mouse down handler - start drawing, finalize duplication, or start repositioning
+// Mouse down handler - start drawing, duplication, or repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
     return;
   }
 
-  // If duplicating, finalize the duplicate placement
-  if (isDuplicating && duplicatingRectangle) {
-    placedRectangles.push(duplicatingRectangle);
-    duplicatingRectangle = null;
-    isDuplicating = false;
-    duplicateAxisLocked = null;
-    event.preventDefault();
-    return;
+  // If Alt is held and mouse is over a rectangle, start duplicating (Figma-style)
+  if (event.altKey && !isCurrentlyDrawing && !event.metaKey && !event.ctrlKey) {
+    var rectUnderMouse = getRectangleAtPosition(event.clientX, event.clientY);
+    if (rectUnderMouse) {
+      isDuplicating = true;
+
+      // Create a duplicate of the rectangle under mouse
+      var rectLeft = parseInt(rectUnderMouse.style.left, 10);
+      var rectTop = parseInt(rectUnderMouse.style.top, 10);
+      var rectWidth = parseInt(rectUnderMouse.style.width, 10);
+      var rectHeight = parseInt(rectUnderMouse.style.height, 10);
+
+      duplicatingRectangle = createRectangle(rectLeft, rectTop, rectWidth, rectHeight);
+      document.body.appendChild(duplicatingRectangle);
+
+      // Calculate offset from cursor to rectangle top-left
+      duplicateOffsetX = rectLeft - event.clientX;
+      duplicateOffsetY = rectTop - event.clientY;
+
+      // Store starting position for axis locking
+      duplicateStartX = rectLeft;
+      duplicateStartY = rectTop;
+      duplicateAxisLocked = null;
+
+      event.preventDefault();
+      return;
+    }
   }
 
   // If Cmd/Ctrl is held and mouse is over a rectangle, start repositioning
@@ -344,8 +363,18 @@ function handleMouseMove(event) {
   event.preventDefault();
 }
 
-// Mouse up handler - finish drawing or repositioning
+// Mouse up handler - finish drawing, duplication, or repositioning
 function handleMouseUp(event) {
+  // If duplicating, finalize the duplicate placement
+  if (isDuplicating && duplicatingRectangle) {
+    placedRectangles.push(duplicatingRectangle);
+    duplicatingRectangle = null;
+    isDuplicating = false;
+    duplicateAxisLocked = null;
+    event.preventDefault();
+    return;
+  }
+
   // If repositioning, finalize it
   if (isRepositioning && repositioningRectangle) {
     isRepositioning = false;
@@ -457,38 +486,7 @@ function handleSpacebarUp(event) {
 }
 
 // Alt+D handler - duplicate last rectangle
-function handleDuplicateShortcut(event) {
-  // Check for Alt+D using event.code (more reliable with modifiers)
-  if (event.altKey && (event.code === "KeyD" || event.key === "d" || event.key === "D")) {
-    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && placedRectangles.length > 0) {
-      // Get the last placed rectangle
-      var lastRect = placedRectangles[placedRectangles.length - 1];
-
-      // Create a duplicate
-      var rectLeft = parseInt(lastRect.style.left, 10);
-      var rectTop = parseInt(lastRect.style.top, 10);
-      var rectWidth = parseInt(lastRect.style.width, 10);
-      var rectHeight = parseInt(lastRect.style.height, 10);
-
-      duplicatingRectangle = createRectangle(rectLeft, rectTop, rectWidth, rectHeight);
-      document.body.appendChild(duplicatingRectangle);
-
-      // Calculate offset from cursor to rectangle top-left
-      duplicateOffsetX = rectLeft - currentMouseX;
-      duplicateOffsetY = rectTop - currentMouseY;
-
-      // Store starting position for axis locking
-      duplicateStartX = rectLeft;
-      duplicateStartY = rectTop;
-      duplicateAxisLocked = null;
-
-      isDuplicating = true;
-
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-}
+// Alt+D handler removed - now using Alt+drag like Figma
 
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
@@ -506,7 +504,6 @@ function handleKeyDown(event) {
     }
     disableDrawingMode();
   } else {
-    handleDuplicateShortcut(event);
     handleSpacebarDown(event);
   }
 }
