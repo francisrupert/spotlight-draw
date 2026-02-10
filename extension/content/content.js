@@ -1,10 +1,19 @@
 // State management
 var isDrawingMode = false;
 var isCurrentlyDrawing = false;
+var isSpacebarHeld = false;
 var startX = 0;
 var startY = 0;
+var currentMouseX = 0;
+var currentMouseY = 0;
 var currentRectangle = null;
 var placedRectangle = null; // Only one rectangle at a time
+
+// Pan mode state (when spacebar is held during drawing)
+var panModeWidth = 0;
+var panModeHeight = 0;
+var panOffsetX = 0;
+var panOffsetY = 0;
 
 // CSS class names
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
@@ -59,6 +68,7 @@ function handleMouseDown(event) {
   removePlacedRectangle();
 
   isCurrentlyDrawing = true;
+  isSpacebarHeld = false; // Reset spacebar state
   startX = event.clientX;
   startY = event.clientY;
 
@@ -69,14 +79,26 @@ function handleMouseDown(event) {
   event.preventDefault();
 }
 
-// Mouse move handler - update rectangle size
+// Mouse move handler - update rectangle size or position
 function handleMouseMove(event) {
+  // Always track mouse position
+  currentMouseX = event.clientX;
+  currentMouseY = event.clientY;
+
   if (!isDrawingMode || !isCurrentlyDrawing || !currentRectangle) {
     return;
   }
 
-  var coords = calculateRectCoords(event.clientX, event.clientY);
-  updateRectangle(currentRectangle, coords.x, coords.y, coords.width, coords.height);
+  if (isSpacebarHeld) {
+    // Pan mode: move the entire rectangle without resizing
+    var newX = currentMouseX + panOffsetX;
+    var newY = currentMouseY + panOffsetY;
+    updateRectangle(currentRectangle, newX, newY, panModeWidth, panModeHeight);
+  } else {
+    // Normal mode: resize the rectangle
+    var coords = calculateRectCoords(currentMouseX, currentMouseY);
+    updateRectangle(currentRectangle, coords.x, coords.y, coords.width, coords.height);
+  }
 
   event.preventDefault();
 }
@@ -88,6 +110,7 @@ function handleMouseUp(event) {
   }
 
   isCurrentlyDrawing = false;
+  isSpacebarHeld = false; // Reset spacebar state
 
   // Keep the rectangle if it has some size
   if (currentRectangle) {
@@ -109,11 +132,69 @@ function handleMouseUp(event) {
   event.preventDefault();
 }
 
+// Spacebar keydown - enter pan mode during drawing
+function handleSpacebarDown(event) {
+  if (event.key === " " || event.keyCode === 32) {
+    if (isCurrentlyDrawing && !isSpacebarHeld && currentRectangle) {
+      isSpacebarHeld = true;
+
+      // Store current rectangle dimensions
+      panModeWidth = parseInt(currentRectangle.style.width, 10);
+      panModeHeight = parseInt(currentRectangle.style.height, 10);
+
+      // Calculate offset from cursor to rectangle top-left using tracked mouse position
+      var rectLeft = parseInt(currentRectangle.style.left, 10);
+      var rectTop = parseInt(currentRectangle.style.top, 10);
+      panOffsetX = rectLeft - currentMouseX;
+      panOffsetY = rectTop - currentMouseY;
+
+      event.preventDefault();
+    }
+  }
+}
+
+// Spacebar keyup - exit pan mode and recalculate start position
+function handleSpacebarUp(event) {
+  if (event.key === " " || event.keyCode === 32) {
+    if (isCurrentlyDrawing && isSpacebarHeld && currentRectangle) {
+      isSpacebarHeld = false;
+
+      // Recalculate startX and startY based on current rectangle position
+      var rectLeft = parseInt(currentRectangle.style.left, 10);
+      var rectTop = parseInt(currentRectangle.style.top, 10);
+      var rectWidth = parseInt(currentRectangle.style.width, 10);
+      var rectHeight = parseInt(currentRectangle.style.height, 10);
+
+      // Determine which corner should be the fixed anchor point
+      // based on where the cursor is relative to the rectangle
+      if (currentMouseX >= rectLeft + rectWidth / 2) {
+        startX = rectLeft;
+      } else {
+        startX = rectLeft + rectWidth;
+      }
+
+      if (currentMouseY >= rectTop + rectHeight / 2) {
+        startY = rectTop;
+      } else {
+        startY = rectTop + rectHeight;
+      }
+
+      event.preventDefault();
+    }
+  }
+}
+
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
   if (event.key === "Escape" || event.keyCode === 27) {
     disableDrawingMode();
+  } else {
+    handleSpacebarDown(event);
   }
+}
+
+function handleKeyUp(event) {
+  handleSpacebarUp(event);
 }
 
 // Enable drawing mode
@@ -130,6 +211,7 @@ function enableDrawingMode() {
   document.addEventListener("mousemove", handleMouseMove, true);
   document.addEventListener("mouseup", handleMouseUp, true);
   document.addEventListener("keydown", handleKeyDown, true);
+  document.addEventListener("keyup", handleKeyUp, true);
 }
 
 // Disable drawing mode
@@ -139,6 +221,7 @@ function disableDrawingMode() {
   }
 
   isDrawingMode = false;
+  isSpacebarHeld = false;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
 
   // Remove event listeners
@@ -146,6 +229,7 @@ function disableDrawingMode() {
   document.removeEventListener("mousemove", handleMouseMove, true);
   document.removeEventListener("mouseup", handleMouseUp, true);
   document.removeEventListener("keydown", handleKeyDown, true);
+  document.removeEventListener("keyup", handleKeyUp, true);
 
   // Clear any rectangles
   removePlacedRectangle();

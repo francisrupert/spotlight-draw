@@ -11,7 +11,11 @@ function sendToggleMessage(tab) {
     return;
   }
 
-  chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_BOX_HIGHLIGHT" });
+  // Use promise .catch() for Manifest V3
+  chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_BOX_HIGHLIGHT" })
+    .catch(function() {
+      // Silently ignore errors (e.g., content script not loaded on restricted pages)
+    });
 }
 
 function handleCommand(command) {
