@@ -16,6 +16,15 @@ html.box-highlight-pan-mode * {
   cursor: none !important;
 }
 
+/* Repositioning mode - move cursor */
+html.box-highlight-repositioning-mode {
+  cursor: move !important;
+}
+
+html.box-highlight-repositioning-mode * {
+  cursor: move !important;
+}
+
 /* Rectangle style */
 .box-highlight-rectangle {
   border: 2px solid #FF9800;

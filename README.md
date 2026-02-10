@@ -11,7 +11,8 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 - ⚡ Click-and-drag interface with modifier keys:
   - **Alt**: Draw from center outward
   - **Spacebar**: Reposition while drawing (cursor hidden)
-  - **Cmd/Ctrl**: Constrain to horizontal/vertical axis
+  - **Cmd/Ctrl (drawing)**: Constrain to horizontal/vertical axis
+  - **Cmd/Ctrl (over rectangle)**: Click and drag to reposition (hold Shift to constrain axis)
   - **Shift**: Multi-rectangle mode
   - **Alt+D**: Duplicate and reposition last rectangle
 - 🔄 Press ESC to exit drawing mode

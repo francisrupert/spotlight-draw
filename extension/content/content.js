@@ -2,6 +2,7 @@
 var isDrawingMode = false;
 var isCurrentlyDrawing = false;
 var isDuplicating = false;
+var isRepositioning = false;
 var isSpacebarHeld = false;
 var isAltHeld = false;
 var isCmdCtrlHeld = false;
@@ -11,6 +12,7 @@ var currentMouseX = 0;
 var currentMouseY = 0;
 var currentRectangle = null;
 var duplicatingRectangle = null;
+var repositioningRectangle = null;
 var placedRectangles = []; // Array to hold multiple rectangles (when Shift is used)
 
 // Axis constraint state (when Cmd/Ctrl is held during drawing)
@@ -31,9 +33,17 @@ var duplicateStartX = 0;
 var duplicateStartY = 0;
 var duplicateAxisLocked = null; // "horizontal" or "vertical"
 
+// Repositioning state (when Cmd/Ctrl + drag over existing rectangle)
+var repositionOffsetX = 0;
+var repositionOffsetY = 0;
+var repositionStartX = 0;
+var repositionStartY = 0;
+var repositionAxisLocked = null; // "horizontal" or "vertical"
+
 // CSS class names
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
 var PAN_MODE_CLASS = "box-highlight-pan-mode";
+var REPOSITIONING_MODE_CLASS = "box-highlight-repositioning-mode";
 var RECTANGLE_CLASS = "box-highlight-rectangle";
 
 // Create a rectangle element
@@ -120,7 +130,24 @@ function clearAllRectangles() {
   placedRectangles = [];
 }
 
-// Mouse down handler - start drawing or finalize duplication
+// Find rectangle at mouse position
+function getRectangleAtPosition(x, y) {
+  // Iterate in reverse order to check top-most rectangles first
+  for (var i = placedRectangles.length - 1; i >= 0; i--) {
+    var rect = placedRectangles[i];
+    var left = parseInt(rect.style.left, 10);
+    var top = parseInt(rect.style.top, 10);
+    var width = parseInt(rect.style.width, 10);
+    var height = parseInt(rect.style.height, 10);
+
+    if (x >= left && x <= left + width && y >= top && y <= top + height) {
+      return rect;
+    }
+  }
+  return null;
+}
+
+// Mouse down handler - start drawing, finalize duplication, or start repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
     return;
@@ -134,6 +161,32 @@ function handleMouseDown(event) {
     duplicateAxisLocked = null;
     event.preventDefault();
     return;
+  }
+
+  // If Cmd/Ctrl is held and mouse is over a rectangle, start repositioning
+  if ((event.metaKey || event.ctrlKey) && !isCurrentlyDrawing) {
+    var rectUnderMouse = getRectangleAtPosition(event.clientX, event.clientY);
+    if (rectUnderMouse) {
+      isRepositioning = true;
+      repositioningRectangle = rectUnderMouse;
+
+      // Add repositioning mode class to change cursor
+      document.documentElement.classList.add(REPOSITIONING_MODE_CLASS);
+
+      // Calculate offset from cursor to rectangle top-left
+      var rectLeft = parseInt(rectUnderMouse.style.left, 10);
+      var rectTop = parseInt(rectUnderMouse.style.top, 10);
+      repositionOffsetX = rectLeft - event.clientX;
+      repositionOffsetY = rectTop - event.clientY;
+
+      // Store starting position for axis locking
+      repositionStartX = rectLeft;
+      repositionStartY = rectTop;
+      repositionAxisLocked = null;
+
+      event.preventDefault();
+      return;
+    }
   }
 
   // Only clear previous rectangles if Shift is NOT held
@@ -161,6 +214,56 @@ function handleMouseMove(event) {
   // Always track mouse position
   currentMouseX = event.clientX;
   currentMouseY = event.clientY;
+
+  // Show move cursor when Cmd/Ctrl is held over a rectangle (not actively drawing or repositioning)
+  if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning) {
+    if (event.metaKey || event.ctrlKey) {
+      var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
+      if (rectUnderMouse) {
+        document.documentElement.classList.add(REPOSITIONING_MODE_CLASS);
+      } else {
+        document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+      }
+    } else {
+      document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+    }
+  }
+
+  // Handle repositioning mode
+  if (isRepositioning && repositioningRectangle) {
+    var newX = currentMouseX + repositionOffsetX;
+    var newY = currentMouseY + repositionOffsetY;
+
+    // Handle Shift for axis locking during repositioning
+    if (event.shiftKey) {
+      // Determine axis lock if not already set
+      if (!repositionAxisLocked) {
+        var deltaX = Math.abs(newX - repositionStartX);
+        var deltaY = Math.abs(newY - repositionStartY);
+
+        if (deltaX > deltaY) {
+          repositionAxisLocked = "horizontal";
+        } else {
+          repositionAxisLocked = "vertical";
+        }
+      }
+
+      // Apply axis constraint
+      if (repositionAxisLocked === "horizontal") {
+        newY = repositionStartY; // Lock Y, only move X
+      } else if (repositionAxisLocked === "vertical") {
+        newX = repositionStartX; // Lock X, only move Y
+      }
+    } else {
+      // Shift released, clear axis lock
+      repositionAxisLocked = null;
+    }
+
+    repositioningRectangle.style.left = newX + "px";
+    repositioningRectangle.style.top = newY + "px";
+    event.preventDefault();
+    return;
+  }
 
   // Handle duplication drag mode
   if (isDuplicating && duplicatingRectangle) {
@@ -241,8 +344,18 @@ function handleMouseMove(event) {
   event.preventDefault();
 }
 
-// Mouse up handler - finish drawing
+// Mouse up handler - finish drawing or repositioning
 function handleMouseUp(event) {
+  // If repositioning, finalize it
+  if (isRepositioning && repositioningRectangle) {
+    isRepositioning = false;
+    repositioningRectangle = null;
+    repositionAxisLocked = null;
+    document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+    event.preventDefault();
+    return;
+  }
+
   if (!isDrawingMode || !isCurrentlyDrawing) {
     return;
   }
@@ -431,8 +544,10 @@ function disableDrawingMode() {
   isAltHeld = false;
   isCmdCtrlHeld = false;
   isDuplicating = false;
+  isRepositioning = false;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
   document.documentElement.classList.remove(PAN_MODE_CLASS);
+  document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
 
   // Remove event listeners
   document.removeEventListener("mousedown", handleMouseDown, true);
@@ -456,6 +571,9 @@ function disableDrawingMode() {
     duplicatingRectangle.parentNode.removeChild(duplicatingRectangle);
     duplicatingRectangle = null;
   }
+
+  // Clear repositioning state
+  repositioningRectangle = null;
 }
 
 // Toggle drawing mode
