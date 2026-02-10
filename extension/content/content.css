@@ -1,0 +1,4 @@
+html.box-highlight--enabled * {
+  outline: 1px solid rgba(255, 152, 0, 0.6);
+  box-sizing: border-box;
+}

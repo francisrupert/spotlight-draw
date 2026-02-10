@@ -1,0 +1,22 @@
+{
+  "name": "box-highlight",
+  "version": "0.1.0",
+  "description": "Chrome extension for highlighting boxes on web pages",
+  "private": true,
+  "scripts": {
+    "clean": "rm -f box-highlight-*.zip",
+    "zip": "npm run clean && cd extension && zip -r ../box-highlight-$(node -p \"require('../package.json').version\").zip . -x '*.DS_Store' -x '*/README.md' -x '*/convert-icon.html' && cd .. && echo \"Created box-highlight-$(node -p \"require('./package.json').version\").zip\"",
+    "zip:latest": "npm run clean && cd extension && zip -r ../box-highlight-latest.zip . -x '*.DS_Store' -x '*/README.md' -x '*/convert-icon.html' && cd .. && echo 'Created box-highlight-latest.zip'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/box-highlight.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "developer-tools",
+    "highlighting"
+  ],
+  "author": "",
+  "license": "MIT"
+}

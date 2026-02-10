@@ -1,0 +1,18 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="128" height="128" fill="#2196F3" rx="24"/>
+
+  <!-- Main box outline (thick orange stroke) -->
+  <rect x="24" y="24" width="80" height="80"
+        fill="none"
+        stroke="#FF9800"
+        stroke-width="8"
+        rx="4"/>
+
+  <!-- Inner highlight effect (thinner outline) -->
+  <rect x="40" y="40" width="48" height="48"
+        fill="none"
+        stroke="#FFB74D"
+        stroke-width="4"
+        rx="2"/>
+</svg>
