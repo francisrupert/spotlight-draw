@@ -7,6 +7,15 @@ html.box-highlight-drawing-mode * {
   cursor: crosshair !important;
 }
 
+/* Pan mode - hide cursor when spacebar is held */
+html.box-highlight-pan-mode {
+  cursor: none !important;
+}
+
+html.box-highlight-pan-mode * {
+  cursor: none !important;
+}
+
 /* Rectangle style */
 .box-highlight-rectangle {
   border: 2px solid #FF9800;

@@ -3,12 +3,18 @@ var isDrawingMode = false;
 var isCurrentlyDrawing = false;
 var isSpacebarHeld = false;
 var isAltHeld = false;
+var isCmdCtrlHeld = false;
 var startX = 0;
 var startY = 0;
 var currentMouseX = 0;
 var currentMouseY = 0;
 var currentRectangle = null;
 var placedRectangles = []; // Array to hold multiple rectangles (when Shift is used)
+
+// Axis constraint state (when Cmd/Ctrl is held during drawing)
+var axisConstraintWidth = 0;
+var axisConstraintHeight = 0;
+var axisConstraintMode = null; // "horizontal" or "vertical"
 
 // Pan mode state (when spacebar is held during drawing)
 var panModeWidth = 0;
@@ -18,6 +24,7 @@ var panOffsetY = 0;
 
 // CSS class names
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
+var PAN_MODE_CLASS = "box-highlight-pan-mode";
 var RECTANGLE_CLASS = "box-highlight-rectangle";
 
 // Create a rectangle element
@@ -45,21 +52,50 @@ function updateRectangle(rect, x, y, width, height) {
 // Calculate rectangle coordinates from start and current mouse position
 function calculateRectCoords(currentX, currentY) {
   var x, y, width, height;
+  var effectiveCurrentX = currentX;
+  var effectiveCurrentY = currentY;
+
+  // Apply axis constraint if Cmd/Ctrl is held during drawing
+  if (isCmdCtrlHeld && axisConstraintMode) {
+    if (axisConstraintMode === "horizontal") {
+      // Lock to horizontal: keep height fixed
+      var deltaY = Math.abs(currentY - startY);
+      effectiveCurrentY = startY + (currentY > startY ? deltaY : -deltaY);
+      // Constrain effectiveCurrentY to maintain the locked height
+      if (isAltHeld) {
+        effectiveCurrentY = startY + (axisConstraintHeight / 2) * (currentY > startY ? 1 : -1);
+      } else {
+        var lockedHeight = axisConstraintHeight;
+        effectiveCurrentY = startY + lockedHeight * (currentY > startY ? 1 : -1);
+      }
+    } else if (axisConstraintMode === "vertical") {
+      // Lock to vertical: keep width fixed
+      var deltaX = Math.abs(currentX - startX);
+      effectiveCurrentX = startX + (currentX > startX ? deltaX : -deltaX);
+      // Constrain effectiveCurrentX to maintain the locked width
+      if (isAltHeld) {
+        effectiveCurrentX = startX + (axisConstraintWidth / 2) * (currentX > startX ? 1 : -1);
+      } else {
+        var lockedWidth = axisConstraintWidth;
+        effectiveCurrentX = startX + lockedWidth * (currentX > startX ? 1 : -1);
+      }
+    }
+  }
 
   if (isAltHeld) {
     // Alt held: draw from center outward
-    var halfWidth = Math.abs(currentX - startX);
-    var halfHeight = Math.abs(currentY - startY);
+    var halfWidth = Math.abs(effectiveCurrentX - startX);
+    var halfHeight = Math.abs(effectiveCurrentY - startY);
     x = startX - halfWidth;
     y = startY - halfHeight;
     width = halfWidth * 2;
     height = halfHeight * 2;
   } else {
     // Normal: draw from corner to corner
-    x = Math.min(startX, currentX);
-    y = Math.min(startY, currentY);
-    width = Math.abs(currentX - startX);
-    height = Math.abs(currentY - startY);
+    x = Math.min(startX, effectiveCurrentX);
+    y = Math.min(startY, effectiveCurrentY);
+    width = Math.abs(effectiveCurrentX - startX);
+    height = Math.abs(effectiveCurrentY - startY);
   }
 
   return { x: x, y: y, width: width, height: height };
@@ -89,6 +125,8 @@ function handleMouseDown(event) {
   isCurrentlyDrawing = true;
   isSpacebarHeld = false; // Reset spacebar state
   isAltHeld = event.altKey; // Capture initial Alt state
+  isCmdCtrlHeld = false; // Reset Cmd/Ctrl state
+  axisConstraintMode = null; // Reset axis constraint
   startX = event.clientX;
   startY = event.clientY;
 
@@ -112,13 +150,35 @@ function handleMouseMove(event) {
   // Update Alt state during drawing
   isAltHeld = event.altKey;
 
+  // Handle Cmd/Ctrl for axis constraint (only during drawing, not on initial mousedown)
+  var wasCmdCtrlHeld = isCmdCtrlHeld;
+  isCmdCtrlHeld = event.metaKey || event.ctrlKey; // metaKey = Cmd on Mac, ctrlKey = Ctrl on Windows/Linux
+
+  // If Cmd/Ctrl was just pressed, capture current dimensions and determine axis
+  if (isCmdCtrlHeld && !wasCmdCtrlHeld) {
+    axisConstraintWidth = Math.abs(currentMouseX - startX);
+    axisConstraintHeight = Math.abs(currentMouseY - startY);
+
+    // Determine dominant axis based on current movement
+    if (axisConstraintWidth > axisConstraintHeight) {
+      axisConstraintMode = "horizontal";
+    } else {
+      axisConstraintMode = "vertical";
+    }
+  }
+
+  // If Cmd/Ctrl was released, clear axis constraint
+  if (!isCmdCtrlHeld && wasCmdCtrlHeld) {
+    axisConstraintMode = null;
+  }
+
   if (isSpacebarHeld) {
     // Pan mode: move the entire rectangle without resizing
     var newX = currentMouseX + panOffsetX;
     var newY = currentMouseY + panOffsetY;
     updateRectangle(currentRectangle, newX, newY, panModeWidth, panModeHeight);
   } else {
-    // Normal/Alt mode: resize the rectangle (from corner or center)
+    // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
     var coords = calculateRectCoords(currentMouseX, currentMouseY);
     updateRectangle(currentRectangle, coords.x, coords.y, coords.width, coords.height);
   }
@@ -135,6 +195,8 @@ function handleMouseUp(event) {
   isCurrentlyDrawing = false;
   isSpacebarHeld = false; // Reset spacebar state
   isAltHeld = false; // Reset Alt state
+  isCmdCtrlHeld = false; // Reset Cmd/Ctrl state
+  axisConstraintMode = null; // Reset axis constraint
 
   // Keep the rectangle if it has some size
   if (currentRectangle) {
@@ -174,6 +236,9 @@ function handleSpacebarDown(event) {
     if (isCurrentlyDrawing && !isSpacebarHeld && currentRectangle) {
       isSpacebarHeld = true;
 
+      // Add pan mode class to hide cursor
+      document.documentElement.classList.add(PAN_MODE_CLASS);
+
       // Store current rectangle dimensions
       panModeWidth = parseInt(currentRectangle.style.width, 10);
       panModeHeight = parseInt(currentRectangle.style.height, 10);
@@ -195,6 +260,9 @@ function handleSpacebarUp(event) {
     if (isCurrentlyDrawing && isSpacebarHeld && currentRectangle) {
       isSpacebarHeld = false;
 
+      // Remove pan mode class to restore cursor
+      document.documentElement.classList.remove(PAN_MODE_CLASS);
+
       // Recalculate startX and startY based on current rectangle position
       var rectLeft = parseInt(currentRectangle.style.left, 10);
       var rectTop = parseInt(currentRectangle.style.top, 10);
@@ -211,7 +279,7 @@ function handleSpacebarUp(event) {
 
       if (currentMouseY >= rectTop + rectHeight / 2) {
         startY = rectTop;
-      } else {
+        } else {
         startY = rectTop + rectHeight;
       }
 
@@ -260,7 +328,9 @@ function disableDrawingMode() {
   isDrawingMode = false;
   isSpacebarHeld = false;
   isAltHeld = false;
+  isCmdCtrlHeld = false;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
+  document.documentElement.classList.remove(PAN_MODE_CLASS);
 
   // Remove event listeners
   document.removeEventListener("mousedown", handleMouseDown, true);
