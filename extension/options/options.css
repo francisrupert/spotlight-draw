@@ -1,3 +1,11 @@
+:root {
+  --color-orange: oklch(0.7397 0.2057 47.88);
+  --color-plain: graytext;
+  --color-blue: oklch(0.6295 0.2128 246.71);
+  --color-purple: oklch(0.7384 0.2783 342);
+  --color-green: oklch(0.7634 0.1947 159.75);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   padding: 20px;
@@ -45,6 +53,98 @@ select:focus {
   outline: none;
   border-color: #4CAF50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+/* Button group (segmented control) */
+.button-group {
+  display: flex;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.button-group-item {
+  flex: 1;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+  background-color: white;
+  border: none;
+  border-right: 1px solid #ddd;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.button-group-item:last-child {
+  border-right: none;
+}
+
+.button-group-item:hover {
+  outline: 2px solid canvasText;
+}
+
+.button-group-item.active {
+  background-color: #e8e8e8;
+  color: #333;
+  font-weight: 600;
+}
+
+.button-group-item:focus {
+  outline: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* Color button group */
+.color-group {
+  width: fit-content;
+}
+
+.color-button {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  position: relative;
+}
+
+.color-button[data-color="orange"] {
+  background-color: var(--color-orange);
+}
+
+.color-button[data-color="plain"] {
+  background-color: var(--color-plain);
+}
+
+.color-button[data-color="blue"] {
+  background-color: var(--color-blue);
+}
+
+.color-button[data-color="purple"] {
+  background-color: var(--color-purple);
+}
+
+.color-button[data-color="green"] {
+  background-color: var(--color-green);
+}
+
+.color-button:hover {
+  opacity: 0.85;
+  background-color: inherit;
+}
+
+.color-button.active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
 button {

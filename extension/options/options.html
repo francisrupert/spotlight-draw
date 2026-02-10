@@ -11,24 +11,24 @@
     <h1>Box Highlight Settings</h1>
 
     <div class="setting-group">
-      <label for="borderSize">Border Size:</label>
-      <select id="borderSize">
-        <option value="0.5">0.5px (thin)</option>
-        <option value="1">1px (default)</option>
-        <option value="2">2px (medium)</option>
-        <option value="3">3px (thick)</option>
-      </select>
+      <label>Border</label>
+      <div class="button-group" id="borderSize">
+        <button type="button" class="button-group-item" data-value="0.5">.5</button>
+        <button type="button" class="button-group-item" data-value="1">1</button>
+        <button type="button" class="button-group-item" data-value="2">2</button>
+        <button type="button" class="button-group-item" data-value="3">3</button>
+      </div>
     </div>
 
     <div class="setting-group">
-      <label for="defaultColor">Default Color:</label>
-      <select id="defaultColor">
-        <option value="">Orange (default)</option>
-        <option value="box-highlight-rectangle--plain">Gray</option>
-        <option value="box-highlight-rectangle--blue">Blue</option>
-        <option value="box-highlight-rectangle--purple">Purple</option>
-        <option value="box-highlight-rectangle--green">Green</option>
-      </select>
+      <label>Default Color</label>
+      <div class="button-group color-group" id="defaultColor">
+        <button type="button" class="button-group-item color-button" data-value="" data-color="orange"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--plain" data-color="plain"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--blue" data-color="blue"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--purple" data-color="purple"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--green" data-color="green"></button>
+      </div>
     </div>
 
     <button id="save">Save Settings</button>
