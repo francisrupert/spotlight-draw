@@ -8,7 +8,7 @@ var startY = 0;
 var currentMouseX = 0;
 var currentMouseY = 0;
 var currentRectangle = null;
-var placedRectangle = null; // Only one rectangle at a time
+var placedRectangles = []; // Array to hold multiple rectangles (when Shift is used)
 
 // Pan mode state (when spacebar is held during drawing)
 var panModeWidth = 0;
@@ -65,12 +65,14 @@ function calculateRectCoords(currentX, currentY) {
   return { x: x, y: y, width: width, height: height };
 }
 
-// Remove the placed rectangle
-function removePlacedRectangle() {
-  if (placedRectangle && placedRectangle.parentNode) {
-    placedRectangle.parentNode.removeChild(placedRectangle);
+// Remove all placed rectangles
+function clearAllRectangles() {
+  for (var i = 0; i < placedRectangles.length; i++) {
+    if (placedRectangles[i] && placedRectangles[i].parentNode) {
+      placedRectangles[i].parentNode.removeChild(placedRectangles[i]);
+    }
   }
-  placedRectangle = null;
+  placedRectangles = [];
 }
 
 // Mouse down handler - start drawing
@@ -79,8 +81,10 @@ function handleMouseDown(event) {
     return;
   }
 
-  // Always remove previous rectangle on any mousedown (whether dragging or just clicking)
-  removePlacedRectangle();
+  // Only clear previous rectangles if Shift is NOT held
+  if (!event.shiftKey) {
+    clearAllRectangles();
+  }
 
   isCurrentlyDrawing = true;
   isSpacebarHeld = false; // Reset spacebar state
@@ -138,8 +142,8 @@ function handleMouseUp(event) {
     var height = parseInt(currentRectangle.style.height, 10);
 
     if (width > 3 && height > 3) {
-      // This becomes the placed rectangle
-      placedRectangle = currentRectangle;
+      // Add to the array of placed rectangles
+      placedRectangles.push(currentRectangle);
     } else {
       // Remove tiny rectangles (accidental clicks)
       if (currentRectangle.parentNode) {
@@ -253,7 +257,7 @@ function disableDrawingMode() {
   document.removeEventListener("keyup", handleKeyUp, true);
 
   // Clear any rectangles
-  removePlacedRectangle();
+  clearAllRectangles();
 
   if (isCurrentlyDrawing && currentRectangle && currentRectangle.parentNode) {
     currentRectangle.parentNode.removeChild(currentRectangle);

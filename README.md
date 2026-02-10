@@ -7,7 +7,10 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 - ✏️ Draw custom rectangles anywhere on any webpage
 - ⌨️ Activate with **Alt+C** keyboard shortcut (Option+C on Mac)
 - 🎨 Orange border with 20% opacity orange background
-- ⚡ Click-and-drag interface with spacebar repositioning
+- ⚡ Click-and-drag interface with modifier keys:
+  - **Alt**: Draw from center outward
+  - **Spacebar**: Reposition while drawing
+  - **Shift**: Multi-rectangle mode (keep previous rectangles)
 - 🔄 Press ESC to exit drawing mode
 - 🔒 Privacy-focused (no data collection)
 - 🚀 Lightweight and fast (Manifest V3)
@@ -75,11 +78,12 @@ box-highlight/
 3. Click and drag anywhere on the page to draw a rectangle
 4. **Hold Alt** while dragging to draw from center outward
 5. **Hold Spacebar** while dragging to reposition the rectangle without resizing
-6. Release spacebar/alt to continue normal resizing
-7. Release mouse to place the rectangle
-8. Click anywhere to clear and redraw a rectangle
-9. Press **ESC** to exit drawing mode (clears rectangle and restores normal cursor)
-10. Press **Alt+C** again to also exit drawing mode
+6. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
+7. Release spacebar/alt to continue normal resizing
+8. Release mouse to place the rectangle
+9. Click without Shift to clear all rectangles and draw a new one
+10. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
+11. Press **Alt+C** again to also exit drawing mode
 
 No permanent page modifications are made—just visual overlays using positioned div elements.
 
