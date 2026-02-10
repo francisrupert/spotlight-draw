@@ -57,6 +57,33 @@ var COLOR_CLASSES = [
   "box-highlight-rectangle--green"
 ];
 
+// User preferences (loaded from chrome.storage)
+var userPreferences = {
+  borderSize: "1",
+  defaultColor: ""
+};
+
+// Load user preferences from chrome.storage
+function loadPreferences(callback) {
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
+    chrome.storage.sync.get({
+      borderSize: "1",
+      defaultColor: ""
+    }, function(items) {
+      userPreferences.borderSize = items.borderSize;
+      userPreferences.defaultColor = items.defaultColor;
+      if (callback) {
+        callback();
+      }
+    });
+  } else {
+    // Fallback if chrome.storage is not available
+    if (callback) {
+      callback();
+    }
+  }
+}
+
 // Create a rectangle element
 function createRectangle(x, y, width, height) {
   var rect = document.createElement("div");
@@ -68,7 +95,21 @@ function createRectangle(x, y, width, height) {
   rect.style.height = height + "px";
   rect.style.pointerEvents = "none";
   rect.style.zIndex = "2147483647"; // Maximum z-index
-  rect.setAttribute("data-color-index", "0"); // Initialize to default color
+
+  // Apply user preference for border size
+  rect.style.borderWidth = userPreferences.borderSize + "px";
+
+  // Apply user preference for default color
+  var defaultColorIndex = 0;
+  if (userPreferences.defaultColor) {
+    var colorIndex = COLOR_CLASSES.indexOf(userPreferences.defaultColor);
+    if (colorIndex !== -1) {
+      defaultColorIndex = colorIndex;
+      rect.classList.add(userPreferences.defaultColor);
+    }
+  }
+  rect.setAttribute("data-color-index", defaultColorIndex.toString());
+
   return rect;
 }
 
@@ -640,16 +681,19 @@ function enableDrawingMode() {
     return;
   }
 
-  isDrawingMode = true;
-  document.documentElement.classList.add(DRAWING_MODE_CLASS);
+  // Load preferences first, then enable drawing mode
+  loadPreferences(function() {
+    isDrawingMode = true;
+    document.documentElement.classList.add(DRAWING_MODE_CLASS);
 
-  // Add event listeners
-  document.addEventListener("mousedown", handleMouseDown, true);
-  document.addEventListener("mousemove", handleMouseMove, true);
-  document.addEventListener("mouseup", handleMouseUp, true);
-  document.addEventListener("click", handleClick, true);
-  document.addEventListener("keydown", handleKeyDown, true);
-  document.addEventListener("keyup", handleKeyUp, true);
+    // Add event listeners
+    document.addEventListener("mousedown", handleMouseDown, true);
+    document.addEventListener("mousemove", handleMouseMove, true);
+    document.addEventListener("mouseup", handleMouseUp, true);
+    document.addEventListener("click", handleClick, true);
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("keyup", handleKeyUp, true);
+  });
 }
 
 // Disable drawing mode

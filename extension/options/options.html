@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Box Highlight Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Box Highlight Settings</h1>
+
+    <div class="setting-group">
+      <label for="borderSize">Border Size:</label>
+      <select id="borderSize">
+        <option value="0.5">0.5px (thin)</option>
+        <option value="1">1px (default)</option>
+        <option value="2">2px (medium)</option>
+        <option value="3">3px (thick)</option>
+      </select>
+    </div>
+
+    <div class="setting-group">
+      <label for="defaultColor">Default Color:</label>
+      <select id="defaultColor">
+        <option value="">Orange (default)</option>
+        <option value="box-highlight-rectangle--plain">Gray</option>
+        <option value="box-highlight-rectangle--blue">Blue</option>
+        <option value="box-highlight-rectangle--purple">Purple</option>
+        <option value="box-highlight-rectangle--green">Green</option>
+      </select>
+    </div>
+
+    <button id="save">Save Settings</button>
+    <div id="status"></div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

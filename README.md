@@ -6,7 +6,7 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 
 - ✏️ Draw custom rectangles anywhere on any webpage
 - ⌨️ Activate with **Alt+C** keyboard shortcut (Option+C on Mac)
-- 🎨 Orange border with 20% opacity orange background
+- 🎨 Customizable colors and border sizes via options page
 - 🛡️ Click-safe: prevents accidental navigation/clicks while drawing
 - ⚡ Click-and-drag interface with modifier keys:
   - **Alt**: Draw from center outward
@@ -15,8 +15,11 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
   - **Cmd/Ctrl (over rectangle)**: Shows move cursor on hover; click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
   - **Alt (over rectangle)**: Click and drag to duplicate (cursor hidden while dragging, hold Shift to constrain axis)
   - **Shift**: Multi-rectangle mode
+  - **Tab**: Cycle through colors (orange → gray → blue → purple → green)
+  - **Delete/Backspace**: Remove rectangle under cursor
 - 🔄 Press ESC to exit drawing mode
-- 🔒 Privacy-focused (no data collection)
+- ⚙️ Configurable settings (border size, default color)
+- 🔒 Privacy-focused (no data collection, settings sync across devices)
 - 🚀 Lightweight and fast (Manifest V3)
 
 ## Quick Start
@@ -31,6 +34,19 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 6. Open any webpage and press **Alt+C** to start drawing
 
 For detailed instructions, see [Running the Extension Locally](docs/running-box-highlight-extension-locally.md).
+
+### Configuring Settings
+
+Access the options page to customize your experience:
+
+1. Right-click the extension icon and select **Options**, OR
+2. Go to `chrome://extensions`, find **Box Highlight**, and click **Options**
+
+**Available settings:**
+- **Border Size**: Choose between 0.5px, 1px (default), 2px, or 3px
+- **Default Color**: Set your preferred starting color (orange, gray, blue, purple, or green)
+
+Settings automatically sync across all your Chrome devices.
 
 ### Development
 
@@ -66,6 +82,10 @@ box-highlight/
 │   ├── content/            # Content scripts
 │   │   ├── content.js      # Page interaction logic
 │   │   └── content.css     # Highlighting styles
+│   ├── options/            # Settings page
+│   │   ├── options.html    # Options UI
+│   │   ├── options.js      # Options logic
+│   │   └── options.css     # Options styling
 │   └── icons/              # Extension icons
 │       └── convert-icon.html
 └── docs/                   # Documentation
@@ -84,11 +104,13 @@ box-highlight/
 7. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
 8. **Hold Cmd/Ctrl** and hover over a rectangle to see the move cursor, then click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
 9. **Hold Alt** and click any rectangle to duplicate it (cursor hidden while dragging, hold Shift to constrain axis)
-10. Release spacebar/alt/cmd to continue normal resizing
-11. Release mouse to place the rectangle
-12. Click without Shift to clear all rectangles and draw a new one
-13. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
-14. Press **Alt+C** again to also exit drawing mode
+10. **Press Tab** while hovering over a rectangle (or while drawing/dragging) to cycle through colors
+11. **Press Delete or Backspace** while hovering over a rectangle to remove it
+12. Release spacebar/alt/cmd to continue normal resizing
+13. Release mouse to place the rectangle
+14. Click without Shift to clear all rectangles and draw a new one
+15. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
+16. Press **Alt+C** again to also exit drawing mode
 
 No permanent page modifications are made—just visual overlays using positioned div elements.
 

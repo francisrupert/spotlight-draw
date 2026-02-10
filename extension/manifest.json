@@ -20,8 +20,13 @@
     "service_worker": "background.js"
   },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": false
+  },
   "content_scripts": [
     {
       "matches": [
