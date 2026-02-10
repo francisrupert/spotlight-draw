@@ -387,6 +387,7 @@ function handleKeyDown(event) {
       }
       duplicatingRectangle = null;
       isDuplicating = false;
+      duplicateAxisLocked = null;
       event.preventDefault();
       return;
     }
