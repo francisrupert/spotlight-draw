@@ -109,17 +109,10 @@ function handleMouseUp(event) {
   event.preventDefault();
 }
 
-// ESC key handler - clear rectangle
+// ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
   if (event.key === "Escape" || event.keyCode === 27) {
-    removePlacedRectangle();
-
-    // Also remove current drawing if in progress
-    if (isCurrentlyDrawing && currentRectangle && currentRectangle.parentNode) {
-      currentRectangle.parentNode.removeChild(currentRectangle);
-      currentRectangle = null;
-      isCurrentlyDrawing = false;
-    }
+    disableDrawingMode();
   }
 }
 

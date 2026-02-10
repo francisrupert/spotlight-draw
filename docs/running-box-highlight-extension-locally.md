@@ -34,12 +34,12 @@ If you prefer to work with relative paths:
 ## Using the extension
 
 1. Open any page served over `http` or `https`.
-2. Press **Shift+C** to activate drawing mode.
+2. Press **Alt+C** (Option+C on Mac) to activate drawing mode.
 3. Your cursor will change to a crosshair - you're now in drawing mode.
 4. Click and drag anywhere on the page to draw a rectangle.
 5. Click anywhere (or start dragging) to clear and draw a new rectangle.
-6. Press **ESC** to clear the rectangle without drawing a new one.
-7. Press **Shift+C** again to exit drawing mode (this also clears the rectangle).
+6. Press **ESC** to exit drawing mode (clears rectangle and restores normal cursor).
+7. Press **Alt+C** again to also exit drawing mode.
 
 ## Reloading changes during development
 

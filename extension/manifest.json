@@ -11,7 +11,7 @@
   "commands": {
     "toggle-drawing-mode": {
       "suggested_key": {
-        "default": "Shift+C"
+        "default": "Alt+C"
       },
       "description": "Toggle rectangle drawing mode"
     }

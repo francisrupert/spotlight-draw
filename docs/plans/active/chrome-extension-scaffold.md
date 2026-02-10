@@ -14,11 +14,11 @@ This document tracks the plan and progress for scaffolding the Box Highlight Chr
 
 The extension now focuses on **interactive rectangle drawing**:
 
-1. **Activation:** User presses **Shift+C** to enter "drawing mode" (no popup UI)
+1. **Activation:** User presses **Alt+C** (Option+C on Mac) to enter "drawing mode" (no popup UI)
 2. **Draw rectangle:** Click and drag anywhere on the page to draw a rectangle
 3. **Single rectangle:** Only one rectangle at a time; new draw replaces previous
 4. **Clear:** Press ESC to remove the rectangle
-5. **Deactivate:** Press Shift+C again to exit drawing mode
+5. **Deactivate:** Press Alt+C again to exit drawing mode
 6. **Visual style:** Orange border (2px solid) with 20% opacity orange background
 7. **User feedback:** Crosshair cursor when drawing mode is active
 
