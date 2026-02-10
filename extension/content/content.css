@@ -16,13 +16,22 @@ html.box-highlight-pan-mode * {
   cursor: none !important;
 }
 
-/* Repositioning mode - move cursor (hover only) */
+/* Repositioning mode - default cursor (hover only) */
 html.box-highlight-repositioning-mode {
-  cursor: move !important;
+  cursor: default !important;
 }
 
 html.box-highlight-repositioning-mode * {
-  cursor: move !important;
+  cursor: default !important;
+}
+
+/* Duplication mode - copy cursor (hover with Alt key) */
+html.box-highlight-duplication-hover-mode {
+  cursor: copy !important;
+}
+
+html.box-highlight-duplication-hover-mode * {
+  cursor: copy !important;
 }
 
 /* Dragging mode - hide cursor (when actively dragging) */
@@ -34,10 +43,28 @@ html.box-highlight-dragging-mode * {
   cursor: none !important;
 }
 
+:root {
+  --box-highlight-color: color-mix(in srgb, canvasText 80%, transparent);
+}
+
 /* Rectangle style */
 .box-highlight-rectangle {
-  border: 2px solid #FF9800;
-  background-color: rgba(255, 152, 0, 0.2);
+  border: .5px solid var(--box-highlight-color);
+  background-color: color-mix(in srgb, var(--box-highlight-color) 15%, transparent);
   box-sizing: border-box;
   pointer-events: none;
+  border-radius: 2px;
 }
+.box-highlight-rectangle--orange {
+  --box-highlight-color: orangered;
+}
+.box-highlight-rectangle--blue {
+  --box-highlight-color: dodgerblue;
+}
+.box-highlight-rectangle--purple {
+  --box-highlight-color: magenta;
+}
+.box-highlight-rectangle--green {
+  --box-highlight-color: mediumseagreen;
+}
+

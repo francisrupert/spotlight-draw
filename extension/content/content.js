@@ -44,8 +44,18 @@ var repositionAxisLocked = null; // "horizontal" or "vertical"
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
 var PAN_MODE_CLASS = "box-highlight-pan-mode";
 var REPOSITIONING_MODE_CLASS = "box-highlight-repositioning-mode";
+var DUPLICATION_HOVER_CLASS = "box-highlight-duplication-hover-mode";
 var DRAGGING_MODE_CLASS = "box-highlight-dragging-mode";
 var RECTANGLE_CLASS = "box-highlight-rectangle";
+
+// Color cycling
+var COLOR_CLASSES = [
+  "", // default (no modifier class)
+  "box-highlight-rectangle--orange",
+  "box-highlight-rectangle--blue",
+  "box-highlight-rectangle--purple",
+  "box-highlight-rectangle--green"
+];
 
 // Create a rectangle element
 function createRectangle(x, y, width, height) {
@@ -58,6 +68,7 @@ function createRectangle(x, y, width, height) {
   rect.style.height = height + "px";
   rect.style.pointerEvents = "none";
   rect.style.zIndex = "2147483647"; // Maximum z-index
+  rect.setAttribute("data-color-index", "0"); // Initialize to default color
   return rect;
 }
 
@@ -148,6 +159,34 @@ function getRectangleAtPosition(x, y) {
   return null;
 }
 
+// Cycle through rectangle colors
+function cycleRectangleColor(rect) {
+  if (!rect) {
+    return;
+  }
+
+  // Get current color index (default to 0)
+  var currentIndex = parseInt(rect.getAttribute("data-color-index") || "0", 10);
+
+  // Calculate next index (wrap around to 0 after last color)
+  var nextIndex = (currentIndex + 1) % COLOR_CLASSES.length;
+
+  // Remove all color classes
+  for (var i = 0; i < COLOR_CLASSES.length; i++) {
+    if (COLOR_CLASSES[i]) {
+      rect.classList.remove(COLOR_CLASSES[i]);
+    }
+  }
+
+  // Add new color class (if not default)
+  if (COLOR_CLASSES[nextIndex]) {
+    rect.classList.add(COLOR_CLASSES[nextIndex]);
+  }
+
+  // Store new color index
+  rect.setAttribute("data-color-index", nextIndex.toString());
+}
+
 // Mouse down handler - start drawing, duplication, or repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
@@ -161,6 +200,7 @@ function handleMouseDown(event) {
       isDuplicating = true;
 
       // Hide cursor during duplication drag
+      document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Create a duplicate of the rectangle under mouse
@@ -170,6 +210,14 @@ function handleMouseDown(event) {
       var rectHeight = parseInt(rectUnderMouse.style.height, 10);
 
       duplicatingRectangle = createRectangle(rectLeft, rectTop, rectWidth, rectHeight);
+
+      // Copy color from original rectangle
+      var colorIndex = rectUnderMouse.getAttribute("data-color-index") || "0";
+      duplicatingRectangle.setAttribute("data-color-index", colorIndex);
+      if (COLOR_CLASSES[parseInt(colorIndex, 10)]) {
+        duplicatingRectangle.classList.add(COLOR_CLASSES[parseInt(colorIndex, 10)]);
+      }
+
       document.body.appendChild(duplicatingRectangle);
 
       // Calculate offset from cursor to rectangle top-left
@@ -195,6 +243,7 @@ function handleMouseDown(event) {
 
       // Remove move cursor and hide cursor during drag
       document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+      document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Calculate offset from cursor to rectangle top-left
@@ -226,6 +275,10 @@ function handleMouseDown(event) {
   startX = event.clientX;
   startY = event.clientY;
 
+  // Remove hover cursor classes when starting to draw
+  document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+  document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
+
   // Create initial rectangle
   currentRectangle = createRectangle(startX, startY, 0, 0);
   document.body.appendChild(currentRectangle);
@@ -250,6 +303,18 @@ function handleMouseMove(event) {
       }
     } else {
       document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+    }
+
+    // Show copy cursor when Alt is held over a rectangle (not actively drawing or duplicating)
+    if (event.altKey && !event.metaKey && !event.ctrlKey) {
+      var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
+      if (rectUnderMouse) {
+        document.documentElement.classList.add(DUPLICATION_HOVER_CLASS);
+      } else {
+        document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
+      }
+    } else {
+      document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
     }
   }
 
@@ -509,6 +574,29 @@ function handleKeyDown(event) {
       return;
     }
     disableDrawingMode();
+  } else if (event.key === "Tab" || event.keyCode === 9) {
+    // Tab key - cycle through colors
+    if (isDrawingMode) {
+      var targetRect = null;
+
+      // Determine which rectangle to color cycle
+      if (isCurrentlyDrawing && currentRectangle) {
+        targetRect = currentRectangle;
+      } else if (isDuplicating && duplicatingRectangle) {
+        targetRect = duplicatingRectangle;
+      } else if (isRepositioning && repositioningRectangle) {
+        targetRect = repositioningRectangle;
+      } else {
+        // Not actively dragging, check if hovering over a rectangle
+        targetRect = getRectangleAtPosition(currentMouseX, currentMouseY);
+      }
+
+      if (targetRect) {
+        event.preventDefault();
+        cycleRectangleColor(targetRect);
+        return;
+      }
+    }
   } else {
     handleSpacebarDown(event);
   }
@@ -551,6 +639,7 @@ function disableDrawingMode() {
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
   document.documentElement.classList.remove(PAN_MODE_CLASS);
   document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+  document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
   document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
 
   // Remove event listeners
