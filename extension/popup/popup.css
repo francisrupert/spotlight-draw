@@ -33,3 +33,10 @@
 .popup__button:active {
   background-color: #1976d2;
 }
+
+.popup__hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}

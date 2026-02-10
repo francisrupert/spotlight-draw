@@ -4,8 +4,11 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 
 ## Features
 
-- 🎨 Toggle element outlines on any webpage
-- ⚡ Simple one-click activation via popup
+- ✏️ Draw custom rectangles anywhere on any webpage
+- ⌨️ Activate with **Shift+C** keyboard shortcut
+- 🎨 Orange border with 20% opacity orange background
+- ⚡ Simple click-and-drag interface
+- 🔄 Press ESC to clear rectangle
 - 🔒 Privacy-focused (no data collection)
 - 🚀 Lightweight and fast (Manifest V3)
 
@@ -18,7 +21,7 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 3. Enable **Developer mode** (top-right corner)
 4. Click **Load unpacked**
 5. Select the `extension/` directory from this project
-6. Click the Box Highlight icon in your toolbar and use the **Toggle highlight** button
+6. Open any webpage and press **Shift+C** to start drawing
 
 For detailed instructions, see [Running the Extension Locally](docs/running-box-highlight-extension-locally.md).
 
@@ -48,7 +51,7 @@ See [extension/icons/README.md](extension/icons/README.md) for alternative metho
 
 ## Project Structure
 
-```
+```text
 box-highlight/
 ├── extension/              # Extension source code
 │   ├── manifest.json       # Extension manifest (Manifest V3)
@@ -67,12 +70,15 @@ box-highlight/
 
 ## How It Works
 
-When activated, the extension:
-1. Adds a `box-highlight--enabled` class to the page's `<html>` element
-2. Applies CSS that adds orange outlines to all elements
-3. Toggles off by removing the class
+1. Press **Shift+C** to activate drawing mode
+2. Your cursor changes to a crosshair
+3. Click and drag anywhere on the page to draw a rectangle
+4. Release to place the rectangle
+5. Click anywhere to clear the rectangle (whether dragging or just clicking)
+6. Press **ESC** to clear the rectangle without drawing
+7. Press **Shift+C** again to exit drawing mode
 
-No page modifications are made—just visual overlays.
+No permanent page modifications are made—just visual overlays using positioned div elements.
 
 ## Documentation
 

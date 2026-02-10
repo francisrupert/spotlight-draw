@@ -1,4 +1,16 @@
-html.box-highlight--enabled * {
-  outline: 1px solid rgba(255, 152, 0, 0.6);
+/* Drawing mode cursor */
+html.box-highlight-drawing-mode {
+  cursor: crosshair !important;
+}
+
+html.box-highlight-drawing-mode * {
+  cursor: crosshair !important;
+}
+
+/* Rectangle style */
+.box-highlight-rectangle {
+  border: 2px solid #FF9800;
+  background-color: rgba(255, 152, 0, 0.2);
   box-sizing: border-box;
+  pointer-events: none;
 }
