@@ -50,8 +50,8 @@ var RECTANGLE_CLASS = "box-highlight-rectangle";
 
 // Color cycling
 var COLOR_CLASSES = [
-  "", // default (no modifier class)
-  "box-highlight-rectangle--orange",
+  "", // default (orange - oklch color from :root)
+  "box-highlight-rectangle--plain",
   "box-highlight-rectangle--blue",
   "box-highlight-rectangle--purple",
   "box-highlight-rectangle--green"
@@ -185,6 +185,24 @@ function cycleRectangleColor(rect) {
 
   // Store new color index
   rect.setAttribute("data-color-index", nextIndex.toString());
+}
+
+// Delete a specific rectangle
+function deleteRectangle(rect) {
+  if (!rect) {
+    return;
+  }
+
+  // Remove from DOM
+  if (rect.parentNode) {
+    rect.parentNode.removeChild(rect);
+  }
+
+  // Remove from placedRectangles array
+  var index = placedRectangles.indexOf(rect);
+  if (index > -1) {
+    placedRectangles.splice(index, 1);
+  }
 }
 
 // Mouse down handler - start drawing, duplication, or repositioning
@@ -594,6 +612,16 @@ function handleKeyDown(event) {
       if (targetRect) {
         event.preventDefault();
         cycleRectangleColor(targetRect);
+        return;
+      }
+    }
+  } else if (event.key === "Delete" || event.key === "Backspace" || event.keyCode === 46 || event.keyCode === 8) {
+    // Delete/Backspace key - remove rectangle if hovering over one
+    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning) {
+      var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
+      if (rectUnderMouse) {
+        event.preventDefault();
+        deleteRectangle(rectUnderMouse);
         return;
       }
     }

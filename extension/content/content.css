@@ -44,27 +44,27 @@ html.box-highlight-dragging-mode * {
 }
 
 :root {
-  --box-highlight-color: color-mix(in srgb, canvasText 80%, transparent);
+  --box-highlight-color: color-mix(in srgb, oklch(0.7397 0.2057 47.88) 90%, transparent);
 }
 
 /* Rectangle style */
 .box-highlight-rectangle {
-  border: .5px solid var(--box-highlight-color);
+  border: 1px solid var(--box-highlight-color);
   background-color: color-mix(in srgb, var(--box-highlight-color) 15%, transparent);
   box-sizing: border-box;
   pointer-events: none;
-  border-radius: 2px;
+  border-radius: 4px;
 }
-.box-highlight-rectangle--orange {
-  --box-highlight-color: orangered;
+.box-highlight-rectangle--plain {
+  --box-highlight-color: graytext;
 }
 .box-highlight-rectangle--blue {
-  --box-highlight-color: dodgerblue;
+  --box-highlight-color: oklch(0.6295 0.2128 246.71);
 }
 .box-highlight-rectangle--purple {
-  --box-highlight-color: magenta;
+  --box-highlight-color: oklch(0.7384 0.2783 342);
 }
 .box-highlight-rectangle--green {
-  --box-highlight-color: mediumseagreen;
+  --box-highlight-color: oklch(0.7634 0.1947 159.75);
 }
 
