@@ -1,10 +1,13 @@
-/* Drawing mode cursor */
+/* Drawing mode cursor and interaction blocking */
 html.box-highlight-drawing-mode {
   cursor: crosshair !important;
+  user-select: none !important;
 }
 
 html.box-highlight-drawing-mode * {
   cursor: crosshair !important;
+  pointer-events: none !important;
+  user-select: none !important;
 }
 
 /* Pan mode - hide cursor when spacebar is held */
