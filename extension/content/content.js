@@ -48,6 +48,10 @@ var inspectionTraversalPath = []; // Stack of elements for up/down navigation
 var inspectionCurrentIndex = -1; // Current position in traversal path
 var inspectionOriginElement = null; // The starting element
 
+// Help dialog state
+var helpButton = null;
+var helpDialog = null;
+
 // CSS class names
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
 var PAN_MODE_CLASS = "box-highlight-pan-mode";
@@ -150,6 +154,217 @@ function createRectangle(x, y, width, height) {
   rect.setAttribute("data-color-index", defaultColorIndex.toString());
 
   return rect;
+}
+
+// Create help button
+function createHelpButton() {
+  var helpButton = document.createElement("button");
+  helpButton.className = "box-highlight-help-button hidden";
+  helpButton.textContent = "?";
+  helpButton.setAttribute("aria-label", "Show keyboard shortcuts");
+  helpButton.style.position = "fixed";
+  helpButton.style.bottom = "12px";
+  helpButton.style.left = "12px";
+  helpButton.style.width = "24px";
+  helpButton.style.height = "24px";
+  helpButton.style.zIndex = "2147483647";
+  helpButton.style.display = "none"; // Hidden by default
+
+  return helpButton;
+}
+
+// Create help dialog
+function createHelpDialog() {
+  var dialog = document.createElement("dialog");
+  dialog.className = "box-highlight-help-dialog";
+
+  dialog.innerHTML = `
+    <div class="box-highlight-help-header">
+      <h2>Keyboard Shortcuts</h2>
+      <button class="box-highlight-help-close" aria-label="Close">×</button>
+    </div>
+    <div class="box-highlight-help-content">
+      <section>
+        <h3>Drawing Mode</h3>
+        <dl>
+          <dt>Alt + F</dt>
+          <dd>Toggle drawing mode</dd>
+
+          <dt>Click & Drag</dt>
+          <dd>Draw rectangle</dd>
+
+          <dt>Shift + Drag</dt>
+          <dd>Lock to horizontal or vertical axis</dd>
+
+          <dt>Alt (during drawing)</dt>
+          <dd>Draw from center</dd>
+
+          <dt>Cmd/Ctrl (during drawing)</dt>
+          <dd>Axis constraint</dd>
+
+          <dt>Spacebar (hold during drawing)</dt>
+          <dd>Pan mode - move rectangle</dd>
+        </dl>
+      </section>
+
+      <section>
+        <h3>Rectangle Operations</h3>
+        <dl>
+          <dt>Alt + Drag (over rectangle)</dt>
+          <dd>Duplicate rectangle</dd>
+
+          <dt>Cmd/Ctrl + Drag (over rectangle)</dt>
+          <dd>Reposition rectangle</dd>
+
+          <dt>Tab</dt>
+          <dd>Cycle rectangle colors</dd>
+
+          <dt>Delete / Backspace</dt>
+          <dd>Remove hovered rectangle</dd>
+
+          <dt>Right-click</dt>
+          <dd>Multi-rectangle mode (like Shift)</dd>
+        </dl>
+      </section>
+
+      <section>
+        <h3>Element Inspection</h3>
+        <dl>
+          <dt>F (hold)</dt>
+          <dd>Element inspection mode</dd>
+
+          <dt>Arrow Up (in inspection)</dt>
+          <dd>Traverse to parent element</dd>
+
+          <dt>Arrow Down (in inspection)</dt>
+          <dd>Traverse to child element</dd>
+
+          <dt>Tab (in inspection)</dt>
+          <dd>Next sibling element</dd>
+
+          <dt>Shift + Tab (in inspection)</dt>
+          <dd>Previous sibling element</dd>
+        </dl>
+      </section>
+
+      <section>
+        <h3>General</h3>
+        <dl>
+          <dt>?</dt>
+          <dd>Toggle this help dialog</dd>
+
+          <dt>Escape</dt>
+          <dd>Close dialog or exit current mode</dd>
+        </dl>
+      </section>
+    </div>
+  `;
+
+  return dialog;
+}
+
+// Show help dialog
+function showHelpDialog() {
+  if (helpDialog) {
+    helpDialog.showModal();
+  }
+}
+
+// Hide help dialog
+function hideHelpDialog() {
+  if (helpDialog && helpDialog.open) {
+    helpDialog.close();
+  }
+}
+
+// Show help button with slide-in animation
+function showHelpButton() {
+  if (helpButton) {
+    helpButton.style.display = "block";
+    // Force reflow to ensure transition works
+    helpButton.offsetHeight;
+    helpButton.classList.add("visible");
+    helpButton.classList.remove("hidden");
+  }
+}
+
+// Hide help button with slide-out animation
+function hideHelpButton() {
+  if (helpButton) {
+    helpButton.classList.add("hidden");
+    helpButton.classList.remove("visible");
+    // Hide completely after animation completes
+    setTimeout(function() {
+      if (helpButton && helpButton.classList.contains("hidden")) {
+        helpButton.style.display = "none";
+      }
+    }, 300);
+  }
+}
+
+// Handle help button click
+function handleHelpButtonClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  showHelpDialog();
+}
+
+// Handle dialog close button click
+function handleDialogCloseClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  hideHelpDialog();
+}
+
+// Handle dialog backdrop click
+function handleDialogBackdropClick(event) {
+  // Close dialog when clicking on backdrop (outside dialog content)
+  if (event.target === helpDialog) {
+    hideHelpDialog();
+  }
+}
+
+// Check if an element is part of the help UI
+function isHelpUIElement(element) {
+  if (!element) {
+    return false;
+  }
+
+  // Check if element itself or any ancestor is help button or dialog
+  var current = element;
+  while (current) {
+    if (current === helpButton || current === helpDialog) {
+      return true;
+    }
+    if (current.classList &&
+        (current.classList.contains("box-highlight-help-button") ||
+         current.classList.contains("box-highlight-help-dialog"))) {
+      return true;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
+
+// Initialize help system
+function initHelpSystem() {
+  // Create help button
+  helpButton = createHelpButton();
+  document.body.appendChild(helpButton);
+  helpButton.addEventListener("click", handleHelpButtonClick, true);
+
+  // Create help dialog
+  helpDialog = createHelpDialog();
+  document.body.appendChild(helpDialog);
+
+  // Setup dialog event listeners
+  var closeButton = helpDialog.querySelector(".box-highlight-help-close");
+  if (closeButton) {
+    closeButton.addEventListener("click", handleDialogCloseClick, true);
+  }
+
+  // Close on backdrop click
+  helpDialog.addEventListener("click", handleDialogBackdropClick, true);
 }
 
 // Update rectangle position and size
@@ -844,6 +1059,11 @@ function handleMouseDown(event) {
     return;
   }
 
+  // Allow clicks on help UI elements to pass through
+  if (isHelpUIElement(event.target)) {
+    return;
+  }
+
   // If Alt is held and mouse is over a rectangle, start duplicating (Figma-style)
   if (event.altKey && !isCurrentlyDrawing && !event.metaKey && !event.ctrlKey) {
     var rectUnderMouse = getRectangleAtPosition(event.clientX, event.clientY);
@@ -1271,6 +1491,11 @@ function handleClick(event) {
     return;
   }
 
+  // Allow clicks on help UI elements to pass through
+  if (isHelpUIElement(event.target)) {
+    return;
+  }
+
   // Prevent click from triggering page actions (links, buttons, etc.)
   event.preventDefault();
   event.stopPropagation();
@@ -1280,6 +1505,11 @@ function handleClick(event) {
 // Context menu handler - prevent right-click menu when in drawing mode
 function handleContextMenu(event) {
   if (!isDrawingMode) {
+    return;
+  }
+
+  // Allow right-clicks on help UI elements to pass through
+  if (isHelpUIElement(event.target)) {
     return;
   }
 
@@ -1365,6 +1595,17 @@ function handleKeyDown(event) {
     return;
   }
 
+  // Handle '?' key for help dialog (Shift+/)
+  if (event.key === "?" && isDrawingMode) {
+    event.preventDefault();
+    if (helpDialog && helpDialog.open) {
+      hideHelpDialog();
+    } else {
+      showHelpDialog();
+    }
+    return;
+  }
+
   // Handle 'f' key for element inspection
   if (event.key === "f" || event.key === "F") {
     if (isDrawingMode && !isInspecting) {
@@ -1388,7 +1629,13 @@ function handleKeyDown(event) {
   }
 
   if (event.key === "Escape" || event.keyCode === 27) {
-    // Exit inspection mode first if active
+    // Close help dialog first if open
+    if (helpDialog && helpDialog.open) {
+      hideHelpDialog();
+      event.preventDefault();
+      return;
+    }
+    // Exit inspection mode if active
     if (isInspecting) {
       exitInspectionMode();
       event.preventDefault();
@@ -1468,6 +1715,12 @@ function enableDrawingMode() {
     isDrawingMode = true;
     document.documentElement.classList.add(DRAWING_MODE_CLASS);
 
+    // Initialize and show help button
+    if (!helpButton) {
+      initHelpSystem();
+    }
+    showHelpButton();
+
     // Create snap guide lines
     createGuideLines();
 
@@ -1491,6 +1744,12 @@ function disableDrawingMode() {
   // Exit inspection mode if active
   if (isInspecting) {
     exitInspectionMode();
+  }
+
+  // Hide help button and close dialog if open
+  hideHelpButton();
+  if (helpDialog && helpDialog.open) {
+    helpDialog.close();
   }
 
   isDrawingMode = false;
