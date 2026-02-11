@@ -60,7 +60,8 @@ var COLOR_CLASSES = [
 // User preferences (loaded from chrome.storage)
 var userPreferences = {
   borderSize: "1",
-  defaultColor: ""
+  defaultColor: "",
+  snapToEdges: true
 };
 
 // Snap-to-edge configuration
@@ -75,10 +76,12 @@ function loadPreferences(callback) {
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
     chrome.storage.sync.get({
       borderSize: "1",
-      defaultColor: ""
+      defaultColor: "",
+      snapToEdges: true
     }, function(items) {
       userPreferences.borderSize = items.borderSize;
       userPreferences.defaultColor = items.defaultColor;
+      userPreferences.snapToEdges = items.snapToEdges;
       if (callback) {
         callback();
       }
@@ -711,22 +714,30 @@ function handleMouseMove(event) {
     // Apply position-only snapping (exclude the rectangle being repositioned)
     var rectWidth = parseInt(repositioningRectangle.style.width, 10);
     var rectHeight = parseInt(repositioningRectangle.style.height, 10);
-    var snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, repositioningRectangle);
+    var snapped;
+
+    if (userPreferences.snapToEdges) {
+      snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, repositioningRectangle);
+    } else {
+      snapped = { x: newX, y: newY, width: rectWidth, height: rectHeight, verticalSnapPos: null, horizontalSnapPos: null };
+    }
 
     repositioningRectangle.style.left = snapped.x + "px";
     repositioningRectangle.style.top = snapped.y + "px";
 
-    // Show guide lines if snapping occurred
-    if (snapped.verticalSnapPos !== null) {
-      showVerticalGuide(snapped.verticalSnapPos);
-    } else {
-      if (verticalGuideLine) verticalGuideLine.style.display = "none";
-    }
+    // Show guide lines if snapping occurred and guidelines are enabled
+    if (userPreferences.snapToEdges) {
+      if (snapped.verticalSnapPos !== null) {
+        showVerticalGuide(snapped.verticalSnapPos);
+      } else {
+        if (verticalGuideLine) verticalGuideLine.style.display = "none";
+      }
 
-    if (snapped.horizontalSnapPos !== null) {
-      showHorizontalGuide(snapped.horizontalSnapPos);
-    } else {
-      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      if (snapped.horizontalSnapPos !== null) {
+        showHorizontalGuide(snapped.horizontalSnapPos);
+      } else {
+        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      }
     }
 
     event.preventDefault();
@@ -766,22 +777,30 @@ function handleMouseMove(event) {
     // Apply position-only snapping (exclude the rectangle being duplicated - not in placedRectangles yet)
     var rectWidth = parseInt(duplicatingRectangle.style.width, 10);
     var rectHeight = parseInt(duplicatingRectangle.style.height, 10);
-    var snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, duplicatingRectangle);
+    var snapped;
+
+    if (userPreferences.snapToEdges) {
+      snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, duplicatingRectangle);
+    } else {
+      snapped = { x: newX, y: newY, width: rectWidth, height: rectHeight, verticalSnapPos: null, horizontalSnapPos: null };
+    }
 
     duplicatingRectangle.style.left = snapped.x + "px";
     duplicatingRectangle.style.top = snapped.y + "px";
 
-    // Show guide lines if snapping occurred
-    if (snapped.verticalSnapPos !== null) {
-      showVerticalGuide(snapped.verticalSnapPos);
-    } else {
-      if (verticalGuideLine) verticalGuideLine.style.display = "none";
-    }
+    // Show guide lines if snapping occurred and guidelines are enabled
+    if (userPreferences.snapToEdges) {
+      if (snapped.verticalSnapPos !== null) {
+        showVerticalGuide(snapped.verticalSnapPos);
+      } else {
+        if (verticalGuideLine) verticalGuideLine.style.display = "none";
+      }
 
-    if (snapped.horizontalSnapPos !== null) {
-      showHorizontalGuide(snapped.horizontalSnapPos);
-    } else {
-      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      if (snapped.horizontalSnapPos !== null) {
+        showHorizontalGuide(snapped.horizontalSnapPos);
+      } else {
+        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      }
     }
 
     event.preventDefault();
@@ -823,40 +842,54 @@ function handleMouseMove(event) {
     var newY = currentMouseY + panOffsetY;
 
     // Apply position-only snapping during pan mode
-    var snapped = applyPositionSnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
+    var snapped;
+    if (userPreferences.snapToEdges) {
+      snapped = applyPositionSnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
+    } else {
+      snapped = { x: newX, y: newY, width: panModeWidth, height: panModeHeight, verticalSnapPos: null, horizontalSnapPos: null };
+    }
     updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
 
-    // Show guide lines if snapping occurred
-    if (snapped.verticalSnapPos !== null) {
-      showVerticalGuide(snapped.verticalSnapPos);
-    } else {
-      if (verticalGuideLine) verticalGuideLine.style.display = "none";
-    }
+    // Show guide lines if snapping occurred and guidelines are enabled
+    if (userPreferences.snapToEdges) {
+      if (snapped.verticalSnapPos !== null) {
+        showVerticalGuide(snapped.verticalSnapPos);
+      } else {
+        if (verticalGuideLine) verticalGuideLine.style.display = "none";
+      }
 
-    if (snapped.horizontalSnapPos !== null) {
-      showHorizontalGuide(snapped.horizontalSnapPos);
-    } else {
-      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      if (snapped.horizontalSnapPos !== null) {
+        showHorizontalGuide(snapped.horizontalSnapPos);
+      } else {
+        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      }
     }
   } else {
     // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
     var coords = calculateRectCoords(currentMouseX, currentMouseY);
 
     // Apply snapping during drawing/resizing
-    var snapped = applySnapping(coords.x, coords.y, coords.width, coords.height, currentRectangle);
+    var snapped;
+    if (userPreferences.snapToEdges) {
+      snapped = applySnapping(coords.x, coords.y, coords.width, coords.height, currentRectangle);
+    } else {
+      snapped = { x: coords.x, y: coords.y, width: coords.width, height: coords.height, verticalSnapPos: null, horizontalSnapPos: null };
+    }
     updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
 
-    // Show guide lines if snapping occurred
-    if (snapped.verticalSnapPos !== null) {
-      showVerticalGuide(snapped.verticalSnapPos);
-    } else {
-      if (verticalGuideLine) verticalGuideLine.style.display = "none";
-    }
+    // Show guide lines if snapping occurred and guidelines are enabled
+    if (userPreferences.snapToEdges) {
+      if (snapped.verticalSnapPos !== null) {
+        showVerticalGuide(snapped.verticalSnapPos);
+      } else {
+        if (verticalGuideLine) verticalGuideLine.style.display = "none";
+      }
 
-    if (snapped.horizontalSnapPos !== null) {
-      showHorizontalGuide(snapped.horizontalSnapPos);
-    } else {
-      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      if (snapped.horizontalSnapPos !== null) {
+        showHorizontalGuide(snapped.horizontalSnapPos);
+      } else {
+        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+      }
     }
   }
 

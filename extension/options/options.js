@@ -10,9 +10,13 @@ function saveOptions() {
   var activeColorButton = colorGroup.querySelector(".button-group-item.active");
   var defaultColor = activeColorButton ? activeColorButton.getAttribute("data-value") : "";
 
+  // Get checkbox value
+  var snapToEdges = document.getElementById("snapToEdges").checked;
+
   chrome.storage.sync.set({
     borderSize: borderSize,
-    defaultColor: defaultColor
+    defaultColor: defaultColor,
+    snapToEdges: snapToEdges
   });
 }
 
@@ -20,7 +24,8 @@ function saveOptions() {
 function loadOptions() {
   chrome.storage.sync.get({
     borderSize: "1",     // default values
-    defaultColor: ""
+    defaultColor: "",
+    snapToEdges: true
   }, function(items) {
     // Set active border size button
     var borderButtons = document.querySelectorAll("#borderSize .button-group-item");
@@ -41,6 +46,9 @@ function loadOptions() {
         button.classList.remove("active");
       }
     });
+
+    // Set checkbox value
+    document.getElementById("snapToEdges").checked = items.snapToEdges;
   });
 }
 
@@ -69,4 +77,7 @@ document.addEventListener("DOMContentLoaded", function() {
   loadOptions();
   setupButtonGroup("borderSize");
   setupButtonGroup("defaultColor");
+
+  // Add event listener for checkbox with auto-save
+  document.getElementById("snapToEdges").addEventListener("change", saveOptions);
 });
