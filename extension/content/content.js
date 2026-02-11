@@ -1185,12 +1185,12 @@ function handleMouseDown(event) {
       document.body.appendChild(duplicatingRectangle);
 
       // Calculate offset from cursor to rectangle top-left
-      duplicateOffsetX = rectLeft - event.clientX;
-      duplicateOffsetY = rectTop - event.clientY;
+      duplicateOffsetX = b.left - event.clientX;
+      duplicateOffsetY = b.top - event.clientY;
 
       // Store starting position for axis locking
-      duplicateStartX = rectLeft;
-      duplicateStartY = rectTop;
+      duplicateStartX = b.left;
+      duplicateStartY = b.top;
       duplicateAxisLocked = null;
 
       event.preventDefault();
