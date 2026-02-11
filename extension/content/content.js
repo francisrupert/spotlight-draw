@@ -71,6 +71,27 @@ var SNAP_THRESHOLD = 8; // pixels
 var horizontalGuideLine = null;
 var verticalGuideLine = null;
 
+// Clamp rectangle coordinates to viewport bounds
+function clampToViewport(x, y, width, height) {
+  var viewportWidth = window.innerWidth;
+  var viewportHeight = window.innerHeight;
+
+  // Ensure rectangle stays within viewport bounds
+  var clampedX = Math.max(0, Math.min(x, viewportWidth - width));
+  var clampedY = Math.max(0, Math.min(y, viewportHeight - height));
+
+  // Ensure width and height don't exceed viewport when positioned at edge
+  var clampedWidth = Math.min(width, viewportWidth - clampedX);
+  var clampedHeight = Math.min(height, viewportHeight - clampedY);
+
+  return {
+    x: clampedX,
+    y: clampedY,
+    width: clampedWidth,
+    height: clampedHeight
+  };
+}
+
 // Load user preferences from chrome.storage
 function loadPreferences(callback) {
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
@@ -683,8 +704,12 @@ function handleMouseMove(event) {
 
   // Handle repositioning mode
   if (isRepositioning && repositioningRectangle) {
-    var newX = currentMouseX + repositionOffsetX;
-    var newY = currentMouseY + repositionOffsetY;
+    // Clamp mouse position to viewport bounds
+    var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
+    var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+
+    var newX = clampedMouseX + repositionOffsetX;
+    var newY = clampedMouseY + repositionOffsetY;
 
     // Handle Shift for axis locking during repositioning
     if (event.shiftKey) {
@@ -722,8 +747,11 @@ function handleMouseMove(event) {
       snapped = { x: newX, y: newY, width: rectWidth, height: rectHeight, verticalSnapPos: null, horizontalSnapPos: null };
     }
 
-    repositioningRectangle.style.left = snapped.x + "px";
-    repositioningRectangle.style.top = snapped.y + "px";
+    // Clamp to viewport bounds
+    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+
+    repositioningRectangle.style.left = clamped.x + "px";
+    repositioningRectangle.style.top = clamped.y + "px";
 
     // Show guide lines if snapping occurred and guidelines are enabled
     if (userPreferences.snapToEdges) {
@@ -746,8 +774,12 @@ function handleMouseMove(event) {
 
   // Handle duplication drag mode
   if (isDuplicating && duplicatingRectangle) {
-    var newX = currentMouseX + duplicateOffsetX;
-    var newY = currentMouseY + duplicateOffsetY;
+    // Clamp mouse position to viewport bounds
+    var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
+    var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+
+    var newX = clampedMouseX + duplicateOffsetX;
+    var newY = clampedMouseY + duplicateOffsetY;
 
     // Handle Shift for axis locking during duplication
     if (event.shiftKey) {
@@ -785,8 +817,11 @@ function handleMouseMove(event) {
       snapped = { x: newX, y: newY, width: rectWidth, height: rectHeight, verticalSnapPos: null, horizontalSnapPos: null };
     }
 
-    duplicatingRectangle.style.left = snapped.x + "px";
-    duplicatingRectangle.style.top = snapped.y + "px";
+    // Clamp to viewport bounds
+    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+
+    duplicatingRectangle.style.left = clamped.x + "px";
+    duplicatingRectangle.style.top = clamped.y + "px";
 
     // Show guide lines if snapping occurred and guidelines are enabled
     if (userPreferences.snapToEdges) {
@@ -836,10 +871,14 @@ function handleMouseMove(event) {
     axisConstraintMode = null;
   }
 
+  // Clamp mouse position to viewport bounds for drawing calculations
+  var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
+  var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+
   if (isSpacebarHeld) {
     // Pan mode: move the entire rectangle without resizing
-    var newX = currentMouseX + panOffsetX;
-    var newY = currentMouseY + panOffsetY;
+    var newX = clampedMouseX + panOffsetX;
+    var newY = clampedMouseY + panOffsetY;
 
     // Apply position-only snapping during pan mode
     var snapped;
@@ -848,7 +887,10 @@ function handleMouseMove(event) {
     } else {
       snapped = { x: newX, y: newY, width: panModeWidth, height: panModeHeight, verticalSnapPos: null, horizontalSnapPos: null };
     }
-    updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
+
+    // Clamp to viewport bounds
+    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+    updateRectangle(currentRectangle, clamped.x, clamped.y, clamped.width, clamped.height);
 
     // Show guide lines if snapping occurred and guidelines are enabled
     if (userPreferences.snapToEdges) {
@@ -866,7 +908,7 @@ function handleMouseMove(event) {
     }
   } else {
     // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
-    var coords = calculateRectCoords(currentMouseX, currentMouseY);
+    var coords = calculateRectCoords(clampedMouseX, clampedMouseY);
 
     // Apply snapping during drawing/resizing
     var snapped;
@@ -875,7 +917,10 @@ function handleMouseMove(event) {
     } else {
       snapped = { x: coords.x, y: coords.y, width: coords.width, height: coords.height, verticalSnapPos: null, horizontalSnapPos: null };
     }
-    updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
+
+    // Clamp to viewport bounds
+    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+    updateRectangle(currentRectangle, clamped.x, clamped.y, clamped.width, clamped.height);
 
     // Show guide lines if snapping occurred and guidelines are enabled
     if (userPreferences.snapToEdges) {
