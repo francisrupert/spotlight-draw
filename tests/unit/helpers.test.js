@@ -444,7 +444,9 @@ QUnit.test("handles multiple spacing opportunities", function(assert) {
 
   var targets = getEvenSpacingTargets(movingRect, null);
 
-  assert.equal(targets.horizontal.length, 2, "found two horizontal spacing targets");
+  // With 2 pairs of rectangles (A-B and B-C), each generates 3 targets:
+  // between, left, and right = 6 total
+  assert.equal(targets.horizontal.length, 6, "found six horizontal spacing targets (3 per pair)");
 });
 
 QUnit.test("excludes specified rectangle from calculations", function(assert) {
@@ -513,4 +515,168 @@ QUnit.test("ignores overlapping rectangles", function(assert) {
   var targets = getEvenSpacingTargets(movingRect, null);
 
   assert.equal(targets.horizontal.length, 0, "no spacing targets for overlapping rectangles");
+});
+
+QUnit.test("finds left positioning target for even spacing", function(assert) {
+  // Create two rectangles with a gap of 200px
+  // Rect A: x=200-300
+  // Rect B: x=500-600
+  // Gap A-B: 200px
+  // Moving rect to LEFT of A to match gap: should position at x=-100 (so gap from C to A is also 200px)
+  var rectA = document.createElement("div");
+  rectA.style.left = "200px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "500px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: width=100
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "0px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "100px";
+  movingRect.style.height = "100px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  // Should find 3 targets: between, left of A, right of B
+  assert.equal(targets.horizontal.length, 3, "found three horizontal spacing targets");
+
+  // Find the left positioning target
+  var leftTarget = targets.horizontal.find(function(t) {
+    return t.position === 0; // Should be at x=0 (200 - 200 gap - 0 for left edge)
+  });
+  assert.ok(leftTarget, "found left positioning target");
+  assert.equal(leftTarget.gap, 200, "gap matches the A-B gap");
+  assert.equal(leftTarget.between, null, "between is null for left positioning");
+  assert.ok(leftTarget.referenceRects, "has referenceRects");
+});
+
+QUnit.test("finds right positioning target for even spacing", function(assert) {
+  // Create two rectangles with a gap of 200px
+  // Rect A: x=0-100
+  // Rect B: x=300-400
+  // Gap A-B: 200px
+  // Moving rect to RIGHT of B to match gap: should position at x=600 (400 + 200 gap)
+  var rectA = document.createElement("div");
+  rectA.style.left = "0px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "300px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: width=100
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "500px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "100px";
+  movingRect.style.height = "100px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  // Should find 3 targets: between, left of A, right of B
+  assert.equal(targets.horizontal.length, 3, "found three horizontal spacing targets");
+
+  // Find the right positioning target
+  var rightTarget = targets.horizontal.find(function(t) {
+    return t.position === 600; // Should be at x=600 (400 + 200 gap)
+  });
+  assert.ok(rightTarget, "found right positioning target");
+  assert.equal(rightTarget.gap, 200, "gap matches the A-B gap");
+  assert.equal(rightTarget.between, null, "between is null for right positioning");
+  assert.ok(rightTarget.referenceRects, "has referenceRects");
+});
+
+QUnit.test("finds above positioning target for vertical even spacing", function(assert) {
+  // Create two rectangles with a vertical gap of 200px
+  // Rect A: y=200-300
+  // Rect B: y=500-600
+  // Gap A-B: 200px
+  // Moving rect ABOVE A to match gap: should position at y=0 (200 - 200 gap)
+  var rectA = document.createElement("div");
+  rectA.style.left = "100px";
+  rectA.style.top = "200px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "100px";
+  rectB.style.top = "500px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: height=100
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "100px";
+  movingRect.style.top = "0px";
+  movingRect.style.width = "100px";
+  movingRect.style.height = "100px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  // Should find 3 targets: between, above A, below B
+  assert.equal(targets.vertical.length, 3, "found three vertical spacing targets");
+
+  // Find the above positioning target
+  var aboveTarget = targets.vertical.find(function(t) {
+    return t.position === 0;
+  });
+  assert.ok(aboveTarget, "found above positioning target");
+  assert.equal(aboveTarget.gap, 200, "gap matches the A-B gap");
+});
+
+QUnit.test("finds below positioning target for vertical even spacing", function(assert) {
+  // Create two rectangles with a vertical gap of 200px
+  // Rect A: y=0-100
+  // Rect B: y=300-400
+  // Gap A-B: 200px
+  // Moving rect BELOW B to match gap: should position at y=600 (400 + 200 gap)
+  var rectA = document.createElement("div");
+  rectA.style.left = "100px";
+  rectA.style.top = "0px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "100px";
+  rectB.style.top = "300px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: height=100
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "100px";
+  movingRect.style.top = "500px";
+  movingRect.style.width = "100px";
+  movingRect.style.height = "100px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  // Should find 3 targets: between, above A, below B
+  assert.equal(targets.vertical.length, 3, "found three vertical spacing targets");
+
+  // Find the below positioning target
+  var belowTarget = targets.vertical.find(function(t) {
+    return t.position === 600;
+  });
+  assert.ok(belowTarget, "found below positioning target");
+  assert.equal(belowTarget.gap, 200, "gap matches the A-B gap");
 });

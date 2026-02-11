@@ -1002,29 +1002,6 @@ function findClosestEdge(position, edges) {
 
 // Create snap guide lines (2 per axis)
 function createGuideLines() {
-  // Compute spacing guide color from CSS variable
-  // CSS variables cannot be resolved in JavaScript inline styles, so we need to
-  // compute the actual color value at runtime
-  var spacingGuideColor = "oklch(0.7397 0.2057 47.88)"; // Fallback to orange
-
-  try {
-    // Create temporary rectangle to compute the color
-    var tempRect = document.createElement("div");
-    tempRect.className = "spotlight-draw-rectangle";
-    tempRect.style.position = "fixed";
-    tempRect.style.visibility = "hidden";
-    document.body.appendChild(tempRect);
-
-    // Get the computed border color which uses --spotlight-draw-color
-    var borderColor = getComputedStyle(tempRect).borderColor;
-    if (borderColor && borderColor !== "rgba(0, 0, 0, 0)") {
-      spacingGuideColor = borderColor;
-    }
-
-    document.body.removeChild(tempRect);
-  } catch (e) {
-    // Use fallback color if computation fails
-  }
 
   for (var i = 0; i < 2; i++) {
     // Horizontal guide lines
@@ -1059,7 +1036,7 @@ function createGuideLines() {
   spacingGuideHorizontal = document.createElement("div");
   spacingGuideHorizontal.style.position = "fixed";
   spacingGuideHorizontal.style.width = "0";
-  spacingGuideHorizontal.style.borderLeft = "1px solid " + spacingGuideColor;
+  spacingGuideHorizontal.style.borderLeft = "1px solid GrayText";
   spacingGuideHorizontal.style.pointerEvents = "none";
   spacingGuideHorizontal.style.zIndex = Z_INDEX_GUIDE;
   spacingGuideHorizontal.style.display = "none";
@@ -1069,7 +1046,7 @@ function createGuideLines() {
   spacingGuideVertical = document.createElement("div");
   spacingGuideVertical.style.position = "fixed";
   spacingGuideVertical.style.height = "0";
-  spacingGuideVertical.style.borderTop = "1px solid " + spacingGuideColor;
+  spacingGuideVertical.style.borderTop = "1px solid GrayText";
   spacingGuideVertical.style.pointerEvents = "none";
   spacingGuideVertical.style.zIndex = Z_INDEX_GUIDE;
   spacingGuideVertical.style.display = "none";
@@ -1138,38 +1115,38 @@ function showSpacingGuides(guides) {
   for (var i = 0; i < guides.length; i++) {
     var guide = guides[i];
     if (guide.axis === 'horizontal') {
-      // Horizontal spacing = vertical line in horizontal gap
-      if (spacingGuideHorizontal) {
-        // Position at midpoint of the gap
-        var gapMidX = (guide.gapStart + guide.gapEnd) / 2;
-        spacingGuideHorizontal.style.left = gapMidX + "px";
-        // Span the entire gap vertically (use reference rectangles to determine range)
+      // Horizontal spacing = horizontal line spanning the gap
+      if (spacingGuideVertical) {
+        // Position at midpoint vertically (use reference rectangles to determine Y position)
         var rectsForExtent = guide.between || guide.referenceRects;
         var topExtent = Math.min(rectsForExtent[0].top, rectsForExtent[1].top);
         var bottomExtent = Math.max(
           rectsForExtent[0].top + rectsForExtent[0].height,
           rectsForExtent[1].top + rectsForExtent[1].height
         );
-        spacingGuideHorizontal.style.top = topExtent + "px";
-        spacingGuideHorizontal.style.height = (bottomExtent - topExtent) + "px";
-        spacingGuideHorizontal.style.display = "block";
+        var midY = (topExtent + bottomExtent) / 2;
+        spacingGuideVertical.style.top = midY + "px";
+        // Span horizontally across the gap
+        spacingGuideVertical.style.left = guide.gapStart + "px";
+        spacingGuideVertical.style.width = (guide.gapEnd - guide.gapStart) + "px";
+        spacingGuideVertical.style.display = "block";
       }
     } else if (guide.axis === 'vertical') {
-      // Vertical spacing = horizontal line in vertical gap
-      if (spacingGuideVertical) {
-        // Position at midpoint of the gap
-        var gapMidY = (guide.gapStart + guide.gapEnd) / 2;
-        spacingGuideVertical.style.top = gapMidY + "px";
-        // Span the entire gap horizontally (use reference rectangles to determine range)
+      // Vertical spacing = vertical line spanning the gap
+      if (spacingGuideHorizontal) {
+        // Position at midpoint horizontally (use reference rectangles to determine X position)
         var rectsForExtent = guide.between || guide.referenceRects;
         var leftExtent = Math.min(rectsForExtent[0].left, rectsForExtent[1].left);
         var rightExtent = Math.max(
           rectsForExtent[0].left + rectsForExtent[0].width,
           rectsForExtent[1].left + rectsForExtent[1].width
         );
-        spacingGuideVertical.style.left = leftExtent + "px";
-        spacingGuideVertical.style.width = (rightExtent - leftExtent) + "px";
-        spacingGuideVertical.style.display = "block";
+        var midX = (leftExtent + rightExtent) / 2;
+        spacingGuideHorizontal.style.left = midX + "px";
+        // Span vertically across the gap
+        spacingGuideHorizontal.style.top = guide.gapStart + "px";
+        spacingGuideHorizontal.style.height = (guide.gapEnd - guide.gapStart) + "px";
+        spacingGuideHorizontal.style.display = "block";
       }
     }
   }

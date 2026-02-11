@@ -10,24 +10,26 @@ Implemented a Figma-style "smart distribute" feature that automatically snaps re
 ## User Experience
 
 When moving or duplicating a rectangle:
-- If positioned between two other rectangles
-- And the position would create equal gaps on both sides
+- Detects three positioning scenarios:
+  1. **Between**: Position between two rectangles with equal gaps on both sides
+  2. **Left/Above**: Position to the left/above to match an existing gap
+  3. **Right/Below**: Position to the right/below to match an existing gap
 - Within 8px snap threshold (same as edge snapping)
 - The rectangle snaps to the even-spacing position
-- Visual guides appear at the gap midpoints
+- Visual guides appear spanning the gap
 
 ## Visual Feedback
 
 **Spacing Guide Lines:**
-- Solid colored lines (using `var(--spotlight-draw-color)`)
-- Positioned at the midpoint of gaps
-- Span only the gap region (not full viewport like edge guides)
-- Horizontal spacing = vertical line in the horizontal gap
-- Vertical spacing = horizontal line in the vertical gap
+- Solid gray lines (1px solid GrayText)
+- Span along the gap (parallel to the spacing direction)
+- Horizontal spacing = horizontal line spanning the gap
+- Vertical spacing = vertical line spanning the gap
+- Positioned at the vertical/horizontal midpoint of adjacent rectangles
 
 **Different from Edge Guides:**
-- Edge guides: dashed GrayText, span full viewport
-- Spacing guides: solid color, span only gaps
+- Edge guides: 0.5px dashed GrayText, span full viewport
+- Spacing guides: 1px solid GrayText, span only the gap length
 
 ## Implementation Details
 
@@ -47,22 +49,30 @@ var spacingGuideVertical = null;
 1. Collect all rectangles except the one being moved
 2. For horizontal spacing:
    - Sort rectangles by left edge
-   - For each adjacent pair (A, B):
+   - For each adjacent pair (A, B) with a gap:
      - Calculate gap: `B.left - A.right`
-     - If rect fits: calculate even position: `A.right + (gap - rectWidth) / 2`
-     - Store as spacing target
-3. Repeat for vertical spacing (sort by top edge)
+     - **Case 1 - Between**: If rect fits between A and B:
+       - Position: `A.right + (gap - rectWidth) / 2`
+       - Creates equal gaps on both sides
+     - **Case 2 - Left**: Position rect to the left of A:
+       - Position: `A.left - gap - rectWidth`
+       - Creates gap between C and A equal to gap between A and B
+     - **Case 3 - Right**: Position rect to the right of B:
+       - Position: `B.right + gap`
+       - Creates gap between B and C equal to gap between A and B
+3. Repeat for vertical spacing (sort by top edge, same logic for above/below)
 
 **Returns**:
 ```javascript
 {
   horizontal: [
     {
-      position: x,           // Left position for even spacing
-      gap: pixels,           // Size of each equal gap
-      between: [rectA, rectB], // The two rectangles
-      gapStart: x,           // Start of gap (A.right)
-      gapEnd: x              // End of gap (B.left)
+      position: x,                   // Left position for even spacing
+      gap: pixels,                   // Size of each equal gap
+      between: [rectA, rectB] | null, // For "between" case, or null for left/right
+      referenceRects: [rectA, rectB], // Reference rectangles for visual extent
+      gapStart: x,                   // Start of the gap being indicated
+      gapEnd: x                      // End of the gap being indicated
     }
   ],
   vertical: [ /* same structure */ ]
@@ -124,26 +134,34 @@ var spacingGuideVertical = null;
 ### Unit Tests
 **File**: `tests/unit/helpers.test.js`
 
-**New Tests** (8 total):
+**New Tests** (12 total):
 1. ✓ Finds horizontal even spacing between two rectangles
 2. ✓ Finds vertical even spacing between two rectangles
 3. ✓ Ignores gaps where rectangle is too large to fit
-4. ✓ Handles multiple spacing opportunities
+4. ✓ Handles multiple spacing opportunities (now finds 6 targets per 2 pairs)
 5. ✓ Excludes specified rectangle from calculations
 6. ✓ Handles no rectangles
 7. ✓ Ignores overlapping rectangles
 8. ✓ Calculates correct even spacing positions
+9. ✓ Finds left positioning target for even spacing
+10. ✓ Finds right positioning target for even spacing
+11. ✓ Finds above positioning target for vertical even spacing
+12. ✓ Finds below positioning target for vertical even spacing
 
 ### Manual Testing
 **File**: `test-even-spacing.html`
 
 **Test Scenarios**:
-1. Horizontal even spacing between two rectangles
-2. Vertical even spacing between two rectangles
-3. Duplication with even spacing (Alt+drag)
-4. Repositioning with even spacing (Cmd/Ctrl+drag)
-5. Priority verification (edge alignment vs even spacing)
-6. Rectangle too large (no spacing snap)
+1. Horizontal even spacing (between) - position C between A and B
+2. Horizontal even spacing (right) - position C right of B matching A-B gap
+3. Horizontal even spacing (left) - position C left of A matching A-B gap
+4. Vertical even spacing (between) - position C between A and B vertically
+5. Vertical even spacing (below) - position C below B matching A-B gap
+6. Vertical even spacing (above) - position C above A matching A-B gap
+7. Duplication with even spacing (Alt+drag)
+8. Repositioning with even spacing (Cmd/Ctrl+drag)
+9. Priority verification (edge alignment vs even spacing)
+10. Rectangle too large (no spacing snap)
 
 ## Edge Cases Handled
 
