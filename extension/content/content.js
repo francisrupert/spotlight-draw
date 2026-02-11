@@ -91,6 +91,10 @@ var ANIMATION_DURATION = 300;
 var horizontalGuideLines = [null, null];
 var verticalGuideLines = [null, null];
 
+// Spacing guide lines (for even spacing visualization)
+var spacingGuideHorizontal = null;
+var spacingGuideVertical = null;
+
 // Clamp rectangle coordinates to viewport bounds
 function clampToViewport(x, y, width, height) {
   var viewportWidth = window.innerWidth;
@@ -496,6 +500,139 @@ function getSnapTargets(excludeRect) {
   return targets;
 }
 
+// Get even spacing targets for a moving rectangle
+function getEvenSpacingTargets(rect, excludeRect) {
+  var result = {
+    horizontal: [],
+    vertical: []
+  };
+
+  // Get bounds of the moving rectangle
+  var rectBounds = getRectBounds(rect);
+  var rectWidth = rectBounds.width;
+  var rectHeight = rectBounds.height;
+
+  // Collect all rectangles except the one being moved
+  var otherRects = [];
+  for (var i = 0; i < placedRectangles.length; i++) {
+    if (placedRectangles[i] !== excludeRect) {
+      otherRects.push(getRectBounds(placedRectangles[i]));
+    }
+  }
+
+  // Check horizontal spacing (sort by left edge)
+  var sortedByX = otherRects.slice().sort(function(a, b) {
+    return a.left - b.left;
+  });
+
+  for (var i = 0; i < sortedByX.length - 1; i++) {
+    var rectA = sortedByX[i];
+    var rectB = sortedByX[i + 1];
+    var aRight = rectA.left + rectA.width;
+    var bLeft = rectB.left;
+
+    // Check if there's an actual gap between A and B
+    if (bLeft > aRight) {
+      var existingGap = bLeft - aRight;
+
+      // Case 1: Position rect BETWEEN A and B with even spacing
+      if (existingGap > rectWidth) {
+        var gap = (existingGap - rectWidth) / 2;
+        var evenPosition = aRight + gap;
+
+        result.horizontal.push({
+          position: evenPosition,
+          gap: gap,
+          between: [rectA, rectB],
+          gapStart: aRight,
+          gapEnd: bLeft
+        });
+      }
+
+      // Case 2: Position rect to the LEFT of A to match the A-B gap
+      // Pattern: [rect] gap [A] gap [B] where both gaps are equal
+      var leftPosition = rectA.left - existingGap - rectWidth;
+      result.horizontal.push({
+        position: leftPosition,
+        gap: existingGap,
+        between: null, // Not between, but to the left
+        referenceRects: [rectA, rectB],
+        gapStart: leftPosition + rectWidth,
+        gapEnd: rectA.left
+      });
+
+      // Case 3: Position rect to the RIGHT of B to match the A-B gap
+      // Pattern: [A] gap [B] gap [rect] where both gaps are equal
+      var rightPosition = rectB.left + rectB.width + existingGap;
+      result.horizontal.push({
+        position: rightPosition,
+        gap: existingGap,
+        between: null, // Not between, but to the right
+        referenceRects: [rectA, rectB],
+        gapStart: rectB.left + rectB.width,
+        gapEnd: rightPosition
+      });
+    }
+  }
+
+  // Check vertical spacing (sort by top edge)
+  var sortedByY = otherRects.slice().sort(function(a, b) {
+    return a.top - b.top;
+  });
+
+  for (var j = 0; j < sortedByY.length - 1; j++) {
+    var rectA = sortedByY[j];
+    var rectB = sortedByY[j + 1];
+    var aBottom = rectA.top + rectA.height;
+    var bTop = rectB.top;
+
+    // Check if there's an actual gap between A and B
+    if (bTop > aBottom) {
+      var existingGap = bTop - aBottom;
+
+      // Case 1: Position rect BETWEEN A and B with even spacing
+      if (existingGap > rectHeight) {
+        var gap = (existingGap - rectHeight) / 2;
+        var evenPosition = aBottom + gap;
+
+        result.vertical.push({
+          position: evenPosition,
+          gap: gap,
+          between: [rectA, rectB],
+          gapStart: aBottom,
+          gapEnd: bTop
+        });
+      }
+
+      // Case 2: Position rect ABOVE A to match the A-B gap
+      // Pattern: [rect] gap [A] gap [B] where both gaps are equal
+      var topPosition = rectA.top - existingGap - rectHeight;
+      result.vertical.push({
+        position: topPosition,
+        gap: existingGap,
+        between: null, // Not between, but above
+        referenceRects: [rectA, rectB],
+        gapStart: topPosition + rectHeight,
+        gapEnd: rectA.top
+      });
+
+      // Case 3: Position rect BELOW B to match the A-B gap
+      // Pattern: [A] gap [B] gap [rect] where both gaps are equal
+      var bottomPosition = rectB.top + rectB.height + existingGap;
+      result.vertical.push({
+        position: bottomPosition,
+        gap: existingGap,
+        between: null, // Not between, but below
+        referenceRects: [rectA, rectB],
+        gapStart: rectB.top + rectB.height,
+        gapEnd: bottomPosition
+      });
+    }
+  }
+
+  return result;
+}
+
 // Pick the closer of two candidate snap values to a given position
 function pickCloserSnap(position, a, b) {
   if (a === null) return b;
@@ -595,7 +732,8 @@ function applySnapping(x, y, width, height, excludeRect) {
     width: snappedWidth,
     height: snappedHeight,
     verticalSnapPositions: verticalSnapPositions,
-    horizontalSnapPositions: horizontalSnapPositions
+    horizontalSnapPositions: horizontalSnapPositions,
+    spacingGuides: [] // No spacing guides for drawing mode
   };
 }
 
@@ -606,6 +744,7 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var snappedY = y;
   var verticalSnapPositions = [];
   var horizontalSnapPositions = [];
+  var spacingGuides = [];
 
   // Calculate edges and center of current rectangle
   var left = x;
@@ -631,9 +770,12 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var leftSnapDist = bestLeftSnap !== null ? Math.abs(left - bestLeftSnap) : Infinity;
   var rightSnapDist = bestRightSnap !== null ? Math.abs(right - bestRightSnap) : Infinity;
 
+  var xSnapped = false;
+
   if (leftSnapDist <= rightSnapDist && bestLeftSnap !== null) {
     snappedX = bestLeftSnap;
     verticalSnapPositions.push(bestLeftSnap);
+    xSnapped = true;
     // Also show right guide if right edge aligns too
     if (bestRightSnap !== null) {
       // Recalculate right edge after applying left snap
@@ -648,6 +790,7 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   } else if (bestRightSnap !== null) {
     snappedX = bestRightSnap - width;
     verticalSnapPositions.push(bestRightSnap);
+    xSnapped = true;
     // Also show left guide if left edge aligns too
     if (bestLeftSnap !== null) {
       var newLeft = bestRightSnap - width;
@@ -666,6 +809,58 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     if (centerXSnap !== null) {
       snappedX = centerXSnap - width / 2;
       verticalSnapPositions.push(centerXSnap);
+      xSnapped = true;
+    }
+  }
+
+  // Check even spacing only if no edge/center snap occurred
+  if (!xSnapped) {
+    // Create temporary rectangle with current position for spacing calculation
+    var tempRect = { style: { left: x + "px", top: y + "px", width: width + "px", height: height + "px" } };
+    var spacingTargets = getEvenSpacingTargets(tempRect, excludeRect);
+
+    for (var i = 0; i < spacingTargets.horizontal.length; i++) {
+      var target = spacingTargets.horizontal[i];
+      var dist = Math.abs(left - target.position);
+      if (dist <= SNAP_THRESHOLD) {
+        snappedX = target.position;
+
+        // For left/right positioning cases, compute moved rectangle bounds
+        // and use it with the adjacent reference rect for visual extent
+        var visualExtentRects = target.between;
+        if (!target.between && target.referenceRects) {
+          // Compute moved rectangle's bounds after snapping
+          var movedRectBounds = {
+            left: target.position,
+            top: y,
+            width: width,
+            height: height
+          };
+          // Use the closer reference rect for visual extent
+          var rectA = target.referenceRects[0];
+          var rectB = target.referenceRects[1];
+          // Determine if moved rect is to the left or right
+          if (target.position < rectA.left) {
+            // Left case: use moved rect and rectA
+            visualExtentRects = [movedRectBounds, rectA];
+          } else {
+            // Right case: use rectB and moved rect
+            visualExtentRects = [rectB, movedRectBounds];
+          }
+        }
+
+        // Store spacing guide info
+        spacingGuides.push({
+          axis: 'horizontal',
+          position: target.position + width / 2, // Midpoint of the moved rectangle
+          gapStart: target.gapStart,
+          gapEnd: target.gapEnd,
+          gap: target.gap,
+          between: target.between,
+          referenceRects: visualExtentRects
+        });
+        break; // Use first (closest) spacing target
+      }
     }
   }
 
@@ -685,9 +880,12 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var topSnapDist = bestTopSnap !== null ? Math.abs(top - bestTopSnap) : Infinity;
   var bottomSnapDist = bestBottomSnap !== null ? Math.abs(bottom - bestBottomSnap) : Infinity;
 
+  var ySnapped = false;
+
   if (topSnapDist <= bottomSnapDist && bestTopSnap !== null) {
     snappedY = bestTopSnap;
     horizontalSnapPositions.push(bestTopSnap);
+    ySnapped = true;
     // Also show bottom guide if bottom edge aligns too
     if (bestBottomSnap !== null) {
       var newBottom = bestTopSnap + height;
@@ -701,6 +899,7 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   } else if (bestBottomSnap !== null) {
     snappedY = bestBottomSnap - height;
     horizontalSnapPositions.push(bestBottomSnap);
+    ySnapped = true;
     // Also show top guide if top edge aligns too
     if (bestTopSnap !== null) {
       var newTop = bestBottomSnap - height;
@@ -719,6 +918,58 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     if (centerYSnap !== null) {
       snappedY = centerYSnap - height / 2;
       horizontalSnapPositions.push(centerYSnap);
+      ySnapped = true;
+    }
+  }
+
+  // Check even spacing only if no edge/center snap occurred
+  if (!ySnapped) {
+    // Create temporary rectangle with current position for spacing calculation
+    var tempRect = { style: { left: x + "px", top: y + "px", width: width + "px", height: height + "px" } };
+    var spacingTargets = getEvenSpacingTargets(tempRect, excludeRect);
+
+    for (var j = 0; j < spacingTargets.vertical.length; j++) {
+      var target = spacingTargets.vertical[j];
+      var dist = Math.abs(top - target.position);
+      if (dist <= SNAP_THRESHOLD) {
+        snappedY = target.position;
+
+        // For above/below positioning cases, compute moved rectangle bounds
+        // and use it with the adjacent reference rect for visual extent
+        var visualExtentRects = target.between;
+        if (!target.between && target.referenceRects) {
+          // Compute moved rectangle's bounds after snapping
+          var movedRectBounds = {
+            left: x,
+            top: target.position,
+            width: width,
+            height: height
+          };
+          // Use the closer reference rect for visual extent
+          var rectA = target.referenceRects[0];
+          var rectB = target.referenceRects[1];
+          // Determine if moved rect is above or below
+          if (target.position < rectA.top) {
+            // Above case: use moved rect and rectA
+            visualExtentRects = [movedRectBounds, rectA];
+          } else {
+            // Below case: use rectB and moved rect
+            visualExtentRects = [rectB, movedRectBounds];
+          }
+        }
+
+        // Store spacing guide info
+        spacingGuides.push({
+          axis: 'vertical',
+          position: target.position + height / 2, // Midpoint of the moved rectangle
+          gapStart: target.gapStart,
+          gapEnd: target.gapEnd,
+          gap: target.gap,
+          between: target.between,
+          referenceRects: visualExtentRects
+        });
+        break; // Use first (closest) spacing target
+      }
     }
   }
 
@@ -728,7 +979,8 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     width: width,
     height: height,
     verticalSnapPositions: verticalSnapPositions,
-    horizontalSnapPositions: horizontalSnapPositions
+    horizontalSnapPositions: horizontalSnapPositions,
+    spacingGuides: spacingGuides
   };
 }
 
@@ -750,6 +1002,7 @@ function findClosestEdge(position, edges) {
 
 // Create snap guide lines (2 per axis)
 function createGuideLines() {
+
   for (var i = 0; i < 2; i++) {
     // Horizontal guide lines
     var hLine = document.createElement("div");
@@ -777,6 +1030,27 @@ function createGuideLines() {
     document.body.appendChild(vLine);
     verticalGuideLines[i] = vLine;
   }
+
+  // Create spacing guide lines (shorter, span only the gap)
+  // Horizontal spacing guide (vertical line in horizontal gap)
+  spacingGuideHorizontal = document.createElement("div");
+  spacingGuideHorizontal.style.position = "fixed";
+  spacingGuideHorizontal.style.width = "0";
+  spacingGuideHorizontal.style.borderLeft = "1px solid GrayText";
+  spacingGuideHorizontal.style.pointerEvents = "none";
+  spacingGuideHorizontal.style.zIndex = Z_INDEX_GUIDE;
+  spacingGuideHorizontal.style.display = "none";
+  document.body.appendChild(spacingGuideHorizontal);
+
+  // Vertical spacing guide (horizontal line in vertical gap)
+  spacingGuideVertical = document.createElement("div");
+  spacingGuideVertical.style.position = "fixed";
+  spacingGuideVertical.style.height = "0";
+  spacingGuideVertical.style.borderTop = "1px solid GrayText";
+  spacingGuideVertical.style.pointerEvents = "none";
+  spacingGuideVertical.style.zIndex = Z_INDEX_GUIDE;
+  spacingGuideVertical.style.display = "none";
+  document.body.appendChild(spacingGuideVertical);
 }
 
 // Remove snap guide lines
@@ -790,6 +1064,16 @@ function removeGuideLines() {
       verticalGuideLines[i].parentNode.removeChild(verticalGuideLines[i]);
       verticalGuideLines[i] = null;
     }
+  }
+
+  // Remove spacing guide lines
+  if (spacingGuideHorizontal && spacingGuideHorizontal.parentNode) {
+    spacingGuideHorizontal.parentNode.removeChild(spacingGuideHorizontal);
+    spacingGuideHorizontal = null;
+  }
+  if (spacingGuideVertical && spacingGuideVertical.parentNode) {
+    spacingGuideVertical.parentNode.removeChild(spacingGuideVertical);
+    spacingGuideVertical = null;
   }
 }
 
@@ -817,6 +1101,57 @@ function showVerticalGuides(positions) {
   }
 }
 
+// Show spacing guide lines
+function showSpacingGuides(guides) {
+  // Hide both spacing guides first
+  if (spacingGuideHorizontal) {
+    spacingGuideHorizontal.style.display = "none";
+  }
+  if (spacingGuideVertical) {
+    spacingGuideVertical.style.display = "none";
+  }
+
+  // Show guides for each spacing match
+  for (var i = 0; i < guides.length; i++) {
+    var guide = guides[i];
+    if (guide.axis === 'horizontal') {
+      // Horizontal spacing = horizontal line spanning the gap
+      if (spacingGuideVertical) {
+        // Position at midpoint vertically (use reference rectangles to determine Y position)
+        var rectsForExtent = guide.between || guide.referenceRects;
+        var topExtent = Math.min(rectsForExtent[0].top, rectsForExtent[1].top);
+        var bottomExtent = Math.max(
+          rectsForExtent[0].top + rectsForExtent[0].height,
+          rectsForExtent[1].top + rectsForExtent[1].height
+        );
+        var midY = (topExtent + bottomExtent) / 2;
+        spacingGuideVertical.style.top = midY + "px";
+        // Span horizontally across the gap
+        spacingGuideVertical.style.left = guide.gapStart + "px";
+        spacingGuideVertical.style.width = (guide.gapEnd - guide.gapStart) + "px";
+        spacingGuideVertical.style.display = "block";
+      }
+    } else if (guide.axis === 'vertical') {
+      // Vertical spacing = vertical line spanning the gap
+      if (spacingGuideHorizontal) {
+        // Position at midpoint horizontally (use reference rectangles to determine X position)
+        var rectsForExtent = guide.between || guide.referenceRects;
+        var leftExtent = Math.min(rectsForExtent[0].left, rectsForExtent[1].left);
+        var rightExtent = Math.max(
+          rectsForExtent[0].left + rectsForExtent[0].width,
+          rectsForExtent[1].left + rectsForExtent[1].width
+        );
+        var midX = (leftExtent + rightExtent) / 2;
+        spacingGuideHorizontal.style.left = midX + "px";
+        // Span vertically across the gap
+        spacingGuideHorizontal.style.top = guide.gapStart + "px";
+        spacingGuideHorizontal.style.height = (guide.gapEnd - guide.gapStart) + "px";
+        spacingGuideHorizontal.style.display = "block";
+      }
+    }
+  }
+}
+
 // Hide all guide lines
 function hideGuideLines() {
   for (var i = 0; i < 2; i++) {
@@ -827,6 +1162,14 @@ function hideGuideLines() {
       verticalGuideLines[i].style.display = "none";
     }
   }
+
+  // Hide spacing guides
+  if (spacingGuideHorizontal) {
+    spacingGuideHorizontal.style.display = "none";
+  }
+  if (spacingGuideVertical) {
+    spacingGuideVertical.style.display = "none";
+  }
 }
 
 // Snap, clamp to viewport, and show/hide guide lines in one step
@@ -835,7 +1178,7 @@ function applySnapClampAndGuides(x, y, width, height, excludeRect, snapFn) {
   if (userPreferences.snapToEdges) {
     snapped = snapFn(x, y, width, height, excludeRect);
   } else {
-    snapped = { x: x, y: y, width: width, height: height, verticalSnapPositions: [], horizontalSnapPositions: [] };
+    snapped = { x: x, y: y, width: width, height: height, verticalSnapPositions: [], horizontalSnapPositions: [], spacingGuides: [] };
   }
 
   var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
@@ -843,6 +1186,18 @@ function applySnapClampAndGuides(x, y, width, height, excludeRect, snapFn) {
   if (userPreferences.snapToEdges) {
     showVerticalGuides(snapped.verticalSnapPositions);
     showHorizontalGuides(snapped.horizontalSnapPositions);
+    // Show spacing guides if present
+    if (snapped.spacingGuides && snapped.spacingGuides.length > 0) {
+      showSpacingGuides(snapped.spacingGuides);
+    } else {
+      // Hide spacing guides if no spacing snap
+      if (spacingGuideHorizontal) {
+        spacingGuideHorizontal.style.display = "none";
+      }
+      if (spacingGuideVertical) {
+        spacingGuideVertical.style.display = "none";
+      }
+    }
   }
 
   return clamped;
@@ -994,7 +1349,9 @@ function getElementAtCursor(x, y) {
   while (element && (
     (element.classList && element.classList.contains(RECTANGLE_CLASS)) ||
     horizontalGuideLines.indexOf(element) !== -1 ||
-    verticalGuideLines.indexOf(element) !== -1
+    verticalGuideLines.indexOf(element) !== -1 ||
+    element === spacingGuideHorizontal ||
+    element === spacingGuideVertical
   )) {
     hiddenElements.push({ element: element, display: element.style.display });
     element.style.display = 'none';
