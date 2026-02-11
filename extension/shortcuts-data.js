@@ -16,7 +16,7 @@ var KEYBOARD_SHORTCUTS = [
     shortcuts: [
       { keys: "Alt + Drag (over rectangle)", description: "Duplicate rectangle" },
       { keys: "Cmd/Ctrl + Drag (over rectangle)", description: "Reposition rectangle" },
-      { keys: "Tab", description: "Cycle rectangle colors" },
+      { keys: "Tab", description: "Cycle hovered rectangle colors" },
       { keys: "Delete / Backspace", description: "Remove hovered rectangle" },
       { keys: "Right-click", description: "Multi-rectangle mode (like Shift)" }
     ]
