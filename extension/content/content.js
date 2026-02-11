@@ -694,8 +694,9 @@ function handleMouseDown(event) {
     }
   }
 
-  // Only clear previous rectangles if Shift is NOT held
-  if (!event.shiftKey) {
+  // Only clear previous rectangles if Shift is NOT held and it's NOT a right-click
+  // Right-click (button === 2) acts like Shift key (multi-rectangle mode)
+  if (!event.shiftKey && event.button !== 2) {
     clearAllRectangles();
   }
 
@@ -1057,6 +1058,18 @@ function handleClick(event) {
   event.stopImmediatePropagation();
 }
 
+// Context menu handler - prevent right-click menu when in drawing mode
+function handleContextMenu(event) {
+  if (!isDrawingMode) {
+    return;
+  }
+
+  // Prevent context menu from appearing
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
 // Spacebar keydown - enter pan mode during drawing
 function handleSpacebarDown(event) {
   if (event.key === " " || event.keyCode === 32) {
@@ -1194,6 +1207,7 @@ function enableDrawingMode() {
     document.addEventListener("mousemove", handleMouseMove, true);
     document.addEventListener("mouseup", handleMouseUp, true);
     document.addEventListener("click", handleClick, true);
+    document.addEventListener("contextmenu", handleContextMenu, true);
     document.addEventListener("keydown", handleKeyDown, true);
     document.addEventListener("keyup", handleKeyUp, true);
   });
@@ -1225,6 +1239,7 @@ function disableDrawingMode() {
   document.removeEventListener("mousemove", handleMouseMove, true);
   document.removeEventListener("mouseup", handleMouseUp, true);
   document.removeEventListener("click", handleClick, true);
+  document.removeEventListener("contextmenu", handleContextMenu, true);
   document.removeEventListener("keydown", handleKeyDown, true);
   document.removeEventListener("keyup", handleKeyUp, true);
 

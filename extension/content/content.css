@@ -4,7 +4,9 @@ html.box-highlight-drawing-mode {
   user-select: none !important;
 }
 
-html.box-highlight-drawing-mode * {
+html.box-highlight-drawing-mode *,
+html.box-highlight-drawing-mode body,
+html.box-highlight-drawing-mode body * {
   cursor: crosshair !important;
   pointer-events: none !important;
   user-select: none !important;
