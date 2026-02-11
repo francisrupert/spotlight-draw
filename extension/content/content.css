@@ -267,3 +267,108 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
 .box-highlight-help-close:hover {
   opacity: 1;
 }
+
+/* Settings Section */
+.box-highlight-settings-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid ButtonBorder;
+}
+
+.box-highlight-setting {
+  margin: 16px 0;
+}
+
+.box-highlight-setting label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: CanvasText;
+  margin-bottom: 8px;
+}
+
+.box-highlight-setting-control {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid ButtonBorder;
+  border-radius: 4px;
+  background: Canvas;
+  color: CanvasText;
+  cursor: pointer;
+}
+
+.box-highlight-setting-control:focus {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+
+/* Checkbox styling */
+.box-highlight-setting label input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.box-highlight-setting label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+/* Color Picker */
+.box-highlight-color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.box-highlight-color-option {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  border: 2px solid ButtonBorder;
+  border-radius: 6px;
+  background: Canvas;
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.1s ease;
+}
+
+.box-highlight-color-option:hover {
+  border-color: CanvasText;
+  transform: scale(1.1);
+}
+
+.box-highlight-color-option.selected {
+  border-color: Highlight;
+  border-width: 3px;
+  padding: 3px;
+}
+
+.box-highlight-color-swatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.box-highlight-color-swatch--orange {
+  background: color-mix(in srgb, var(--color-orange) 90%, transparent);
+}
+
+.box-highlight-color-swatch--green {
+  background: color-mix(in srgb, var(--color-green) 90%, transparent);
+}
+
+.box-highlight-color-swatch--blue {
+  background: color-mix(in srgb, var(--color-blue) 90%, transparent);
+}
+
+.box-highlight-color-swatch--purple {
+  background: color-mix(in srgb, var(--color-purple) 90%, transparent);
+}
+
+.box-highlight-color-swatch--plain {
+  background: var(--color-plain);
+}

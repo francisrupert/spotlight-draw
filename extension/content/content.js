@@ -180,7 +180,7 @@ function createHelpDialog() {
 
   dialog.innerHTML = `
     <div class="box-highlight-help-header">
-      <h2>Keyboard Shortcuts</h2>
+      <h2>Shortcuts & Settings</h2>
       <button class="box-highlight-help-close" aria-label="Close">×</button>
     </div>
     <div class="box-highlight-help-content">
@@ -256,6 +256,47 @@ function createHelpDialog() {
           <dt>Escape</dt>
           <dd>Close dialog or exit current mode</dd>
         </dl>
+      </section>
+
+      <section class="box-highlight-settings-section">
+        <h3>Settings</h3>
+
+        <div class="box-highlight-setting">
+          <label for="border-size-setting">Border Size</label>
+          <select id="border-size-setting" class="box-highlight-setting-control">
+            <option value="1">1px</option>
+            <option value="2">2px</option>
+            <option value="3">3px</option>
+          </select>
+        </div>
+
+        <div class="box-highlight-setting">
+          <label>Default Color</label>
+          <div class="box-highlight-color-picker">
+            <button class="box-highlight-color-option" data-color="" title="Orange (default)">
+              <span class="box-highlight-color-swatch box-highlight-color-swatch--orange"></span>
+            </button>
+            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--green" title="Green">
+              <span class="box-highlight-color-swatch box-highlight-color-swatch--green"></span>
+            </button>
+            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--blue" title="Blue">
+              <span class="box-highlight-color-swatch box-highlight-color-swatch--blue"></span>
+            </button>
+            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--purple" title="Purple">
+              <span class="box-highlight-color-swatch box-highlight-color-swatch--purple"></span>
+            </button>
+            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--plain" title="Plain">
+              <span class="box-highlight-color-swatch box-highlight-color-swatch--plain"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="box-highlight-setting">
+          <label>
+            <input type="checkbox" id="snap-to-edges-setting" class="box-highlight-setting-control">
+            <span>Snap to Edges</span>
+          </label>
+        </div>
       </section>
     </div>
   `;
@@ -346,6 +387,72 @@ function isHelpUIElement(element) {
   return false;
 }
 
+// Load settings into the dialog form
+function loadSettingsIntoDialog() {
+  if (!helpDialog) return;
+
+  // Load border size
+  var borderSizeSelect = helpDialog.querySelector("#border-size-setting");
+  if (borderSizeSelect) {
+    borderSizeSelect.value = userPreferences.borderSize;
+  }
+
+  // Load default color
+  var colorButtons = helpDialog.querySelectorAll(".box-highlight-color-option");
+  for (var i = 0; i < colorButtons.length; i++) {
+    var button = colorButtons[i];
+    var colorValue = button.getAttribute("data-color");
+    if (colorValue === userPreferences.defaultColor) {
+      button.classList.add("selected");
+    } else {
+      button.classList.remove("selected");
+    }
+  }
+
+  // Load snap to edges
+  var snapCheckbox = helpDialog.querySelector("#snap-to-edges-setting");
+  if (snapCheckbox) {
+    snapCheckbox.checked = userPreferences.snapToEdges;
+  }
+}
+
+// Save a setting to chrome.storage
+function saveSetting(key, value) {
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
+    var settings = {};
+    settings[key] = value;
+    chrome.storage.sync.set(settings);
+  }
+  // Update local preferences
+  userPreferences[key] = value;
+}
+
+// Handle border size change
+function handleBorderSizeChange(event) {
+  var newSize = event.target.value;
+  saveSetting("borderSize", newSize);
+}
+
+// Handle default color change
+function handleDefaultColorChange(event) {
+  var button = event.currentTarget;
+  var newColor = button.getAttribute("data-color");
+  saveSetting("defaultColor", newColor);
+
+  // Update UI - mark selected button
+  var colorButtons = helpDialog.querySelectorAll(".box-highlight-color-option");
+  for (var i = 0; i < colorButtons.length; i++) {
+    colorButtons[i].classList.remove("selected");
+  }
+  button.classList.add("selected");
+}
+
+// Handle snap to edges change
+function handleSnapToEdgesChange(event) {
+  var newValue = event.target.checked;
+  saveSetting("snapToEdges", newValue);
+}
+
 // Initialize help system
 function initHelpSystem() {
   // Create help button
@@ -365,6 +472,25 @@ function initHelpSystem() {
 
   // Close on backdrop click
   helpDialog.addEventListener("click", handleDialogBackdropClick, true);
+
+  // Setup settings event listeners
+  var borderSizeSelect = helpDialog.querySelector("#border-size-setting");
+  if (borderSizeSelect) {
+    borderSizeSelect.addEventListener("change", handleBorderSizeChange, true);
+  }
+
+  var colorButtons = helpDialog.querySelectorAll(".box-highlight-color-option");
+  for (var i = 0; i < colorButtons.length; i++) {
+    colorButtons[i].addEventListener("click", handleDefaultColorChange, true);
+  }
+
+  var snapCheckbox = helpDialog.querySelector("#snap-to-edges-setting");
+  if (snapCheckbox) {
+    snapCheckbox.addEventListener("change", handleSnapToEdgesChange, true);
+  }
+
+  // Load current settings into form
+  loadSettingsIntoDialog();
 }
 
 // Update rectangle position and size
