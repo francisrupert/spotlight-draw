@@ -63,6 +63,9 @@ var userPreferences = {
   defaultColor: ""
 };
 
+// Snap-to-edge configuration
+var SNAP_THRESHOLD = 8; // pixels
+
 // Load user preferences from chrome.storage
 function loadPreferences(callback) {
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
@@ -119,6 +122,129 @@ function updateRectangle(rect, x, y, width, height) {
   rect.style.top = y + "px";
   rect.style.width = Math.abs(width) + "px";
   rect.style.height = Math.abs(height) + "px";
+}
+
+// Get all snap target edges from placed rectangles (excluding specified rectangle)
+function getSnapTargets(excludeRect) {
+  var targets = {
+    left: [],
+    right: [],
+    top: [],
+    bottom: []
+  };
+
+  for (var i = 0; i < placedRectangles.length; i++) {
+    var rect = placedRectangles[i];
+
+    // Skip the rectangle we're currently moving/duplicating
+    if (rect === excludeRect) {
+      continue;
+    }
+
+    var left = parseInt(rect.style.left, 10);
+    var top = parseInt(rect.style.top, 10);
+    var width = parseInt(rect.style.width, 10);
+    var height = parseInt(rect.style.height, 10);
+    var right = left + width;
+    var bottom = top + height;
+
+    targets.left.push(left);
+    targets.right.push(right);
+    targets.top.push(top);
+    targets.bottom.push(bottom);
+  }
+
+  return targets;
+}
+
+// Apply snapping to rectangle edges
+function applySnapping(x, y, width, height, excludeRect) {
+  var targets = getSnapTargets(excludeRect);
+  var snappedX = x;
+  var snappedY = y;
+  var snappedWidth = width;
+  var snappedHeight = height;
+
+  // Calculate edges of current rectangle
+  var left = x;
+  var right = x + width;
+  var top = y;
+  var bottom = y + height;
+
+  // Snap left edge
+  var leftSnap = findClosestEdge(left, targets.left);
+  if (leftSnap !== null) {
+    snappedX = leftSnap;
+    snappedWidth = width + (x - leftSnap); // Adjust width to maintain right edge
+  }
+
+  // Snap right edge
+  var rightSnap = findClosestEdge(right, targets.right);
+  if (rightSnap !== null && leftSnap === null) {
+    snappedWidth = rightSnap - snappedX;
+  }
+
+  // Also check if right edge should snap to left edges
+  var rightToLeftSnap = findClosestEdge(right, targets.left);
+  if (rightToLeftSnap !== null && leftSnap === null && rightSnap === null) {
+    snappedWidth = rightToLeftSnap - snappedX;
+  }
+
+  // Also check if left edge should snap to right edges
+  var leftToRightSnap = findClosestEdge(left, targets.right);
+  if (leftToRightSnap !== null && leftSnap === null) {
+    snappedX = leftToRightSnap;
+    snappedWidth = width + (x - leftToRightSnap);
+  }
+
+  // Snap top edge
+  var topSnap = findClosestEdge(top, targets.top);
+  if (topSnap !== null) {
+    snappedY = topSnap;
+    snappedHeight = height + (y - topSnap); // Adjust height to maintain bottom edge
+  }
+
+  // Snap bottom edge
+  var bottomSnap = findClosestEdge(bottom, targets.bottom);
+  if (bottomSnap !== null && topSnap === null) {
+    snappedHeight = bottomSnap - snappedY;
+  }
+
+  // Also check if bottom edge should snap to top edges
+  var bottomToTopSnap = findClosestEdge(bottom, targets.top);
+  if (bottomToTopSnap !== null && topSnap === null && bottomSnap === null) {
+    snappedHeight = bottomToTopSnap - snappedY;
+  }
+
+  // Also check if top edge should snap to bottom edges
+  var topToBottomSnap = findClosestEdge(top, targets.bottom);
+  if (topToBottomSnap !== null && topSnap === null) {
+    snappedY = topToBottomSnap;
+    snappedHeight = height + (y - topToBottomSnap);
+  }
+
+  return {
+    x: snappedX,
+    y: snappedY,
+    width: snappedWidth,
+    height: snappedHeight
+  };
+}
+
+// Find closest edge within snap threshold
+function findClosestEdge(position, edges) {
+  var closest = null;
+  var minDistance = SNAP_THRESHOLD;
+
+  for (var i = 0; i < edges.length; i++) {
+    var distance = Math.abs(position - edges[i]);
+    if (distance <= minDistance) {
+      minDistance = distance;
+      closest = edges[i];
+    }
+  }
+
+  return closest;
 }
 
 // Calculate rectangle coordinates from start and current mouse position
@@ -407,8 +533,13 @@ function handleMouseMove(event) {
       repositionAxisLocked = null;
     }
 
-    repositioningRectangle.style.left = newX + "px";
-    repositioningRectangle.style.top = newY + "px";
+    // Apply snapping (exclude the rectangle being repositioned)
+    var rectWidth = parseInt(repositioningRectangle.style.width, 10);
+    var rectHeight = parseInt(repositioningRectangle.style.height, 10);
+    var snapped = applySnapping(newX, newY, rectWidth, rectHeight, repositioningRectangle);
+
+    repositioningRectangle.style.left = snapped.x + "px";
+    repositioningRectangle.style.top = snapped.y + "px";
     event.preventDefault();
     return;
   }
@@ -443,8 +574,13 @@ function handleMouseMove(event) {
       duplicateAxisLocked = null;
     }
 
-    duplicatingRectangle.style.left = newX + "px";
-    duplicatingRectangle.style.top = newY + "px";
+    // Apply snapping (exclude the rectangle being duplicated - not in placedRectangles yet)
+    var rectWidth = parseInt(duplicatingRectangle.style.width, 10);
+    var rectHeight = parseInt(duplicatingRectangle.style.height, 10);
+    var snapped = applySnapping(newX, newY, rectWidth, rectHeight, duplicatingRectangle);
+
+    duplicatingRectangle.style.left = snapped.x + "px";
+    duplicatingRectangle.style.top = snapped.y + "px";
     event.preventDefault();
     return;
   }
@@ -482,11 +618,17 @@ function handleMouseMove(event) {
     // Pan mode: move the entire rectangle without resizing
     var newX = currentMouseX + panOffsetX;
     var newY = currentMouseY + panOffsetY;
-    updateRectangle(currentRectangle, newX, newY, panModeWidth, panModeHeight);
+
+    // Apply snapping during pan mode
+    var snapped = applySnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
+    updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
   } else {
     // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
     var coords = calculateRectCoords(currentMouseX, currentMouseY);
-    updateRectangle(currentRectangle, coords.x, coords.y, coords.width, coords.height);
+
+    // Apply snapping during drawing/resizing
+    var snapped = applySnapping(coords.x, coords.y, coords.width, coords.height, currentRectangle);
+    updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
   }
 
   event.preventDefault();
