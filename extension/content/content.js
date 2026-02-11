@@ -48,13 +48,13 @@ var DUPLICATION_HOVER_CLASS = "box-highlight-duplication-hover-mode";
 var DRAGGING_MODE_CLASS = "box-highlight-dragging-mode";
 var RECTANGLE_CLASS = "box-highlight-rectangle";
 
-// Color cycling
+// Color cycling (order: orange, green, blue, purple, plain)
 var COLOR_CLASSES = [
-  "", // default (orange - oklch color from :root)
-  "box-highlight-rectangle--plain",
-  "box-highlight-rectangle--blue",
-  "box-highlight-rectangle--purple",
-  "box-highlight-rectangle--green"
+  "",                                    // orange (default)
+  "box-highlight-rectangle--green",     // green
+  "box-highlight-rectangle--blue",      // blue
+  "box-highlight-rectangle--purple",    // purple
+  "box-highlight-rectangle--plain"      // plain
 ];
 
 // User preferences (loaded from chrome.storage)

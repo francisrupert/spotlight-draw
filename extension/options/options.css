@@ -76,8 +76,8 @@ label {
   background-color: var(--color-orange);
 }
 
-.color-button[data-color="plain"] {
-  background-color: var(--color-plain);
+.color-button[data-color="green"] {
+  background-color: var(--color-green);
 }
 
 .color-button[data-color="blue"] {
@@ -88,8 +88,8 @@ label {
   background-color: var(--color-purple);
 }
 
-.color-button[data-color="green"] {
-  background-color: var(--color-green);
+.color-button[data-color="plain"] {
+  background-color: var(--color-plain);
 }
 
 .color-button.active::after {
