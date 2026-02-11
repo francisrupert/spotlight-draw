@@ -157,7 +157,7 @@ function getSnapTargets(excludeRect) {
   return targets;
 }
 
-// Apply snapping to rectangle edges
+// Apply snapping to rectangle edges (for drawing/resizing - can adjust size)
 function applySnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
   var snappedX = x;
@@ -228,6 +228,88 @@ function applySnapping(x, y, width, height, excludeRect) {
     y: snappedY,
     width: snappedWidth,
     height: snappedHeight
+  };
+}
+
+// Apply snapping for moving rectangles (repositioning/duplicating - only adjusts position, keeps size fixed)
+function applyPositionSnapping(x, y, width, height, excludeRect) {
+  var targets = getSnapTargets(excludeRect);
+  var snappedX = x;
+  var snappedY = y;
+
+  // Calculate edges of current rectangle
+  var left = x;
+  var right = x + width;
+  var top = y;
+  var bottom = y + height;
+
+  // Try to snap left edge to any vertical edge (left or right of other rectangles)
+  var leftToLeftSnap = findClosestEdge(left, targets.left);
+  var leftToRightSnap = findClosestEdge(left, targets.right);
+
+  // Use whichever is closer
+  var leftSnapDistance = leftToLeftSnap !== null ? Math.abs(left - leftToLeftSnap) : Infinity;
+  var leftRightSnapDistance = leftToRightSnap !== null ? Math.abs(left - leftToRightSnap) : Infinity;
+
+  if (leftSnapDistance <= leftRightSnapDistance && leftToLeftSnap !== null) {
+    snappedX = leftToLeftSnap;
+  } else if (leftToRightSnap !== null) {
+    snappedX = leftToRightSnap;
+  }
+
+  // Try to snap right edge to any vertical edge (left or right of other rectangles)
+  var rightToRightSnap = findClosestEdge(right, targets.right);
+  var rightToLeftSnap = findClosestEdge(right, targets.left);
+
+  // Use whichever is closer, but only if we haven't already snapped the left edge
+  var rightSnapDistance = rightToRightSnap !== null ? Math.abs(right - rightToRightSnap) : Infinity;
+  var rightLeftSnapDistance = rightToLeftSnap !== null ? Math.abs(right - rightToLeftSnap) : Infinity;
+
+  // Only apply right edge snap if left edge didn't snap
+  if (snappedX === x) {
+    if (rightSnapDistance <= rightLeftSnapDistance && rightToRightSnap !== null) {
+      snappedX = rightToRightSnap - width; // Adjust x to align right edge
+    } else if (rightToLeftSnap !== null) {
+      snappedX = rightToLeftSnap - width; // Adjust x to align right edge
+    }
+  }
+
+  // Try to snap top edge to any horizontal edge (top or bottom of other rectangles)
+  var topToTopSnap = findClosestEdge(top, targets.top);
+  var topToBottomSnap = findClosestEdge(top, targets.bottom);
+
+  // Use whichever is closer
+  var topSnapDistance = topToTopSnap !== null ? Math.abs(top - topToTopSnap) : Infinity;
+  var topBottomSnapDistance = topToBottomSnap !== null ? Math.abs(top - topToBottomSnap) : Infinity;
+
+  if (topSnapDistance <= topBottomSnapDistance && topToTopSnap !== null) {
+    snappedY = topToTopSnap;
+  } else if (topToBottomSnap !== null) {
+    snappedY = topToBottomSnap;
+  }
+
+  // Try to snap bottom edge to any horizontal edge (top or bottom of other rectangles)
+  var bottomToBottomSnap = findClosestEdge(bottom, targets.bottom);
+  var bottomToTopSnap = findClosestEdge(bottom, targets.top);
+
+  // Use whichever is closer, but only if we haven't already snapped the top edge
+  var bottomSnapDistance = bottomToBottomSnap !== null ? Math.abs(bottom - bottomToBottomSnap) : Infinity;
+  var bottomTopSnapDistance = bottomToTopSnap !== null ? Math.abs(bottom - bottomToTopSnap) : Infinity;
+
+  // Only apply bottom edge snap if top edge didn't snap
+  if (snappedY === y) {
+    if (bottomSnapDistance <= bottomTopSnapDistance && bottomToBottomSnap !== null) {
+      snappedY = bottomToBottomSnap - height; // Adjust y to align bottom edge
+    } else if (bottomToTopSnap !== null) {
+      snappedY = bottomToTopSnap - height; // Adjust y to align bottom edge
+    }
+  }
+
+  return {
+    x: snappedX,
+    y: snappedY,
+    width: width, // Keep width unchanged
+    height: height // Keep height unchanged
   };
 }
 
@@ -533,10 +615,10 @@ function handleMouseMove(event) {
       repositionAxisLocked = null;
     }
 
-    // Apply snapping (exclude the rectangle being repositioned)
+    // Apply position-only snapping (exclude the rectangle being repositioned)
     var rectWidth = parseInt(repositioningRectangle.style.width, 10);
     var rectHeight = parseInt(repositioningRectangle.style.height, 10);
-    var snapped = applySnapping(newX, newY, rectWidth, rectHeight, repositioningRectangle);
+    var snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, repositioningRectangle);
 
     repositioningRectangle.style.left = snapped.x + "px";
     repositioningRectangle.style.top = snapped.y + "px";
@@ -574,10 +656,10 @@ function handleMouseMove(event) {
       duplicateAxisLocked = null;
     }
 
-    // Apply snapping (exclude the rectangle being duplicated - not in placedRectangles yet)
+    // Apply position-only snapping (exclude the rectangle being duplicated - not in placedRectangles yet)
     var rectWidth = parseInt(duplicatingRectangle.style.width, 10);
     var rectHeight = parseInt(duplicatingRectangle.style.height, 10);
-    var snapped = applySnapping(newX, newY, rectWidth, rectHeight, duplicatingRectangle);
+    var snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, duplicatingRectangle);
 
     duplicatingRectangle.style.left = snapped.x + "px";
     duplicatingRectangle.style.top = snapped.y + "px";
@@ -619,8 +701,8 @@ function handleMouseMove(event) {
     var newX = currentMouseX + panOffsetX;
     var newY = currentMouseY + panOffsetY;
 
-    // Apply snapping during pan mode
-    var snapped = applySnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
+    // Apply position-only snapping during pan mode
+    var snapped = applyPositionSnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
     updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
   } else {
     // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
