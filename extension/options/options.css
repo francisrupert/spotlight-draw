@@ -1,10 +1,4 @@
-:root {
-  --color-orange: oklch(0.7397 0.2057 47.88);
-  --color-plain: graytext;
-  --color-blue: oklch(0.6295 0.2128 246.71);
-  --color-purple: oklch(0.7384 0.2783 342);
-  --color-green: oklch(0.7634 0.1947 159.75);
-}
+@import url('../tokens.css');
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -16,10 +10,6 @@ body {
 .container {
   max-width: 500px;
   margin: 0 auto;
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
@@ -39,22 +29,6 @@ label {
   color: #555;
 }
 
-select {
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: white;
-  cursor: pointer;
-}
-
-select:focus {
-  outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
-}
-
 /* Button group (segmented control) */
 .button-group {
   display: flex;
@@ -63,6 +37,8 @@ select:focus {
   border-radius: 6px;
   overflow: hidden;
   background-color: white;
+  padding: 2px;
+  gap: 2px;
 }
 
 .button-group-item {
@@ -73,17 +49,11 @@ select:focus {
   color: #555;
   background-color: white;
   border: none;
-  border-right: 1px solid #ddd;
-  cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
 
 .button-group-item:last-child {
   border-right: none;
-}
-
-.button-group-item:hover {
-  outline: 2px solid canvasText;
 }
 
 .button-group-item.active {
@@ -100,12 +70,11 @@ select:focus {
 
 /* Color button group */
 .color-group {
-  width: fit-content;
 }
 
 .color-button {
-  width: 48px;
-  height: 48px;
+  width: 100%;
+  height: 32px;
   padding: 0;
   position: relative;
 }
@@ -130,11 +99,6 @@ select:focus {
   background-color: var(--color-green);
 }
 
-.color-button:hover {
-  opacity: 0.85;
-  background-color: inherit;
-}
-
 .color-button.active::after {
   content: '✓';
   position: absolute;
@@ -142,9 +106,8 @@ select:focus {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: bold;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
 button {
@@ -155,16 +118,6 @@ button {
   border-radius: 4px;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
-button:active {
-  background-color: #3d8b40;
 }
 
 #status {

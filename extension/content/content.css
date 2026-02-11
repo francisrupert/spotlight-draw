@@ -1,3 +1,5 @@
+@import url('../tokens.css');
+
 /* Drawing mode cursor */
 html.box-highlight-drawing-mode {
   cursor: crosshair !important;
@@ -44,12 +46,6 @@ html.box-highlight-dragging-mode * {
 }
 
 :root {
-  --color-orange: oklch(0.7397 0.2057 47.88);
-  --color-plain: graytext;
-  --color-blue: oklch(0.6295 0.2128 246.71);
-  --color-purple: oklch(0.7384 0.2783 342);
-  --color-green: oklch(0.7634 0.1947 159.75);
-
   --box-highlight-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
 }
 
