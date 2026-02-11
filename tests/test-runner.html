@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpotlightDraw Extension - Test Suite</title>
+  <link rel="stylesheet" href="lib/qunit.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #qunit-banner {
+      background-color: #0366d6;
+    }
+  </style>
+</head>
+<body>
+  <!-- QUnit Test Runner UI -->
+  <div id="qunit"></div>
+  <div id="qunit-fixture"></div>
+
+  <!-- QUnit Framework -->
+  <script src="lib/qunit.js"></script>
+
+  <!-- Chrome API Mocks (must load before content script) -->
+  <script src="lib/chrome-mock.js"></script>
+
+  <!-- Source Files (in dependency order) -->
+  <script src="../extension/shortcuts-data.js"></script>
+  <script src="../extension/content/content.js"></script>
+
+  <!-- Unit Tests -->
+  <script src="unit/helpers.test.js"></script>
+
+  <!-- Regression Tests -->
+  <script src="regression/spacebar-bug.test.js"></script>
+  <script src="regression/duplication-offset-bug.test.js"></script>
+
+  <!-- Integration Tests (load after unit tests) -->
+  <!-- <script src="integration/drawing-flow.test.js"></script> -->
+  <!-- <script src="integration/duplication-flow.test.js"></script> -->
+  <!-- <script src="integration/reposition-flow.test.js"></script> -->
+  <!-- <script src="integration/pan-mode-flow.test.js"></script> -->
+
+</body>
+</html>

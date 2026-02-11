@@ -1,166 +1,43 @@
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  padding: 20px;
+  font-family: var(--font-system);
+  padding: var(--size-16);
   margin: 0;
-  background-color: #f5f5f5;
+  background-color: Canvas;
+  color: CanvasText;
 }
 
 .container {
-  max-width: 500px;
+  max-inline-size: var(--size-512);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--size-16);
 }
 
 h1 {
-  margin-top: 0;
-  font-size: 24px;
-  color: #333;
-}
-
-.setting-group {
+  margin-block-start: 0;
+  font-size: var(--font-size-24);
+  color: CanvasText;
 }
 
 label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
+  margin-block-end: var(--size-8);
+  font-size: var(--font-size-14);
   font-weight: 500;
-  color: #555;
-}
-
-/* Button group (segmented control) */
-.button-group {
-  display: flex;
-  width: 100%;
-  gap: 2px;
-}
-
-.button-group-item {
-  flex: 1;
-  padding: 8px 16px;
-  font-size: 14px;
-  color: #555;
-  border: none;
-  border-radius: 3px;
-}
-
-.button-group-item:last-child {
-  border-right: none;
-}
-
-.button-group-item.active {
-  background-color: #dedede;
-  color: #000;
-}
-
-.button-group-item:focus {
-  outline: none;
-  position: relative;
-  z-index: 1;
-}
-
-/* Color button group */
-.color-group {
-}
-
-.color-button {
-  width: 100%;
-  height: 32px;
-  padding: 0;
-  position: relative;
-}
-
-.color-button[data-color="orange"] {
-  background-color: var(--color-orange);
-}
-
-.color-button[data-color="green"] {
-  background-color: var(--color-green);
-}
-
-.color-button[data-color="blue"] {
-  background-color: var(--color-blue);
-}
-
-.color-button[data-color="purple"] {
-  background-color: var(--color-purple);
-}
-
-.color-button[data-color="plain"] {
-  background-color: var(--color-plain);
-}
-
-.color-button.active::after {
-  content: '✓';
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 16px;
-}
-
-/* Checkbox labels */
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-weight: normal;
-  margin-bottom: 0;
-}
-
-.checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.checkbox-label span {
-  user-select: none;
+  color: CanvasText;
+  opacity: 0.8;
 }
 
 /* Shortcuts section */
 .shortcuts-section {
-  margin-bottom: 24px;
+  margin-block-end: var(--size-32);
 }
 
 .shortcuts-section h2 {
-  font-size: 16px;
+  font-size: var(--font-size-16);
   font-weight: 600;
-  color: #333;
-  margin: 0 0 12px 0;
-}
-
-.shortcuts-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.shortcuts-table tr {
-  border-bottom: 1px solid #e5e5e5;
-}
-
-.shortcuts-table tr:last-child {
-  border-bottom: none;
-}
-
-.shortcut-keys {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  padding: 10px 12px 10px 0;
-  white-space: nowrap;
-  width: 40%;
-}
-
-.shortcut-description {
-  font-size: 14px;
-  color: #555;
-  padding: 10px 0;
+  color: CanvasText;
+  margin-block: 0 var(--size-16);
 }
 

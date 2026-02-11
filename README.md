@@ -1,6 +1,6 @@
-# Box Highlight
+# SpotlightDraw
 
-A Chrome extension for highlighting element boxes on web pages. Perfect for developers and designers who need to visualize layout structures.
+A Chrome extension for annotating web pages during screensharing and recording sessions. Perfect for developers and presenters who need to highlight and draw attention to specific areas while demonstrating software.
 
 ## Features
 
@@ -33,16 +33,17 @@ A Chrome extension for highlighting element boxes on web pages. Perfect for deve
 5. Select the `extension/` directory from this project
 6. Open any webpage and press **Alt+A** to start drawing
 
-For detailed instructions, see [Running the Extension Locally](docs/running-box-highlight-extension-locally.md).
+For detailed instructions, see [Running the Extension Locally](docs/running-spotlight-draw-extension-locally.md).
 
 ### Configuring Settings
 
 Access the options page to customize your experience:
 
 1. Right-click the extension icon and select **Options**, OR
-2. Go to `chrome://extensions`, find **Box Highlight**, and click **Options**
+2. Go to `chrome://extensions`, find **SpotlightDraw**, and click **Options**
 
 **Available settings:**
+
 - **Border Size**: Choose between 0.5px, 1px (default), 2px, or 3px
 - **Default Color**: Set your preferred starting color (orange, green, blue, purple, or gray)
 
@@ -75,7 +76,7 @@ See [extension/icons/README.md](extension/icons/README.md) for alternative metho
 ## Project Structure
 
 ```text
-box-highlight/
+spotlight-draw/
 ├── extension/              # Extension source code
 │   ├── manifest.json       # Extension manifest (Manifest V3)
 │   ├── tokens.css          # Shared color design tokens
@@ -117,7 +118,7 @@ No permanent page modifications are made—just visual overlays using positioned
 
 ## Documentation
 
-- [Running Locally](docs/running-box-highlight-extension-locally.md) - Detailed setup guide
+- [Running Locally](docs/running-spotlight-draw-extension-locally.md) - Detailed setup guide
 - [Development Plan](docs/plans/active/chrome-extension-scaffold.md) - Project roadmap and progress
 
 ## Browser Support

@@ -22,11 +22,7 @@ function saveOptions() {
 
 // Load saved options from chrome.storage.sync
 function loadOptions() {
-  chrome.storage.sync.get({
-    borderSize: "1",     // default values
-    defaultColor: "",
-    snapToEdges: true
-  }, function(items) {
+  chrome.storage.sync.get(DEFAULT_PREFERENCES, function(items) {
     // Set active border size button
     var borderButtons = document.querySelectorAll("#borderSize .button-group-item");
     borderButtons.forEach(function(button) {
@@ -52,68 +48,19 @@ function loadOptions() {
   });
 }
 
-// Handle button group clicks with auto-save
-function setupButtonGroup(groupId) {
-  var group = document.getElementById(groupId);
-  var buttons = group.querySelectorAll(".button-group-item");
+// Setup button groups using shared helper with auto-save
 
-  buttons.forEach(function(button) {
-    button.addEventListener("click", function() {
-      // Remove active from all buttons in this group
-      buttons.forEach(function(btn) {
-        btn.classList.remove("active");
-      });
-      // Add active to clicked button
-      button.classList.add("active");
-
-      // Auto-save on change
-      saveOptions();
-    });
-  });
-}
-
-// Render keyboard shortcuts
+// Render keyboard shortcuts using shared renderer
 function renderShortcuts() {
   var container = document.getElementById("shortcuts-container");
-  if (!container || typeof KEYBOARD_SHORTCUTS === "undefined") return;
-
-  KEYBOARD_SHORTCUTS.forEach(function(category) {
-    var section = document.createElement("div");
-    section.className = "shortcuts-section";
-
-    var heading = document.createElement("h2");
-    heading.textContent = category.category;
-    section.appendChild(heading);
-
-    var table = document.createElement("table");
-    table.className = "shortcuts-table";
-
-    category.shortcuts.forEach(function(shortcut) {
-      var row = document.createElement("tr");
-
-      var keysCell = document.createElement("td");
-      keysCell.className = "shortcut-keys";
-      keysCell.textContent = shortcut.keys;
-      row.appendChild(keysCell);
-
-      var descCell = document.createElement("td");
-      descCell.className = "shortcut-description";
-      descCell.textContent = shortcut.description;
-      row.appendChild(descCell);
-
-      table.appendChild(row);
-    });
-
-    section.appendChild(table);
-    container.appendChild(section);
-  });
+  renderShortcutsInto(container, "h2", "shortcuts-section");
 }
 
 // Initialize
 document.addEventListener("DOMContentLoaded", function() {
   loadOptions();
-  setupButtonGroup("borderSize");
-  setupButtonGroup("defaultColor");
+  setupButtonGroup(document, "borderSize", function() { saveOptions(); });
+  setupButtonGroup(document, "defaultColor", function() { saveOptions(); });
 
   // Add event listener for checkbox with auto-save
   document.getElementById("snapToEdges").addEventListener("change", saveOptions);

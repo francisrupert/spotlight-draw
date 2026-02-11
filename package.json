@@ -1,20 +1,27 @@
 {
-  "name": "box-highlight",
-  "version": "0.1.0",
-  "description": "Chrome extension for highlighting boxes on web pages",
+  "name": "spotlight-draw",
+  "version": "0.1.3",
+  "description": "Chrome extension for annotating web pages during screensharing and recording sessions",
   "private": true,
   "scripts": {
-    "clean": "rm -f box-highlight-*.zip",
-    "zip": "npm run clean && cd extension && zip -r ../box-highlight-$(node -p \"require('../package.json').version\").zip . -x '*.DS_Store' -x '*/README.md' -x '*/convert-icon.html' && cd .. && echo \"Created box-highlight-$(node -p \"require('./package.json').version\").zip\"",
-    "zip:latest": "npm run clean && cd extension && zip -r ../box-highlight-latest.zip . -x '*.DS_Store' -x '*/README.md' -x '*/convert-icon.html' && cd .. && echo 'Created box-highlight-latest.zip'"
+    "clean": "rm -f spotlight-draw-*.zip",
+    "zip": "npm run clean && cd extension && zip -r ../spotlight-draw-$(node -p \"require('../package.json').version\").zip . -x '*.DS_Store' -x '*/README.md' -x '*/convert-icon.html' && cd .. && echo \"Created spotlight-draw-$(node -p \"require('./package.json').version\").zip\"",
+    "zip:latest": "npm run clean && cd extension && zip -r ../spotlight-draw-latest.zip . -x '*.DS_Store' -x '*/README.md' -x '*/convert-icon.html' && cd .. && echo 'Created spotlight-draw-latest.zip'",
+    "test": "open tests/test-runner.html",
+    "test:watch": "echo 'Open tests/test-runner.html in Chrome and refresh after code changes'"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/box-highlight.git"
+    "url": "git+https://github.com/yourusername/spotlight-draw.git"
   },
   "keywords": [
     "chrome-extension",
-    "developer-tools",
+    "annotation",
+    "screenshare",
+    "screen-recording",
+    "presentation",
+    "demo",
+    "drawing",
     "highlighting"
   ],
   "author": "",

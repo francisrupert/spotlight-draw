@@ -1,125 +1,75 @@
-/* Drawing mode cursor and interaction blocking */
-html.box-highlight-drawing-mode {
-  cursor: crosshair !important;
-  user-select: none !important;
-}
+/* Cursor modes — each mode class sets --sd-cursor, drawing-mode base applies it */
+html.spotlight-draw-drawing-mode { --sd-cursor: crosshair; }
+html.spotlight-draw-pan-mode { --sd-cursor: none; }
+html.spotlight-draw-repositioning-mode { --sd-cursor: default; }
+html.spotlight-draw-duplication-hover-mode { --sd-cursor: copy; }
+html.spotlight-draw-dragging-mode { --sd-cursor: none; }
+html.spotlight-draw-inspection-mode { --sd-cursor: default; }
 
-html.box-highlight-drawing-mode *,
-html.box-highlight-drawing-mode body,
-html.box-highlight-drawing-mode body * {
-  cursor: crosshair !important;
+html.spotlight-draw-drawing-mode,
+html.spotlight-draw-drawing-mode *,
+html.spotlight-draw-drawing-mode body,
+html.spotlight-draw-drawing-mode body * {
+  cursor: var(--sd-cursor) !important;
   pointer-events: none !important;
   user-select: none !important;
 }
 
-/* Pan mode - hide cursor when spacebar is held */
-html.box-highlight-pan-mode {
-  cursor: none !important;
-}
-
-html.box-highlight-pan-mode * {
-  cursor: none !important;
-}
-
-/* Repositioning mode - default cursor (hover only) */
-html.box-highlight-repositioning-mode {
-  cursor: default !important;
-}
-
-html.box-highlight-repositioning-mode * {
-  cursor: default !important;
-}
-
-/* Duplication mode - copy cursor (hover with Alt key) */
-html.box-highlight-duplication-hover-mode {
-  cursor: copy !important;
-}
-
-html.box-highlight-duplication-hover-mode * {
-  cursor: copy !important;
-}
-
-/* Dragging mode - hide cursor (when actively dragging) */
-html.box-highlight-dragging-mode {
-  cursor: none !important;
-}
-
-html.box-highlight-dragging-mode * {
-  cursor: none !important;
-}
-
-/* Inspection mode - default cursor */
-html.box-highlight-inspection-mode {
-  cursor: default !important;
-}
-
-html.box-highlight-inspection-mode * {
-  cursor: default !important;
-}
-
 :root {
-  --box-highlight-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
+  --spotlight-draw-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
 }
 
 /* Rectangle style */
-.box-highlight-rectangle {
+.spotlight-draw-rectangle {
   /* orange */
-  border: 1px solid var(--box-highlight-color);
-  background-color: color-mix(in srgb, var(--box-highlight-color) 15%, transparent);
+  border: var(--size-1) solid var(--spotlight-draw-color);
+  background-color: color-mix(in srgb, var(--spotlight-draw-color) 15%, transparent);
   box-sizing: border-box;
   pointer-events: none;
-  border-radius: 4px;
+  border-radius: var(--size-4);
 }
-.box-highlight-rectangle--plain {
+.spotlight-draw-rectangle--plain {
   /* gray */
-  --box-highlight-color: var(--color-plain);
+  --spotlight-draw-color: var(--color-plain);
 }
-.box-highlight-rectangle--blue {
+.spotlight-draw-rectangle--blue {
   /* blue */
-  --box-highlight-color: var(--color-blue);
+  --spotlight-draw-color: var(--color-blue);
 }
-.box-highlight-rectangle--purple {
+.spotlight-draw-rectangle--purple {
   /* purple */
-  --box-highlight-color: var(--color-purple);
+  --spotlight-draw-color: var(--color-purple);
 }
-.box-highlight-rectangle--green {
+.spotlight-draw-rectangle--green {
   /* green */
-  --box-highlight-color: var(--color-green);
+  --spotlight-draw-color: var(--color-green);
 }
-.asdf {
-  color: graytext;
-  color: oklch(0.7397 0.2057 47.88);
-  color: oklch(0.6295 0.2128 246.71);
-  color: oklch(0.7384 0.2783 342);
-  color: oklch(0.7634 0.1947 159.75);
-}
-
 /* Help Button - must override pointer-events: none from drawing mode */
-/* Use high specificity to beat html.box-highlight-drawing-mode body * */
-html.box-highlight-drawing-mode body .box-highlight-help-button,
-html.box-highlight-drawing-mode .box-highlight-help-button,
-.box-highlight-help-button {
+/* Use high specificity to beat html.spotlight-draw-drawing-mode body * */
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__trigger,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__trigger,
+.spotlight-draw-help__trigger {
   /* Critical override to make button clickable */
   pointer-events: auto !important;
   user-select: auto !important;
   cursor: pointer !important;
 
-  /* Positioning (inline styles, but included for reference) */
+  /* Positioning */
   position: fixed;
-  bottom: 12px;
-  left: 12px;
-  width: 24px;
-  height: 24px;
+  inset-block-end: var(--size-16);
+  inset-inline-start: var(--size-16);
+  inline-size: var(--size-32);
+  block-size: var(--size-32);
   z-index: 2147483647;
 
   /* Visual styling */
-  background-color: var(--box-highlight-color);
+  background-color: var(--spotlight-draw-color);
   border: none;
   border-radius: 50%;
 
   /* Typography - system font stack */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  font-size: 14px;
+  font-family: var(--font-system);
+  font-size: var(--font-size-14);
   font-weight: 600;
   color: white;
   line-height: 1;
@@ -131,31 +81,31 @@ html.box-highlight-drawing-mode .box-highlight-help-button,
 }
 
 /* Hidden state - off-screen to the left */
-.box-highlight-help-button.hidden {
-  transform: translateX(-60px) !important;
+.spotlight-draw-help__trigger--hidden {
+  transform: translateX(calc(-1 * var(--size-64))) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
 /* Visible state - slide in from left */
-.box-highlight-help-button.visible {
+.spotlight-draw-help__trigger--visible {
   transform: translateX(0) !important;
   opacity: 0.9 !important;
 }
 
-.box-highlight-help-button:hover {
+.spotlight-draw-help__trigger:hover {
   opacity: 1;
 }
 
-.box-highlight-help-button:active {
+.spotlight-draw-help__trigger:active {
   transform: scale(0.95);
 }
 
 /* Help Dialog - must override pointer-events: none */
-/* Use high specificity to beat html.box-highlight-drawing-mode body * */
-html.box-highlight-drawing-mode body .box-highlight-help-dialog,
-html.box-highlight-drawing-mode .box-highlight-help-dialog,
-.box-highlight-help-dialog {
+/* Use high specificity to beat html.spotlight-draw-drawing-mode body * */
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__dialog,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__dialog,
+.spotlight-draw-help__dialog {
   /* Critical override to make dialog interactive */
   pointer-events: auto !important;
   user-select: auto !important;
@@ -163,266 +113,122 @@ html.box-highlight-drawing-mode .box-highlight-help-dialog,
 
   /* Basic dialog styling with color-scheme support */
   /* Browser centers modal dialogs automatically - we just set sizing and reset margin */
-  width: 480px;
-  max-width: 90vw;
-  max-height: 80vh;
+  inline-size: var(--size-512);
+  max-inline-size: 90vw;
+  max-block-size: 80vh;
   margin: auto !important;
-  border: 1px solid ButtonBorder;
-  border-radius: 8px;
+  border: var(--size-1) solid ButtonBorder;
+  border-radius: var(--size-8);
   padding: 0;
   background: Canvas;
   color: CanvasText;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 var(--size-4) var(--size-16) var(--shadow-dialog);
   z-index: 2147483647;
-  overflow-y: auto;
+  overflow-block: auto;
 
   /* System font stack */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-system);
 }
 
 /* Dialog backdrop */
-.box-highlight-help-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
+.spotlight-draw-help__dialog::backdrop {
+  background: var(--backdrop-overlay);
   pointer-events: auto !important;
 }
 
 /* All dialog children must be interactive */
-html.box-highlight-drawing-mode body .box-highlight-help-dialog *,
-html.box-highlight-drawing-mode .box-highlight-help-dialog *,
-.box-highlight-help-dialog * {
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__dialog *,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__dialog *,
+.spotlight-draw-help__dialog * {
   pointer-events: auto !important;
   user-select: auto !important;
   cursor: auto !important;
 }
 
 /* Minimal structure styling for dialog header and content */
-.box-highlight-help-header {
+.spotlight-draw-help__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid ButtonBorder;
+  padding: var(--size-16);
+  border-block-end: var(--size-1) solid ButtonBorder;
 }
 
-.box-highlight-help-header h2 {
+.spotlight-draw-help__header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-size-16);
   font-weight: 600;
   color: CanvasText;
 }
 
-.box-highlight-help-content {
-  padding: 20px;
+.spotlight-draw-help__body {
+  padding: var(--size-16);
   color: CanvasText;
 }
 
-.box-highlight-help-content h3 {
-  margin: 16px 0 8px 0;
-  font-size: 14px;
+.spotlight-draw-help__body h3 {
+  margin-block: var(--size-16) var(--size-8);
+  font-size: var(--font-size-14);
   font-weight: 600;
   color: CanvasText;
 }
 
-.box-highlight-help-content h3:first-child {
-  margin-top: 0;
-}
-
-.box-highlight-help-content dl {
-  margin: 0 0 16px 0;
-}
-
-.box-highlight-help-content dt {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: CanvasText;
-  margin-top: 8px;
-}
-
-.box-highlight-help-content dd {
-  margin: 2px 0 0 16px;
-  font-size: 13px;
-  color: CanvasText;
-  opacity: 0.8;
+.spotlight-draw-help__body h3:first-child {
+  margin-block-start: 0;
 }
 
 /* Close button must also override pointer-events */
-html.box-highlight-drawing-mode body .box-highlight-help-close,
-html.box-highlight-drawing-mode .box-highlight-help-close,
-.box-highlight-help-close {
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__close,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__close,
+.spotlight-draw-help__close {
   background: none;
   border: none;
-  font-size: 28px;
+  font-size: var(--font-size-32);
   line-height: 1;
   color: CanvasText;
   cursor: pointer !important;
   pointer-events: auto !important;
   padding: 0;
-  width: 28px;
-  height: 28px;
+  inline-size: var(--size-32);
+  block-size: var(--size-32);
   opacity: 0.6;
   transition: opacity 0.2s ease;
 }
 
-.box-highlight-help-close:hover {
+.spotlight-draw-help__close:hover {
   opacity: 1;
 }
 
 /* Settings Section */
-.box-highlight-settings-section {
-  margin-bottom: 24px;
+.spotlight-draw-help__settings {
+  margin-block-end: var(--size-32);
 }
 
-.box-highlight-setting {
-  margin: 16px 0;
+.spotlight-draw-help__setting {
+  margin-block: var(--size-16);
 }
 
-.box-highlight-setting label {
+.spotlight-draw-help__setting label {
   display: block;
-  font-size: 13px;
+  font-size: var(--font-size-14);
   font-weight: 600;
   color: CanvasText;
-  margin-bottom: 8px;
-}
-
-/* Button group (segmented control) - matches options page */
-.box-highlight-help-dialog .button-group {
-  display: flex;
-  width: 100%;
-  gap: 2px;
-}
-
-.box-highlight-help-dialog .button-group-item {
-  flex: 1;
-  padding: 8px 16px;
-  font-size: 14px;
-  color: CanvasText;
-  background: Canvas;
-  border: 1px solid ButtonBorder;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.box-highlight-help-dialog .button-group-item:hover {
-  background-color: color-mix(in srgb, CanvasText 5%, Canvas);
-}
-
-.box-highlight-help-dialog .button-group-item.active {
-  background-color: color-mix(in srgb, CanvasText 15%, Canvas);
-  font-weight: 600;
-}
-
-.box-highlight-help-dialog .button-group-item:focus {
-  outline: 2px solid Highlight;
-  outline-offset: 2px;
-  position: relative;
-  z-index: 1;
-}
-
-/* Color button group */
-.box-highlight-help-dialog .color-button {
-  width: 100%;
-  height: 32px;
-  padding: 0;
-  position: relative;
-}
-
-.box-highlight-help-dialog .color-button[data-color="orange"] {
-  background-color: var(--color-orange);
-}
-
-.box-highlight-help-dialog .color-button[data-color="green"] {
-  background-color: var(--color-green);
-}
-
-.box-highlight-help-dialog .color-button[data-color="blue"] {
-  background-color: var(--color-blue);
-}
-
-.box-highlight-help-dialog .color-button[data-color="purple"] {
-  background-color: var(--color-purple);
-}
-
-.box-highlight-help-dialog .color-button[data-color="plain"] {
-  background-color: var(--color-plain);
-}
-
-.box-highlight-help-dialog .color-button.active::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-/* Checkbox labels */
-.box-highlight-help-dialog .checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-weight: normal;
-  margin-bottom: 0;
-}
-
-.box-highlight-help-dialog .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
-.box-highlight-help-dialog .checkbox-label span {
-  user-select: none;
+  margin-block-end: var(--size-8);
 }
 
 /* Shortcuts Section */
-.box-highlight-shortcuts-section {
-  padding-top: 20px;
-  border-top: 1px solid ButtonBorder;
+.spotlight-draw-help__shortcuts {
+  padding-block-start: var(--size-16);
+  border-block-start: var(--size-1) solid ButtonBorder;
 }
 
 .shortcuts-category {
-  margin-bottom: 20px;
+  margin-block-end: var(--size-16);
 }
 
 .shortcuts-category h4 {
-  font-size: 14px;
+  font-size: var(--font-size-14);
   font-weight: 600;
   color: CanvasText;
-  margin: 0 0 8px 0;
-}
-
-.shortcuts-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.shortcuts-table tr {
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 10%, Canvas);
-}
-
-.shortcuts-table tr:last-child {
-  border-bottom: none;
-}
-
-.shortcut-keys {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: CanvasText;
-  padding: 8px 12px 8px 0;
-  white-space: nowrap;
-  width: 45%;
-  opacity: 0.8;
-}
-
-.shortcut-description {
-  font-size: 13px;
-  color: CanvasText;
-  padding: 8px 0;
-  opacity: 0.8;
+  margin-block: 0 var(--size-8);
 }

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Box Highlight",
+  "name": "SpotlightDraw",
   "version": "0.1.0",
-  "description": "Draw custom rectangles on web pages for annotations and screen sharing.",
+  "description": "Annotate web pages during presentations and screen recordings with customizable drawing tools.",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
@@ -39,6 +39,7 @@
       ],
       "css": [
         "tokens.css",
+        "components.css",
         "content/content.css"
       ]
     }

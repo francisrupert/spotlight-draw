@@ -3,7 +3,7 @@ function handleInstalled(details) {
     return;
   }
 
-  console.log("Box Highlight extension installed");
+  console.log("SpotlightDraw extension installed");
 }
 
 function sendToggleMessage(tab) {

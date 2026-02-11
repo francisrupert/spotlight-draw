@@ -14,6 +14,7 @@ var currentRectangle = null;
 var duplicatingRectangle = null;
 var repositioningRectangle = null;
 var placedRectangles = []; // Array to hold multiple rectangles (when Shift is used)
+var lastDeletedRect = null; // { left, top, width, height, borderWidth, colorIndex, colorClass }
 
 // Axis constraint state (when Cmd/Ctrl is held during drawing)
 var axisConstraintWidth = 0;
@@ -53,35 +54,42 @@ var helpButton = null;
 var helpDialog = null;
 
 // CSS class names
-var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
-var PAN_MODE_CLASS = "box-highlight-pan-mode";
-var REPOSITIONING_MODE_CLASS = "box-highlight-repositioning-mode";
-var DUPLICATION_HOVER_CLASS = "box-highlight-duplication-hover-mode";
-var DRAGGING_MODE_CLASS = "box-highlight-dragging-mode";
-var RECTANGLE_CLASS = "box-highlight-rectangle";
+var DRAWING_MODE_CLASS = "spotlight-draw-drawing-mode";
+var PAN_MODE_CLASS = "spotlight-draw-pan-mode";
+var REPOSITIONING_MODE_CLASS = "spotlight-draw-repositioning-mode";
+var DUPLICATION_HOVER_CLASS = "spotlight-draw-duplication-hover-mode";
+var DRAGGING_MODE_CLASS = "spotlight-draw-dragging-mode";
+var RECTANGLE_CLASS = "spotlight-draw-rectangle";
 
 // Color cycling (order: orange, green, blue, purple, plain)
 var COLOR_CLASSES = [
   "",                                    // orange (default)
-  "box-highlight-rectangle--green",     // green
-  "box-highlight-rectangle--blue",      // blue
-  "box-highlight-rectangle--purple",    // purple
-  "box-highlight-rectangle--plain"      // plain
+  "spotlight-draw-rectangle--green",     // green
+  "spotlight-draw-rectangle--blue",      // blue
+  "spotlight-draw-rectangle--purple",    // purple
+  "spotlight-draw-rectangle--plain"      // plain
 ];
 
 // User preferences (loaded from chrome.storage)
 var userPreferences = {
-  borderSize: "1",
-  defaultColor: "",
-  snapToEdges: true
+  borderSize: DEFAULT_PREFERENCES.borderSize,
+  defaultColor: DEFAULT_PREFERENCES.defaultColor,
+  snapToEdges: DEFAULT_PREFERENCES.snapToEdges
 };
 
 // Snap-to-edge configuration
 var SNAP_THRESHOLD = 8; // pixels
 
-// Snap guide lines
-var horizontalGuideLine = null;
-var verticalGuideLine = null;
+// Constants
+var Z_INDEX_RECTANGLE = "2147483647";
+var Z_INDEX_GUIDE = "2147483646";
+var MIN_RECT_SIZE = 3;
+var GUIDE_BORDER_STYLE = "0.5px dashed GrayText";
+var ANIMATION_DURATION = 300;
+
+// Snap guide lines (2 per axis to support dual-edge snapping)
+var horizontalGuideLines = [null, null];
+var verticalGuideLines = [null, null];
 
 // Clamp rectangle coordinates to viewport bounds
 function clampToViewport(x, y, width, height) {
@@ -104,14 +112,66 @@ function clampToViewport(x, y, width, height) {
   };
 }
 
+// Read a rectangle's current position and size from inline styles
+function getRectBounds(rect) {
+  return {
+    left: parseInt(rect.style.left, 10),
+    top: parseInt(rect.style.top, 10),
+    width: parseInt(rect.style.width, 10),
+    height: parseInt(rect.style.height, 10)
+  };
+}
+
+// Clamp a mouse coordinate to the viewport
+function clampMouse(x, y) {
+  return {
+    x: Math.max(0, Math.min(x, window.innerWidth)),
+    y: Math.max(0, Math.min(y, window.innerHeight))
+  };
+}
+
+// Apply shift-axis locking to a drag operation
+function applyAxisLock(newX, newY, startX, startY, axisLocked, shiftKey) {
+  if (shiftKey) {
+    if (!axisLocked) {
+      var deltaX = Math.abs(newX - startX);
+      var deltaY = Math.abs(newY - startY);
+      axisLocked = deltaX > deltaY ? "horizontal" : "vertical";
+    }
+    if (axisLocked === "horizontal") {
+      newY = startY;
+    } else if (axisLocked === "vertical") {
+      newX = startX;
+    }
+  } else {
+    axisLocked = null;
+  }
+  return { x: newX, y: newY, axisLocked: axisLocked };
+}
+
+// Remove all color-variant classes from a rectangle
+function removeColorClasses(rect) {
+  for (var i = 0; i < COLOR_CLASSES.length; i++) {
+    if (COLOR_CLASSES[i]) {
+      rect.classList.remove(COLOR_CLASSES[i]);
+    }
+  }
+}
+
+// Reset shared drag state (not isSpacebarHeld — it has its own keyup lifecycle)
+function resetDragState() {
+  isCurrentlyDrawing = false;
+  isAltHeld = false;
+  isCmdCtrlHeld = false;
+  axisConstraintMode = null;
+  duplicateAxisLocked = null;
+  repositionAxisLocked = null;
+}
+
 // Load user preferences from chrome.storage
 function loadPreferences(callback) {
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get({
-      borderSize: "1",
-      defaultColor: "",
-      snapToEdges: true
-    }, function(items) {
+    chrome.storage.sync.get(DEFAULT_PREFERENCES, function(items) {
       userPreferences.borderSize = items.borderSize;
       userPreferences.defaultColor = items.defaultColor;
       userPreferences.snapToEdges = items.snapToEdges;
@@ -137,7 +197,7 @@ function createRectangle(x, y, width, height) {
   rect.style.width = width + "px";
   rect.style.height = height + "px";
   rect.style.pointerEvents = "none";
-  rect.style.zIndex = "2147483647"; // Maximum z-index
+  rect.style.zIndex = Z_INDEX_RECTANGLE;
 
   // Apply user preference for border size
   rect.style.borderWidth = userPreferences.borderSize + "px";
@@ -159,15 +219,9 @@ function createRectangle(x, y, width, height) {
 // Create help button
 function createHelpButton() {
   var helpButton = document.createElement("button");
-  helpButton.className = "box-highlight-help-button hidden";
+  helpButton.className = "spotlight-draw-help__trigger spotlight-draw-help__trigger--hidden";
   helpButton.textContent = "?";
   helpButton.setAttribute("aria-label", "Show keyboard shortcuts");
-  helpButton.style.position = "fixed";
-  helpButton.style.bottom = "12px";
-  helpButton.style.left = "12px";
-  helpButton.style.width = "24px";
-  helpButton.style.height = "24px";
-  helpButton.style.zIndex = "2147483647";
   helpButton.style.display = "none"; // Hidden by default
 
   return helpButton;
@@ -176,28 +230,28 @@ function createHelpButton() {
 // Create help dialog
 function createHelpDialog() {
   var dialog = document.createElement("dialog");
-  dialog.className = "box-highlight-help-dialog";
+  dialog.className = "spotlight-draw-help__dialog";
 
   // Create header
   var header = document.createElement("div");
-  header.className = "box-highlight-help-header";
+  header.className = "spotlight-draw-help__header";
   header.innerHTML = `
     <h2>Shortcuts & Settings</h2>
-    <button class="box-highlight-help-close" aria-label="Close">×</button>
+    <button class="spotlight-draw-help__close" aria-label="Close">×</button>
   `;
   dialog.appendChild(header);
 
   // Create content container
   var content = document.createElement("div");
-  content.className = "box-highlight-help-content";
+  content.className = "spotlight-draw-help__body";
 
   // SETTINGS SECTION (appears first)
   var settingsSection = document.createElement("section");
-  settingsSection.className = "box-highlight-settings-section";
+  settingsSection.className = "spotlight-draw-help__settings";
   settingsSection.innerHTML = `
     <h3>Settings</h3>
 
-    <div class="box-highlight-setting">
+    <div class="spotlight-draw-help__setting">
       <label>Border</label>
       <div class="button-group" id="dialog-border-size">
         <button type="button" class="button-group-item" data-value="0.5">0.5</button>
@@ -207,18 +261,18 @@ function createHelpDialog() {
       </div>
     </div>
 
-    <div class="box-highlight-setting">
+    <div class="spotlight-draw-help__setting">
       <label>Color</label>
       <div class="button-group color-group" id="dialog-default-color">
         <button type="button" class="button-group-item color-button" data-value="" data-color="orange" aria-label="Orange"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--green" data-color="green" aria-label="Green"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--blue" data-color="blue" aria-label="Blue"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--purple" data-color="purple" aria-label="Purple"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--plain" data-color="plain" aria-label="Gray"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--green" data-color="green" aria-label="Green"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--blue" data-color="blue" aria-label="Blue"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--purple" data-color="purple" aria-label="Purple"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--plain" data-color="plain" aria-label="Gray"></button>
       </div>
     </div>
 
-    <div class="box-highlight-setting">
+    <div class="spotlight-draw-help__setting">
       <label class="checkbox-label">
         <input type="checkbox" id="dialog-snap-to-edges">
         <span>Snap to Edges</span>
@@ -229,42 +283,11 @@ function createHelpDialog() {
 
   // SHORTCUTS SECTION (appears second)
   var shortcutsSection = document.createElement("section");
-  shortcutsSection.className = "box-highlight-shortcuts-section";
+  shortcutsSection.className = "spotlight-draw-help__shortcuts";
   shortcutsSection.innerHTML = '<h3>Keyboard Shortcuts</h3>';
 
-  // Render shortcuts from shared data (if available)
-  if (typeof KEYBOARD_SHORTCUTS !== "undefined") {
-    KEYBOARD_SHORTCUTS.forEach(function(category) {
-      var categoryDiv = document.createElement("div");
-      categoryDiv.className = "shortcuts-category";
-
-      var categoryHeading = document.createElement("h4");
-      categoryHeading.textContent = category.category;
-      categoryDiv.appendChild(categoryHeading);
-
-      var table = document.createElement("table");
-      table.className = "shortcuts-table";
-
-      category.shortcuts.forEach(function(shortcut) {
-        var row = document.createElement("tr");
-
-        var keysCell = document.createElement("td");
-        keysCell.className = "shortcut-keys";
-        keysCell.textContent = shortcut.keys;
-        row.appendChild(keysCell);
-
-        var descCell = document.createElement("td");
-        descCell.className = "shortcut-description";
-        descCell.textContent = shortcut.description;
-        row.appendChild(descCell);
-
-        table.appendChild(row);
-      });
-
-      categoryDiv.appendChild(table);
-      shortcutsSection.appendChild(categoryDiv);
-    });
-  }
+  // Render shortcuts from shared data
+  renderShortcutsInto(shortcutsSection, "h4", "shortcuts-category");
 
   content.appendChild(shortcutsSection);
   dialog.appendChild(content);
@@ -292,22 +315,22 @@ function showHelpButton() {
     helpButton.style.display = "block";
     // Force reflow to ensure transition works
     helpButton.offsetHeight;
-    helpButton.classList.add("visible");
-    helpButton.classList.remove("hidden");
+    helpButton.classList.add("spotlight-draw-help__trigger--visible");
+    helpButton.classList.remove("spotlight-draw-help__trigger--hidden");
   }
 }
 
 // Hide help button with slide-out animation
 function hideHelpButton() {
   if (helpButton) {
-    helpButton.classList.add("hidden");
-    helpButton.classList.remove("visible");
+    helpButton.classList.add("spotlight-draw-help__trigger--hidden");
+    helpButton.classList.remove("spotlight-draw-help__trigger--visible");
     // Hide completely after animation completes
     setTimeout(function() {
-      if (helpButton && helpButton.classList.contains("hidden")) {
+      if (helpButton && helpButton.classList.contains("spotlight-draw-help__trigger--hidden")) {
         helpButton.style.display = "none";
       }
-    }, 300);
+    }, ANIMATION_DURATION);
   }
 }
 
@@ -335,21 +358,9 @@ function handleDialogBackdropClick(event) {
 
 // Check if an element is part of the help UI
 function isHelpUIElement(element) {
-  if (!element) {
-    return false;
-  }
-
-  // Check if element itself or any ancestor is help button or dialog
   var current = element;
   while (current) {
-    if (current === helpButton || current === helpDialog) {
-      return true;
-    }
-    if (current.classList &&
-        (current.classList.contains("box-highlight-help-button") ||
-         current.classList.contains("box-highlight-help-dialog"))) {
-      return true;
-    }
+    if (current === helpButton || current === helpDialog) return true;
     current = current.parentElement;
   }
   return false;
@@ -399,32 +410,7 @@ function saveSetting(key, value) {
   userPreferences[key] = value;
 }
 
-// Setup button group for dialog (like options page)
-function setupDialogButtonGroup(groupId, settingKey) {
-  var group = helpDialog.querySelector("#" + groupId);
-  if (!group) return;
-
-  var buttons = group.querySelectorAll(".button-group-item");
-  for (var i = 0; i < buttons.length; i++) {
-    var button = buttons[i];
-    button.addEventListener("click", function() {
-      var clickedButton = this;
-      var value = clickedButton.getAttribute("data-value");
-
-      // Remove active from all buttons in this group
-      var allButtons = group.querySelectorAll(".button-group-item");
-      for (var j = 0; j < allButtons.length; j++) {
-        allButtons[j].classList.remove("active");
-      }
-
-      // Add active to clicked button
-      clickedButton.classList.add("active");
-
-      // Save setting
-      saveSetting(settingKey, value);
-    }, true);
-  }
-}
+// Setup button groups in dialog using shared helper
 
 // Handle snap to edges change
 function handleSnapToEdgesChange(event) {
@@ -444,7 +430,7 @@ function initHelpSystem() {
   document.body.appendChild(helpDialog);
 
   // Setup dialog event listeners
-  var closeButton = helpDialog.querySelector(".box-highlight-help-close");
+  var closeButton = helpDialog.querySelector(".spotlight-draw-help__close");
   if (closeButton) {
     closeButton.addEventListener("click", handleDialogCloseClick, true);
   }
@@ -452,9 +438,9 @@ function initHelpSystem() {
   // Close on backdrop click
   helpDialog.addEventListener("click", handleDialogBackdropClick, true);
 
-  // Setup settings button groups
-  setupDialogButtonGroup("dialog-border-size", "borderSize");
-  setupDialogButtonGroup("dialog-default-color", "defaultColor");
+  // Setup settings button groups using shared helper
+  setupButtonGroup(helpDialog, "dialog-border-size", function(value) { saveSetting("borderSize", value); });
+  setupButtonGroup(helpDialog, "dialog-default-color", function(value) { saveSetting("defaultColor", value); });
 
   // Setup checkbox
   var snapCheckbox = helpDialog.querySelector("#dialog-snap-to-edges");
@@ -493,24 +479,28 @@ function getSnapTargets(excludeRect) {
       continue;
     }
 
-    var left = parseInt(rect.style.left, 10);
-    var top = parseInt(rect.style.top, 10);
-    var width = parseInt(rect.style.width, 10);
-    var height = parseInt(rect.style.height, 10);
-    var right = left + width;
-    var bottom = top + height;
-    var centerX = left + width / 2;
-    var centerY = top + height / 2;
+    var b = getRectBounds(rect);
+    var right = b.left + b.width;
+    var bottom = b.top + b.height;
+    var centerX = b.left + b.width / 2;
+    var centerY = b.top + b.height / 2;
 
-    targets.left.push(left);
+    targets.left.push(b.left);
     targets.right.push(right);
-    targets.top.push(top);
+    targets.top.push(b.top);
     targets.bottom.push(bottom);
     targets.centerX.push(centerX);
     targets.centerY.push(centerY);
   }
 
   return targets;
+}
+
+// Pick the closer of two candidate snap values to a given position
+function pickCloserSnap(position, a, b) {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.abs(position - a) <= Math.abs(position - b) ? a : b;
 }
 
 // Apply snapping to rectangle edges (for drawing/resizing - can adjust size)
@@ -520,8 +510,8 @@ function applySnapping(x, y, width, height, excludeRect) {
   var snappedY = y;
   var snappedWidth = width;
   var snappedHeight = height;
-  var verticalSnapPos = null;
-  var horizontalSnapPos = null;
+  var verticalSnapPositions = [];
+  var horizontalSnapPositions = [];
 
   // Calculate edges and center of current rectangle
   var left = x;
@@ -531,83 +521,71 @@ function applySnapping(x, y, width, height, excludeRect) {
   var centerX = x + width / 2;
   var centerY = y + height / 2;
 
-  // Snap left edge
-  var leftSnap = findClosestEdge(left, targets.left);
-  if (leftSnap !== null) {
-    snappedX = leftSnap;
-    snappedWidth = width + (x - leftSnap); // Adjust width to maintain right edge
-    verticalSnapPos = leftSnap;
+  // --- Horizontal (X-axis): left and right edges snap independently ---
+
+  // Best snap for left edge (to any vertical target)
+  var bestLeftSnap = pickCloserSnap(left,
+    findClosestEdge(left, targets.left),
+    findClosestEdge(left, targets.right));
+
+  // Best snap for right edge (to any vertical target)
+  var bestRightSnap = pickCloserSnap(right,
+    findClosestEdge(right, targets.right),
+    findClosestEdge(right, targets.left));
+
+  // Apply left snap
+  if (bestLeftSnap !== null) {
+    snappedX = bestLeftSnap;
+    snappedWidth = width + (x - bestLeftSnap);
+    verticalSnapPositions.push(bestLeftSnap);
   }
 
-  // Snap right edge
-  var rightSnap = findClosestEdge(right, targets.right);
-  if (rightSnap !== null && leftSnap === null) {
-    snappedWidth = rightSnap - snappedX;
-    verticalSnapPos = rightSnap;
+  // Apply right snap — independently, can coexist with left
+  if (bestRightSnap !== null) {
+    snappedWidth = bestRightSnap - snappedX;
+    verticalSnapPositions.push(bestRightSnap);
   }
 
-  // Also check if right edge should snap to left edges
-  var rightToLeftSnap = findClosestEdge(right, targets.left);
-  if (rightToLeftSnap !== null && leftSnap === null && rightSnap === null) {
-    snappedWidth = rightToLeftSnap - snappedX;
-    verticalSnapPos = rightToLeftSnap;
-  }
-
-  // Also check if left edge should snap to right edges
-  var leftToRightSnap = findClosestEdge(left, targets.right);
-  if (leftToRightSnap !== null && leftSnap === null) {
-    snappedX = leftToRightSnap;
-    snappedWidth = width + (x - leftToRightSnap);
-    verticalSnapPos = leftToRightSnap;
-  }
-
-  // Try to snap center horizontally (only if no edge snapping occurred)
-  if (leftSnap === null && rightSnap === null && rightToLeftSnap === null && leftToRightSnap === null) {
+  // Center snap only if neither edge snapped
+  if (bestLeftSnap === null && bestRightSnap === null) {
     var centerXSnap = findClosestEdge(centerX, targets.centerX);
     if (centerXSnap !== null) {
-      var offset = centerXSnap - centerX;
-      snappedX = x + offset;
-      verticalSnapPos = centerXSnap;
+      snappedX = x + (centerXSnap - centerX);
+      verticalSnapPositions.push(centerXSnap);
     }
   }
 
-  // Snap top edge
-  var topSnap = findClosestEdge(top, targets.top);
-  if (topSnap !== null) {
-    snappedY = topSnap;
-    snappedHeight = height + (y - topSnap); // Adjust height to maintain bottom edge
-    horizontalSnapPos = topSnap;
+  // --- Vertical (Y-axis): top and bottom edges snap independently ---
+
+  // Best snap for top edge (to any horizontal target)
+  var bestTopSnap = pickCloserSnap(top,
+    findClosestEdge(top, targets.top),
+    findClosestEdge(top, targets.bottom));
+
+  // Best snap for bottom edge (to any horizontal target)
+  var bestBottomSnap = pickCloserSnap(bottom,
+    findClosestEdge(bottom, targets.bottom),
+    findClosestEdge(bottom, targets.top));
+
+  // Apply top snap
+  if (bestTopSnap !== null) {
+    snappedY = bestTopSnap;
+    snappedHeight = height + (y - bestTopSnap);
+    horizontalSnapPositions.push(bestTopSnap);
   }
 
-  // Snap bottom edge
-  var bottomSnap = findClosestEdge(bottom, targets.bottom);
-  if (bottomSnap !== null && topSnap === null) {
-    snappedHeight = bottomSnap - snappedY;
-    horizontalSnapPos = bottomSnap;
+  // Apply bottom snap — independently, can coexist with top
+  if (bestBottomSnap !== null) {
+    snappedHeight = bestBottomSnap - snappedY;
+    horizontalSnapPositions.push(bestBottomSnap);
   }
 
-  // Also check if bottom edge should snap to top edges
-  var bottomToTopSnap = findClosestEdge(bottom, targets.top);
-  if (bottomToTopSnap !== null && topSnap === null && bottomSnap === null) {
-    snappedHeight = bottomToTopSnap - snappedY;
-    horizontalSnapPos = bottomToTopSnap;
-  }
-
-  // Also check if top edge should snap to bottom edges
-  var topToBottomSnap = findClosestEdge(top, targets.bottom);
-  if (topToBottomSnap !== null && topSnap === null) {
-    snappedY = topToBottomSnap;
-    snappedHeight = height + (y - topToBottomSnap);
-    horizontalSnapPos = topToBottomSnap;
-  }
-
-  // Try to snap center vertically (only if no edge snapping occurred)
-  if (topSnap === null && bottomSnap === null && bottomToTopSnap === null && topToBottomSnap === null) {
+  // Center snap only if neither edge snapped
+  if (bestTopSnap === null && bestBottomSnap === null) {
     var centerYSnap = findClosestEdge(centerY, targets.centerY);
     if (centerYSnap !== null) {
-      var offset = centerYSnap - centerY;
-      snappedY = y + offset;
-      horizontalSnapPos = centerYSnap;
+      snappedY = y + (centerYSnap - centerY);
+      horizontalSnapPositions.push(centerYSnap);
     }
   }
 
@@ -616,8 +594,8 @@ function applySnapping(x, y, width, height, excludeRect) {
     y: snappedY,
     width: snappedWidth,
     height: snappedHeight,
-    verticalSnapPos: verticalSnapPos,
-    horizontalSnapPos: horizontalSnapPos
+    verticalSnapPositions: verticalSnapPositions,
+    horizontalSnapPositions: horizontalSnapPositions
   };
 }
 
@@ -626,8 +604,8 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
   var snappedX = x;
   var snappedY = y;
-  var verticalSnapPos = null;
-  var horizontalSnapPos = null;
+  var verticalSnapPositions = [];
+  var horizontalSnapPositions = [];
 
   // Calculate edges and center of current rectangle
   var left = x;
@@ -637,101 +615,120 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var centerX = x + width / 2;
   var centerY = y + height / 2;
 
-  // Try to snap left edge to any vertical edge (left or right of other rectangles)
-  var leftToLeftSnap = findClosestEdge(left, targets.left);
-  var leftToRightSnap = findClosestEdge(left, targets.right);
+  // --- Horizontal (X-axis) ---
 
-  // Use whichever is closer
-  var leftSnapDistance = leftToLeftSnap !== null ? Math.abs(left - leftToLeftSnap) : Infinity;
-  var leftRightSnapDistance = leftToRightSnap !== null ? Math.abs(left - leftToRightSnap) : Infinity;
+  // Best snap for left edge (to any vertical target)
+  var bestLeftSnap = pickCloserSnap(left,
+    findClosestEdge(left, targets.left),
+    findClosestEdge(left, targets.right));
 
-  if (leftSnapDistance <= leftRightSnapDistance && leftToLeftSnap !== null) {
-    snappedX = leftToLeftSnap;
-    verticalSnapPos = leftToLeftSnap;
-  } else if (leftToRightSnap !== null) {
-    snappedX = leftToRightSnap;
-    verticalSnapPos = leftToRightSnap;
-  }
+  // Best snap for right edge (to any vertical target)
+  var bestRightSnap = pickCloserSnap(right,
+    findClosestEdge(right, targets.right),
+    findClosestEdge(right, targets.left));
 
-  // Try to snap right edge to any vertical edge (left or right of other rectangles)
-  var rightToRightSnap = findClosestEdge(right, targets.right);
-  var rightToLeftSnap = findClosestEdge(right, targets.left);
+  // For position snapping, both edges can't independently adjust — pick the closer one for position
+  var leftSnapDist = bestLeftSnap !== null ? Math.abs(left - bestLeftSnap) : Infinity;
+  var rightSnapDist = bestRightSnap !== null ? Math.abs(right - bestRightSnap) : Infinity;
 
-  // Use whichever is closer, but only if we haven't already snapped the left edge
-  var rightSnapDistance = rightToRightSnap !== null ? Math.abs(right - rightToRightSnap) : Infinity;
-  var rightLeftSnapDistance = rightToLeftSnap !== null ? Math.abs(right - rightToLeftSnap) : Infinity;
-
-  // Only apply right edge snap if left edge didn't snap
-  if (snappedX === x) {
-    if (rightSnapDistance <= rightLeftSnapDistance && rightToRightSnap !== null) {
-      snappedX = rightToRightSnap - width; // Adjust x to align right edge
-      verticalSnapPos = rightToRightSnap;
-    } else if (rightToLeftSnap !== null) {
-      snappedX = rightToLeftSnap - width; // Adjust x to align right edge
-      verticalSnapPos = rightToLeftSnap;
+  if (leftSnapDist <= rightSnapDist && bestLeftSnap !== null) {
+    snappedX = bestLeftSnap;
+    verticalSnapPositions.push(bestLeftSnap);
+    // Also show right guide if right edge aligns too
+    if (bestRightSnap !== null) {
+      // Recalculate right edge after applying left snap
+      var newRight = bestLeftSnap + width;
+      var rightAfterSnap = pickCloserSnap(newRight,
+        findClosestEdge(newRight, targets.right),
+        findClosestEdge(newRight, targets.left));
+      if (rightAfterSnap !== null) {
+        verticalSnapPositions.push(rightAfterSnap);
+      }
+    }
+  } else if (bestRightSnap !== null) {
+    snappedX = bestRightSnap - width;
+    verticalSnapPositions.push(bestRightSnap);
+    // Also show left guide if left edge aligns too
+    if (bestLeftSnap !== null) {
+      var newLeft = bestRightSnap - width;
+      var leftAfterSnap = pickCloserSnap(newLeft,
+        findClosestEdge(newLeft, targets.left),
+        findClosestEdge(newLeft, targets.right));
+      if (leftAfterSnap !== null) {
+        verticalSnapPositions.push(leftAfterSnap);
+      }
     }
   }
 
-  // Try to snap center horizontally (only if no edge snapping occurred)
-  if (snappedX === x) {
+  // Center snap only if neither edge snapped
+  if (bestLeftSnap === null && bestRightSnap === null) {
     var centerXSnap = findClosestEdge(centerX, targets.centerX);
     if (centerXSnap !== null) {
-      snappedX = centerXSnap - width / 2; // Adjust x to align center
-      verticalSnapPos = centerXSnap;
+      snappedX = centerXSnap - width / 2;
+      verticalSnapPositions.push(centerXSnap);
     }
   }
 
-  // Try to snap top edge to any horizontal edge (top or bottom of other rectangles)
-  var topToTopSnap = findClosestEdge(top, targets.top);
-  var topToBottomSnap = findClosestEdge(top, targets.bottom);
+  // --- Vertical (Y-axis) ---
 
-  // Use whichever is closer
-  var topSnapDistance = topToTopSnap !== null ? Math.abs(top - topToTopSnap) : Infinity;
-  var topBottomSnapDistance = topToBottomSnap !== null ? Math.abs(top - topToBottomSnap) : Infinity;
+  // Best snap for top edge (to any horizontal target)
+  var bestTopSnap = pickCloserSnap(top,
+    findClosestEdge(top, targets.top),
+    findClosestEdge(top, targets.bottom));
 
-  if (topSnapDistance <= topBottomSnapDistance && topToTopSnap !== null) {
-    snappedY = topToTopSnap;
-    horizontalSnapPos = topToTopSnap;
-  } else if (topToBottomSnap !== null) {
-    snappedY = topToBottomSnap;
-    horizontalSnapPos = topToBottomSnap;
-  }
+  // Best snap for bottom edge (to any horizontal target)
+  var bestBottomSnap = pickCloserSnap(bottom,
+    findClosestEdge(bottom, targets.bottom),
+    findClosestEdge(bottom, targets.top));
 
-  // Try to snap bottom edge to any horizontal edge (top or bottom of other rectangles)
-  var bottomToBottomSnap = findClosestEdge(bottom, targets.bottom);
-  var bottomToTopSnap = findClosestEdge(bottom, targets.top);
+  // Pick the closer one for position
+  var topSnapDist = bestTopSnap !== null ? Math.abs(top - bestTopSnap) : Infinity;
+  var bottomSnapDist = bestBottomSnap !== null ? Math.abs(bottom - bestBottomSnap) : Infinity;
 
-  // Use whichever is closer, but only if we haven't already snapped the top edge
-  var bottomSnapDistance = bottomToBottomSnap !== null ? Math.abs(bottom - bottomToBottomSnap) : Infinity;
-  var bottomTopSnapDistance = bottomToTopSnap !== null ? Math.abs(bottom - bottomToTopSnap) : Infinity;
-
-  // Only apply bottom edge snap if top edge didn't snap
-  if (snappedY === y) {
-    if (bottomSnapDistance <= bottomTopSnapDistance && bottomToBottomSnap !== null) {
-      snappedY = bottomToBottomSnap - height; // Adjust y to align bottom edge
-      horizontalSnapPos = bottomToBottomSnap;
-    } else if (bottomToTopSnap !== null) {
-      snappedY = bottomToTopSnap - height; // Adjust y to align bottom edge
-      horizontalSnapPos = bottomToTopSnap;
+  if (topSnapDist <= bottomSnapDist && bestTopSnap !== null) {
+    snappedY = bestTopSnap;
+    horizontalSnapPositions.push(bestTopSnap);
+    // Also show bottom guide if bottom edge aligns too
+    if (bestBottomSnap !== null) {
+      var newBottom = bestTopSnap + height;
+      var bottomAfterSnap = pickCloserSnap(newBottom,
+        findClosestEdge(newBottom, targets.bottom),
+        findClosestEdge(newBottom, targets.top));
+      if (bottomAfterSnap !== null) {
+        horizontalSnapPositions.push(bottomAfterSnap);
+      }
+    }
+  } else if (bestBottomSnap !== null) {
+    snappedY = bestBottomSnap - height;
+    horizontalSnapPositions.push(bestBottomSnap);
+    // Also show top guide if top edge aligns too
+    if (bestTopSnap !== null) {
+      var newTop = bestBottomSnap - height;
+      var topAfterSnap = pickCloserSnap(newTop,
+        findClosestEdge(newTop, targets.top),
+        findClosestEdge(newTop, targets.bottom));
+      if (topAfterSnap !== null) {
+        horizontalSnapPositions.push(topAfterSnap);
+      }
     }
   }
 
-  // Try to snap center vertically (only if no edge snapping occurred)
-  if (snappedY === y) {
+  // Center snap only if neither edge snapped
+  if (bestTopSnap === null && bestBottomSnap === null) {
     var centerYSnap = findClosestEdge(centerY, targets.centerY);
     if (centerYSnap !== null) {
-      snappedY = centerYSnap - height / 2; // Adjust y to align center
-      horizontalSnapPos = centerYSnap;
+      snappedY = centerYSnap - height / 2;
+      horizontalSnapPositions.push(centerYSnap);
     }
   }
 
   return {
     x: snappedX,
     y: snappedY,
-    width: width, // Keep width unchanged
-    height: height, // Keep height unchanged
-    verticalSnapPos: verticalSnapPos,
-    horizontalSnapPos: horizontalSnapPos
+    width: width,
+    height: height,
+    verticalSnapPositions: verticalSnapPositions,
+    horizontalSnapPositions: horizontalSnapPositions
   };
 }
 
@@ -751,69 +748,104 @@ function findClosestEdge(position, edges) {
   return closest;
 }
 
-// Create snap guide lines
+// Create snap guide lines (2 per axis)
 function createGuideLines() {
-  // Horizontal guide line
-  horizontalGuideLine = document.createElement("div");
-  horizontalGuideLine.style.position = "fixed";
-  horizontalGuideLine.style.left = "0";
-  horizontalGuideLine.style.width = "100vw";
-  horizontalGuideLine.style.height = "0";
-  horizontalGuideLine.style.borderTop = "0.5px dashed GrayText";
-  horizontalGuideLine.style.pointerEvents = "none";
-  horizontalGuideLine.style.zIndex = "2147483646"; // Just below rectangles
-  horizontalGuideLine.style.display = "none";
-  document.body.appendChild(horizontalGuideLine);
+  for (var i = 0; i < 2; i++) {
+    // Horizontal guide lines
+    var hLine = document.createElement("div");
+    hLine.style.position = "fixed";
+    hLine.style.left = "0";
+    hLine.style.width = "100vw";
+    hLine.style.height = "0";
+    hLine.style.borderTop = GUIDE_BORDER_STYLE;
+    hLine.style.pointerEvents = "none";
+    hLine.style.zIndex = Z_INDEX_GUIDE;
+    hLine.style.display = "none";
+    document.body.appendChild(hLine);
+    horizontalGuideLines[i] = hLine;
 
-  // Vertical guide line
-  verticalGuideLine = document.createElement("div");
-  verticalGuideLine.style.position = "fixed";
-  verticalGuideLine.style.top = "0";
-  verticalGuideLine.style.height = "100vh";
-  verticalGuideLine.style.width = "0";
-  verticalGuideLine.style.borderLeft = "0.5px dashed GrayText";
-  verticalGuideLine.style.pointerEvents = "none";
-  verticalGuideLine.style.zIndex = "2147483646"; // Just below rectangles
-  verticalGuideLine.style.display = "none";
-  document.body.appendChild(verticalGuideLine);
+    // Vertical guide lines
+    var vLine = document.createElement("div");
+    vLine.style.position = "fixed";
+    vLine.style.top = "0";
+    vLine.style.height = "100vh";
+    vLine.style.width = "0";
+    vLine.style.borderLeft = GUIDE_BORDER_STYLE;
+    vLine.style.pointerEvents = "none";
+    vLine.style.zIndex = Z_INDEX_GUIDE;
+    vLine.style.display = "none";
+    document.body.appendChild(vLine);
+    verticalGuideLines[i] = vLine;
+  }
 }
 
 // Remove snap guide lines
 function removeGuideLines() {
-  if (horizontalGuideLine && horizontalGuideLine.parentNode) {
-    horizontalGuideLine.parentNode.removeChild(horizontalGuideLine);
-    horizontalGuideLine = null;
-  }
-  if (verticalGuideLine && verticalGuideLine.parentNode) {
-    verticalGuideLine.parentNode.removeChild(verticalGuideLine);
-    verticalGuideLine = null;
-  }
-}
-
-// Show horizontal guide line at specific y position
-function showHorizontalGuide(y) {
-  if (horizontalGuideLine) {
-    horizontalGuideLine.style.top = y + "px";
-    horizontalGuideLine.style.display = "block";
+  for (var i = 0; i < 2; i++) {
+    if (horizontalGuideLines[i] && horizontalGuideLines[i].parentNode) {
+      horizontalGuideLines[i].parentNode.removeChild(horizontalGuideLines[i]);
+      horizontalGuideLines[i] = null;
+    }
+    if (verticalGuideLines[i] && verticalGuideLines[i].parentNode) {
+      verticalGuideLines[i].parentNode.removeChild(verticalGuideLines[i]);
+      verticalGuideLines[i] = null;
+    }
   }
 }
 
-// Show vertical guide line at specific x position
-function showVerticalGuide(x) {
-  if (verticalGuideLine) {
-    verticalGuideLine.style.left = x + "px";
-    verticalGuideLine.style.display = "block";
+// Show horizontal guide lines at given Y positions (array of 0-2 values)
+function showHorizontalGuides(positions) {
+  for (var i = 0; i < 2; i++) {
+    if (i < positions.length && horizontalGuideLines[i]) {
+      horizontalGuideLines[i].style.top = positions[i] + "px";
+      horizontalGuideLines[i].style.display = "block";
+    } else if (horizontalGuideLines[i]) {
+      horizontalGuideLines[i].style.display = "none";
+    }
+  }
+}
+
+// Show vertical guide lines at given X positions (array of 0-2 values)
+function showVerticalGuides(positions) {
+  for (var i = 0; i < 2; i++) {
+    if (i < positions.length && verticalGuideLines[i]) {
+      verticalGuideLines[i].style.left = positions[i] + "px";
+      verticalGuideLines[i].style.display = "block";
+    } else if (verticalGuideLines[i]) {
+      verticalGuideLines[i].style.display = "none";
+    }
   }
 }
 
 // Hide all guide lines
 function hideGuideLines() {
-  if (horizontalGuideLine) {
-    horizontalGuideLine.style.display = "none";
+  for (var i = 0; i < 2; i++) {
+    if (horizontalGuideLines[i]) {
+      horizontalGuideLines[i].style.display = "none";
+    }
+    if (verticalGuideLines[i]) {
+      verticalGuideLines[i].style.display = "none";
+    }
   }
-  if (verticalGuideLine) {
-    verticalGuideLine.style.display = "none";
+}
+
+// Snap, clamp to viewport, and show/hide guide lines in one step
+function applySnapClampAndGuides(x, y, width, height, excludeRect, snapFn) {
+  var snapped;
+  if (userPreferences.snapToEdges) {
+    snapped = snapFn(x, y, width, height, excludeRect);
+  } else {
+    snapped = { x: x, y: y, width: width, height: height, verticalSnapPositions: [], horizontalSnapPositions: [] };
   }
+
+  var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+
+  if (userPreferences.snapToEdges) {
+    showVerticalGuides(snapped.verticalSnapPositions);
+    showHorizontalGuides(snapped.horizontalSnapPositions);
+  }
+
+  return clamped;
 }
 
 // Calculate rectangle coordinates from start and current mouse position
@@ -883,12 +915,9 @@ function getRectangleAtPosition(x, y) {
   // Iterate in reverse order to check top-most rectangles first
   for (var i = placedRectangles.length - 1; i >= 0; i--) {
     var rect = placedRectangles[i];
-    var left = parseInt(rect.style.left, 10);
-    var top = parseInt(rect.style.top, 10);
-    var width = parseInt(rect.style.width, 10);
-    var height = parseInt(rect.style.height, 10);
+    var b = getRectBounds(rect);
 
-    if (x >= left && x <= left + width && y >= top && y <= top + height) {
+    if (x >= b.left && x <= b.left + b.width && y >= b.top && y <= b.top + b.height) {
       return rect;
     }
   }
@@ -908,11 +937,7 @@ function cycleRectangleColor(rect) {
   var nextIndex = (currentIndex + 1) % COLOR_CLASSES.length;
 
   // Remove all color classes
-  for (var i = 0; i < COLOR_CLASSES.length; i++) {
-    if (COLOR_CLASSES[i]) {
-      rect.classList.remove(COLOR_CLASSES[i]);
-    }
-  }
+  removeColorClasses(rect);
 
   // Add new color class (if not default)
   if (COLOR_CLASSES[nextIndex]) {
@@ -928,6 +953,18 @@ function deleteRectangle(rect) {
   if (!rect) {
     return;
   }
+
+  // Snapshot for undo
+  var b = getRectBounds(rect);
+  lastDeletedRect = {
+    left: b.left,
+    top: b.top,
+    width: b.width,
+    height: b.height,
+    borderWidth: rect.style.borderWidth,
+    colorIndex: rect.getAttribute("data-color-index") || "0",
+    colorClass: COLOR_CLASSES[parseInt(rect.getAttribute("data-color-index") || "0", 10)] || ""
+  };
 
   // Remove from DOM
   if (rect.parentNode) {
@@ -956,8 +993,8 @@ function getElementAtCursor(x, y) {
   var element = document.elementFromPoint(x, y);
   while (element && (
     (element.classList && element.classList.contains(RECTANGLE_CLASS)) ||
-    element === horizontalGuideLine ||
-    element === verticalGuideLine
+    horizontalGuideLines.indexOf(element) !== -1 ||
+    verticalGuideLines.indexOf(element) !== -1
   )) {
     hiddenElements.push({ element: element, display: element.style.display });
     element.style.display = 'none';
@@ -1090,65 +1127,25 @@ function traverseDown() {
   updateInspectionRectangle(inspectedElement);
 }
 
-// Traverse to next sibling element (with wrapping)
-function traverseNextSibling() {
+// Traverse to sibling element (direction: +1 for next, -1 for previous, with wrapping)
+function traverseSibling(direction) {
   if (!isInspecting || !inspectedElement) return;
 
   var parent = inspectedElement.parentElement;
   if (!parent) return;
 
   var siblings = parent.children;
-  if (siblings.length <= 1) return; // No siblings to cycle through
+  if (siblings.length <= 1) return;
 
-  // Find current index
   var currentIndex = -1;
   for (var i = 0; i < siblings.length; i++) {
-    if (siblings[i] === inspectedElement) {
-      currentIndex = i;
-      break;
-    }
+    if (siblings[i] === inspectedElement) { currentIndex = i; break; }
   }
-
   if (currentIndex === -1) return;
 
-  // Wrap to first if at end
-  var nextIndex = (currentIndex + 1) % siblings.length;
-  var nextSibling = siblings[nextIndex];
-
-  // Replace current element in path with sibling
-  inspectionTraversalPath[inspectionCurrentIndex] = nextSibling;
-  inspectedElement = nextSibling;
-  updateInspectionRectangle(inspectedElement);
-}
-
-// Traverse to previous sibling element (with wrapping)
-function traversePreviousSibling() {
-  if (!isInspecting || !inspectedElement) return;
-
-  var parent = inspectedElement.parentElement;
-  if (!parent) return;
-
-  var siblings = parent.children;
-  if (siblings.length <= 1) return; // No siblings to cycle through
-
-  // Find current index
-  var currentIndex = -1;
-  for (var i = 0; i < siblings.length; i++) {
-    if (siblings[i] === inspectedElement) {
-      currentIndex = i;
-      break;
-    }
-  }
-
-  if (currentIndex === -1) return;
-
-  // Wrap to last if at beginning
-  var prevIndex = (currentIndex - 1 + siblings.length) % siblings.length;
-  var prevSibling = siblings[prevIndex];
-
-  // Replace current element in path with sibling
-  inspectionTraversalPath[inspectionCurrentIndex] = prevSibling;
-  inspectedElement = prevSibling;
+  var nextIndex = (currentIndex + direction + siblings.length) % siblings.length;
+  inspectionTraversalPath[inspectionCurrentIndex] = siblings[nextIndex];
+  inspectedElement = siblings[nextIndex];
   updateInspectionRectangle(inspectedElement);
 }
 
@@ -1174,12 +1171,9 @@ function handleMouseDown(event) {
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Create a duplicate of the rectangle under mouse
-      var rectLeft = parseInt(rectUnderMouse.style.left, 10);
-      var rectTop = parseInt(rectUnderMouse.style.top, 10);
-      var rectWidth = parseInt(rectUnderMouse.style.width, 10);
-      var rectHeight = parseInt(rectUnderMouse.style.height, 10);
+      var b = getRectBounds(rectUnderMouse);
 
-      duplicatingRectangle = createRectangle(rectLeft, rectTop, rectWidth, rectHeight);
+      duplicatingRectangle = createRectangle(b.left, b.top, b.width, b.height);
 
       // Copy color from original rectangle
       var colorIndex = rectUnderMouse.getAttribute("data-color-index") || "0";
@@ -1191,12 +1185,12 @@ function handleMouseDown(event) {
       document.body.appendChild(duplicatingRectangle);
 
       // Calculate offset from cursor to rectangle top-left
-      duplicateOffsetX = rectLeft - event.clientX;
-      duplicateOffsetY = rectTop - event.clientY;
+      duplicateOffsetX = b.left - event.clientX;
+      duplicateOffsetY = b.top - event.clientY;
 
       // Store starting position for axis locking
-      duplicateStartX = rectLeft;
-      duplicateStartY = rectTop;
+      duplicateStartX = b.left;
+      duplicateStartY = b.top;
       duplicateAxisLocked = null;
 
       event.preventDefault();
@@ -1217,14 +1211,13 @@ function handleMouseDown(event) {
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Calculate offset from cursor to rectangle top-left
-      var rectLeft = parseInt(rectUnderMouse.style.left, 10);
-      var rectTop = parseInt(rectUnderMouse.style.top, 10);
-      repositionOffsetX = rectLeft - event.clientX;
-      repositionOffsetY = rectTop - event.clientY;
+      var rb = getRectBounds(rectUnderMouse);
+      repositionOffsetX = rb.left - event.clientX;
+      repositionOffsetY = rb.top - event.clientY;
 
       // Store starting position for axis locking
-      repositionStartX = rectLeft;
-      repositionStartY = rectTop;
+      repositionStartX = rb.left;
+      repositionStartY = rb.top;
       repositionAxisLocked = null;
 
       event.preventDefault();
@@ -1292,68 +1285,24 @@ function handleMouseMove(event) {
   // Handle repositioning mode
   if (isRepositioning && repositioningRectangle) {
     // Clamp mouse position to viewport bounds
-    var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
-    var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+    var cm = clampMouse(currentMouseX, currentMouseY);
+    var clampedMouseX = cm.x;
+    var clampedMouseY = cm.y;
 
     var newX = clampedMouseX + repositionOffsetX;
     var newY = clampedMouseY + repositionOffsetY;
 
     // Handle Shift for axis locking during repositioning
-    if (event.shiftKey) {
-      // Determine axis lock if not already set
-      if (!repositionAxisLocked) {
-        var deltaX = Math.abs(newX - repositionStartX);
-        var deltaY = Math.abs(newY - repositionStartY);
+    var locked = applyAxisLock(newX, newY, repositionStartX, repositionStartY, repositionAxisLocked, event.shiftKey);
+    newX = locked.x;
+    newY = locked.y;
+    repositionAxisLocked = locked.axisLocked;
 
-        if (deltaX > deltaY) {
-          repositionAxisLocked = "horizontal";
-        } else {
-          repositionAxisLocked = "vertical";
-        }
-      }
-
-      // Apply axis constraint
-      if (repositionAxisLocked === "horizontal") {
-        newY = repositionStartY; // Lock Y, only move X
-      } else if (repositionAxisLocked === "vertical") {
-        newX = repositionStartX; // Lock X, only move Y
-      }
-    } else {
-      // Shift released, clear axis lock
-      repositionAxisLocked = null;
-    }
-
-    // Apply position-only snapping (exclude the rectangle being repositioned)
-    var rectWidth = parseInt(repositioningRectangle.style.width, 10);
-    var rectHeight = parseInt(repositioningRectangle.style.height, 10);
-    var snapped;
-
-    if (userPreferences.snapToEdges) {
-      snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, repositioningRectangle);
-    } else {
-      snapped = { x: newX, y: newY, width: rectWidth, height: rectHeight, verticalSnapPos: null, horizontalSnapPos: null };
-    }
-
-    // Clamp to viewport bounds
-    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+    var rb = getRectBounds(repositioningRectangle);
+    var clamped = applySnapClampAndGuides(newX, newY, rb.width, rb.height, repositioningRectangle, applyPositionSnapping);
 
     repositioningRectangle.style.left = clamped.x + "px";
     repositioningRectangle.style.top = clamped.y + "px";
-
-    // Show guide lines if snapping occurred and guidelines are enabled
-    if (userPreferences.snapToEdges) {
-      if (snapped.verticalSnapPos !== null) {
-        showVerticalGuide(snapped.verticalSnapPos);
-      } else {
-        if (verticalGuideLine) verticalGuideLine.style.display = "none";
-      }
-
-      if (snapped.horizontalSnapPos !== null) {
-        showHorizontalGuide(snapped.horizontalSnapPos);
-      } else {
-        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
-      }
-    }
 
     event.preventDefault();
     return;
@@ -1362,68 +1311,24 @@ function handleMouseMove(event) {
   // Handle duplication drag mode
   if (isDuplicating && duplicatingRectangle) {
     // Clamp mouse position to viewport bounds
-    var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
-    var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+    var cm = clampMouse(currentMouseX, currentMouseY);
+    var clampedMouseX = cm.x;
+    var clampedMouseY = cm.y;
 
     var newX = clampedMouseX + duplicateOffsetX;
     var newY = clampedMouseY + duplicateOffsetY;
 
     // Handle Shift for axis locking during duplication
-    if (event.shiftKey) {
-      // Determine axis lock if not already set
-      if (!duplicateAxisLocked) {
-        var deltaX = Math.abs(newX - duplicateStartX);
-        var deltaY = Math.abs(newY - duplicateStartY);
+    var locked = applyAxisLock(newX, newY, duplicateStartX, duplicateStartY, duplicateAxisLocked, event.shiftKey);
+    newX = locked.x;
+    newY = locked.y;
+    duplicateAxisLocked = locked.axisLocked;
 
-        if (deltaX > deltaY) {
-          duplicateAxisLocked = "horizontal";
-        } else {
-          duplicateAxisLocked = "vertical";
-        }
-      }
-
-      // Apply axis constraint
-      if (duplicateAxisLocked === "horizontal") {
-        newY = duplicateStartY; // Lock Y, only move X
-      } else if (duplicateAxisLocked === "vertical") {
-        newX = duplicateStartX; // Lock X, only move Y
-      }
-    } else {
-      // Shift released, clear axis lock
-      duplicateAxisLocked = null;
-    }
-
-    // Apply position-only snapping (exclude the rectangle being duplicated - not in placedRectangles yet)
-    var rectWidth = parseInt(duplicatingRectangle.style.width, 10);
-    var rectHeight = parseInt(duplicatingRectangle.style.height, 10);
-    var snapped;
-
-    if (userPreferences.snapToEdges) {
-      snapped = applyPositionSnapping(newX, newY, rectWidth, rectHeight, duplicatingRectangle);
-    } else {
-      snapped = { x: newX, y: newY, width: rectWidth, height: rectHeight, verticalSnapPos: null, horizontalSnapPos: null };
-    }
-
-    // Clamp to viewport bounds
-    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+    var db = getRectBounds(duplicatingRectangle);
+    var clamped = applySnapClampAndGuides(newX, newY, db.width, db.height, duplicatingRectangle, applyPositionSnapping);
 
     duplicatingRectangle.style.left = clamped.x + "px";
     duplicatingRectangle.style.top = clamped.y + "px";
-
-    // Show guide lines if snapping occurred and guidelines are enabled
-    if (userPreferences.snapToEdges) {
-      if (snapped.verticalSnapPos !== null) {
-        showVerticalGuide(snapped.verticalSnapPos);
-      } else {
-        if (verticalGuideLine) verticalGuideLine.style.display = "none";
-      }
-
-      if (snapped.horizontalSnapPos !== null) {
-        showHorizontalGuide(snapped.horizontalSnapPos);
-      } else {
-        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
-      }
-    }
 
     event.preventDefault();
     return;
@@ -1459,70 +1364,21 @@ function handleMouseMove(event) {
   }
 
   // Clamp mouse position to viewport bounds for drawing calculations
-  var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
-  var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+  var cm = clampMouse(currentMouseX, currentMouseY);
+  var clampedMouseX = cm.x;
+  var clampedMouseY = cm.y;
 
   if (isSpacebarHeld) {
     // Pan mode: move the entire rectangle without resizing
     var newX = clampedMouseX + panOffsetX;
     var newY = clampedMouseY + panOffsetY;
-
-    // Apply position-only snapping during pan mode
-    var snapped;
-    if (userPreferences.snapToEdges) {
-      snapped = applyPositionSnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
-    } else {
-      snapped = { x: newX, y: newY, width: panModeWidth, height: panModeHeight, verticalSnapPos: null, horizontalSnapPos: null };
-    }
-
-    // Clamp to viewport bounds
-    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+    var clamped = applySnapClampAndGuides(newX, newY, panModeWidth, panModeHeight, currentRectangle, applyPositionSnapping);
     updateRectangle(currentRectangle, clamped.x, clamped.y, clamped.width, clamped.height);
-
-    // Show guide lines if snapping occurred and guidelines are enabled
-    if (userPreferences.snapToEdges) {
-      if (snapped.verticalSnapPos !== null) {
-        showVerticalGuide(snapped.verticalSnapPos);
-      } else {
-        if (verticalGuideLine) verticalGuideLine.style.display = "none";
-      }
-
-      if (snapped.horizontalSnapPos !== null) {
-        showHorizontalGuide(snapped.horizontalSnapPos);
-      } else {
-        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
-      }
-    }
   } else {
     // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
     var coords = calculateRectCoords(clampedMouseX, clampedMouseY);
-
-    // Apply snapping during drawing/resizing
-    var snapped;
-    if (userPreferences.snapToEdges) {
-      snapped = applySnapping(coords.x, coords.y, coords.width, coords.height, currentRectangle);
-    } else {
-      snapped = { x: coords.x, y: coords.y, width: coords.width, height: coords.height, verticalSnapPos: null, horizontalSnapPos: null };
-    }
-
-    // Clamp to viewport bounds
-    var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
+    var clamped = applySnapClampAndGuides(coords.x, coords.y, coords.width, coords.height, currentRectangle, applySnapping);
     updateRectangle(currentRectangle, clamped.x, clamped.y, clamped.width, clamped.height);
-
-    // Show guide lines if snapping occurred and guidelines are enabled
-    if (userPreferences.snapToEdges) {
-      if (snapped.verticalSnapPos !== null) {
-        showVerticalGuide(snapped.verticalSnapPos);
-      } else {
-        if (verticalGuideLine) verticalGuideLine.style.display = "none";
-      }
-
-      if (snapped.horizontalSnapPos !== null) {
-        showHorizontalGuide(snapped.horizontalSnapPos);
-      } else {
-        if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
-      }
-    }
   }
 
   event.preventDefault();
@@ -1558,18 +1414,13 @@ function handleMouseUp(event) {
     return;
   }
 
-  isCurrentlyDrawing = false;
-  isSpacebarHeld = false; // Reset spacebar state
-  isAltHeld = false; // Reset Alt state
-  isCmdCtrlHeld = false; // Reset Cmd/Ctrl state
-  axisConstraintMode = null; // Reset axis constraint
+  resetDragState();
 
   // Keep the rectangle if it has some size
   if (currentRectangle) {
-    var width = parseInt(currentRectangle.style.width, 10);
-    var height = parseInt(currentRectangle.style.height, 10);
+    var b = getRectBounds(currentRectangle);
 
-    if (width > 3 && height > 3) {
+    if (b.width > MIN_RECT_SIZE && b.height > MIN_RECT_SIZE) {
       // Add to the array of placed rectangles
       placedRectangles.push(currentRectangle);
     } else {
@@ -1621,6 +1472,10 @@ function handleContextMenu(event) {
 // Spacebar keydown - enter pan mode during drawing
 function handleSpacebarDown(event) {
   if (event.key === " " || event.keyCode === 32) {
+    // Prevent page scroll when spacebar is pressed during drawing or while pan mode is active
+    if (isCurrentlyDrawing || isSpacebarHeld) {
+      event.preventDefault();
+    }
     if (isCurrentlyDrawing && !isSpacebarHeld && currentRectangle) {
       isSpacebarHeld = true;
 
@@ -1628,16 +1483,13 @@ function handleSpacebarDown(event) {
       document.documentElement.classList.add(PAN_MODE_CLASS);
 
       // Store current rectangle dimensions
-      panModeWidth = parseInt(currentRectangle.style.width, 10);
-      panModeHeight = parseInt(currentRectangle.style.height, 10);
+      var b = getRectBounds(currentRectangle);
+      panModeWidth = b.width;
+      panModeHeight = b.height;
 
       // Calculate offset from cursor to rectangle top-left using tracked mouse position
-      var rectLeft = parseInt(currentRectangle.style.left, 10);
-      var rectTop = parseInt(currentRectangle.style.top, 10);
-      panOffsetX = rectLeft - currentMouseX;
-      panOffsetY = rectTop - currentMouseY;
-
-      event.preventDefault();
+      panOffsetX = b.left - currentMouseX;
+      panOffsetY = b.top - currentMouseY;
     }
   }
 }
@@ -1645,39 +1497,35 @@ function handleSpacebarDown(event) {
 // Spacebar keyup - exit pan mode and recalculate start position
 function handleSpacebarUp(event) {
   if (event.key === " " || event.keyCode === 32) {
-    if (isCurrentlyDrawing && isSpacebarHeld && currentRectangle) {
+    if (isSpacebarHeld) {
       isSpacebarHeld = false;
 
       // Remove pan mode class to restore cursor
       document.documentElement.classList.remove(PAN_MODE_CLASS);
+    }
+    if (isCurrentlyDrawing && currentRectangle) {
 
       // Recalculate startX and startY based on current rectangle position
-      var rectLeft = parseInt(currentRectangle.style.left, 10);
-      var rectTop = parseInt(currentRectangle.style.top, 10);
-      var rectWidth = parseInt(currentRectangle.style.width, 10);
-      var rectHeight = parseInt(currentRectangle.style.height, 10);
+      var b = getRectBounds(currentRectangle);
 
       // Determine which corner should be the fixed anchor point
       // based on where the cursor is relative to the rectangle
-      if (currentMouseX >= rectLeft + rectWidth / 2) {
-        startX = rectLeft;
+      if (currentMouseX >= b.left + b.width / 2) {
+        startX = b.left;
       } else {
-        startX = rectLeft + rectWidth;
+        startX = b.left + b.width;
       }
 
-      if (currentMouseY >= rectTop + rectHeight / 2) {
-        startY = rectTop;
+      if (currentMouseY >= b.top + b.height / 2) {
+        startY = b.top;
         } else {
-        startY = rectTop + rectHeight;
+        startY = b.top + b.height;
       }
 
       event.preventDefault();
     }
   }
 }
-
-// Alt+D handler - duplicate last rectangle
-// Alt+D handler removed - now using Alt+drag like Figma
 
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
@@ -1686,11 +1534,7 @@ function handleKeyDown(event) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-    if (event.shiftKey) {
-      traversePreviousSibling();
-    } else {
-      traverseNextSibling();
-    }
+    traverseSibling(event.shiftKey ? -1 : 1);
     return;
   }
 
@@ -1785,6 +1629,29 @@ function handleKeyDown(event) {
         return;
       }
     }
+  } else if (event.key === "u" || event.key === "U") {
+    // Undo last deleted rectangle
+    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning && !isInspecting && lastDeletedRect) {
+      event.preventDefault();
+      var restored = createRectangle(
+        lastDeletedRect.left,
+        lastDeletedRect.top,
+        lastDeletedRect.width,
+        lastDeletedRect.height
+      );
+      // Restore original border width
+      restored.style.borderWidth = lastDeletedRect.borderWidth;
+      // Restore original color (createRectangle applies default color, so remove it first)
+      removeColorClasses(restored);
+      if (lastDeletedRect.colorClass) {
+        restored.classList.add(lastDeletedRect.colorClass);
+      }
+      restored.setAttribute("data-color-index", lastDeletedRect.colorIndex);
+      document.body.appendChild(restored);
+      placedRectangles.push(restored);
+      lastDeletedRect = null; // consumed — only one undo
+      return;
+    }
   } else {
     handleSpacebarDown(event);
   }
@@ -1853,10 +1720,10 @@ function disableDrawingMode() {
 
   isDrawingMode = false;
   isSpacebarHeld = false;
-  isAltHeld = false;
-  isCmdCtrlHeld = false;
+  resetDragState();
   isDuplicating = false;
   isRepositioning = false;
+  lastDeletedRect = null;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
   document.documentElement.classList.remove(PAN_MODE_CLASS);
   document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
