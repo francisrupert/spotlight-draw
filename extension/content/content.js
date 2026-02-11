@@ -776,6 +776,68 @@ function traverseDown() {
   updateInspectionRectangle(inspectedElement);
 }
 
+// Traverse to next sibling element (with wrapping)
+function traverseNextSibling() {
+  if (!isInspecting || !inspectedElement) return;
+
+  var parent = inspectedElement.parentElement;
+  if (!parent) return;
+
+  var siblings = parent.children;
+  if (siblings.length <= 1) return; // No siblings to cycle through
+
+  // Find current index
+  var currentIndex = -1;
+  for (var i = 0; i < siblings.length; i++) {
+    if (siblings[i] === inspectedElement) {
+      currentIndex = i;
+      break;
+    }
+  }
+
+  if (currentIndex === -1) return;
+
+  // Wrap to first if at end
+  var nextIndex = (currentIndex + 1) % siblings.length;
+  var nextSibling = siblings[nextIndex];
+
+  // Replace current element in path with sibling
+  inspectionTraversalPath[inspectionCurrentIndex] = nextSibling;
+  inspectedElement = nextSibling;
+  updateInspectionRectangle(inspectedElement);
+}
+
+// Traverse to previous sibling element (with wrapping)
+function traversePreviousSibling() {
+  if (!isInspecting || !inspectedElement) return;
+
+  var parent = inspectedElement.parentElement;
+  if (!parent) return;
+
+  var siblings = parent.children;
+  if (siblings.length <= 1) return; // No siblings to cycle through
+
+  // Find current index
+  var currentIndex = -1;
+  for (var i = 0; i < siblings.length; i++) {
+    if (siblings[i] === inspectedElement) {
+      currentIndex = i;
+      break;
+    }
+  }
+
+  if (currentIndex === -1) return;
+
+  // Wrap to last if at beginning
+  var prevIndex = (currentIndex - 1 + siblings.length) % siblings.length;
+  var prevSibling = siblings[prevIndex];
+
+  // Replace current element in path with sibling
+  inspectionTraversalPath[inspectionCurrentIndex] = prevSibling;
+  inspectedElement = prevSibling;
+  updateInspectionRectangle(inspectedElement);
+}
+
 // Mouse down handler - start drawing, duplication, or repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
@@ -1290,6 +1352,19 @@ function handleSpacebarUp(event) {
 
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
+  // Handle Tab during inspection FIRST to prevent default focus behavior
+  if (isInspecting && (event.key === "Tab" || event.keyCode === 9)) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (event.shiftKey) {
+      traversePreviousSibling();
+    } else {
+      traverseNextSibling();
+    }
+    return;
+  }
+
   // Handle 'f' key for element inspection
   if (event.key === "f" || event.key === "F") {
     if (isDrawingMode && !isInspecting) {
