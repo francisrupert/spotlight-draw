@@ -123,3 +123,44 @@ label {
   user-select: none;
 }
 
+/* Shortcuts section */
+.shortcuts-section {
+  margin-bottom: 24px;
+}
+
+.shortcuts-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shortcuts-table tr {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.shortcuts-table tr:last-child {
+  border-bottom: none;
+}
+
+.shortcut-keys {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  padding: 10px 12px 10px 0;
+  white-space: nowrap;
+  width: 40%;
+}
+
+.shortcut-description {
+  font-size: 14px;
+  color: #555;
+  padding: 10px 0;
+}
+

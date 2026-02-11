@@ -178,128 +178,96 @@ function createHelpDialog() {
   var dialog = document.createElement("dialog");
   dialog.className = "box-highlight-help-dialog";
 
-  dialog.innerHTML = `
-    <div class="box-highlight-help-header">
-      <h2>Shortcuts & Settings</h2>
-      <button class="box-highlight-help-close" aria-label="Close">×</button>
+  // Create header
+  var header = document.createElement("div");
+  header.className = "box-highlight-help-header";
+  header.innerHTML = `
+    <h2>Shortcuts & Settings</h2>
+    <button class="box-highlight-help-close" aria-label="Close">×</button>
+  `;
+  dialog.appendChild(header);
+
+  // Create content container
+  var content = document.createElement("div");
+  content.className = "box-highlight-help-content";
+
+  // SETTINGS SECTION (appears first)
+  var settingsSection = document.createElement("section");
+  settingsSection.className = "box-highlight-settings-section";
+  settingsSection.innerHTML = `
+    <h3>Settings</h3>
+
+    <div class="box-highlight-setting">
+      <label>Border</label>
+      <div class="button-group" id="dialog-border-size">
+        <button type="button" class="button-group-item" data-value="0.5">0.5</button>
+        <button type="button" class="button-group-item" data-value="1">1</button>
+        <button type="button" class="button-group-item" data-value="2">2</button>
+        <button type="button" class="button-group-item" data-value="3">3</button>
+      </div>
     </div>
-    <div class="box-highlight-help-content">
-      <section>
-        <h3>Drawing Mode</h3>
-        <dl>
-          <dt>Alt + F</dt>
-          <dd>Toggle drawing mode</dd>
 
-          <dt>Click & Drag</dt>
-          <dd>Draw rectangle</dd>
+    <div class="box-highlight-setting">
+      <label>Color</label>
+      <div class="button-group color-group" id="dialog-default-color">
+        <button type="button" class="button-group-item color-button" data-value="" data-color="orange" aria-label="Orange"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--green" data-color="green" aria-label="Green"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--blue" data-color="blue" aria-label="Blue"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--purple" data-color="purple" aria-label="Purple"></button>
+        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--plain" data-color="plain" aria-label="Gray"></button>
+      </div>
+    </div>
 
-          <dt>Shift + Drag</dt>
-          <dd>Lock to horizontal or vertical axis</dd>
-
-          <dt>Alt (during drawing)</dt>
-          <dd>Draw from center</dd>
-
-          <dt>Cmd/Ctrl (during drawing)</dt>
-          <dd>Axis constraint</dd>
-
-          <dt>Spacebar (hold during drawing)</dt>
-          <dd>Pan mode - move rectangle</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h3>Rectangle Operations</h3>
-        <dl>
-          <dt>Alt + Drag (over rectangle)</dt>
-          <dd>Duplicate rectangle</dd>
-
-          <dt>Cmd/Ctrl + Drag (over rectangle)</dt>
-          <dd>Reposition rectangle</dd>
-
-          <dt>Tab</dt>
-          <dd>Cycle rectangle colors</dd>
-
-          <dt>Delete / Backspace</dt>
-          <dd>Remove hovered rectangle</dd>
-
-          <dt>Right-click</dt>
-          <dd>Multi-rectangle mode (like Shift)</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h3>Element Inspection</h3>
-        <dl>
-          <dt>F (hold)</dt>
-          <dd>Element inspection mode</dd>
-
-          <dt>Arrow Up (in inspection)</dt>
-          <dd>Traverse to parent element</dd>
-
-          <dt>Arrow Down (in inspection)</dt>
-          <dd>Traverse to child element</dd>
-
-          <dt>Tab (in inspection)</dt>
-          <dd>Next sibling element</dd>
-
-          <dt>Shift + Tab (in inspection)</dt>
-          <dd>Previous sibling element</dd>
-        </dl>
-      </section>
-
-      <section>
-        <h3>General</h3>
-        <dl>
-          <dt>?</dt>
-          <dd>Toggle this help dialog</dd>
-
-          <dt>Escape</dt>
-          <dd>Close dialog or exit current mode</dd>
-        </dl>
-      </section>
-
-      <section class="box-highlight-settings-section">
-        <h3>Settings</h3>
-
-        <div class="box-highlight-setting">
-          <label for="border-size-setting">Border Size</label>
-          <select id="border-size-setting" class="box-highlight-setting-control">
-            <option value="1">1px</option>
-            <option value="2">2px</option>
-            <option value="3">3px</option>
-          </select>
-        </div>
-
-        <div class="box-highlight-setting">
-          <label>Default Color</label>
-          <div class="box-highlight-color-picker">
-            <button class="box-highlight-color-option" data-color="" title="Orange (default)">
-              <span class="box-highlight-color-swatch box-highlight-color-swatch--orange"></span>
-            </button>
-            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--green" title="Green">
-              <span class="box-highlight-color-swatch box-highlight-color-swatch--green"></span>
-            </button>
-            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--blue" title="Blue">
-              <span class="box-highlight-color-swatch box-highlight-color-swatch--blue"></span>
-            </button>
-            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--purple" title="Purple">
-              <span class="box-highlight-color-swatch box-highlight-color-swatch--purple"></span>
-            </button>
-            <button class="box-highlight-color-option" data-color="box-highlight-rectangle--plain" title="Plain">
-              <span class="box-highlight-color-swatch box-highlight-color-swatch--plain"></span>
-            </button>
-          </div>
-        </div>
-
-        <div class="box-highlight-setting">
-          <label>
-            <input type="checkbox" id="snap-to-edges-setting" class="box-highlight-setting-control">
-            <span>Snap to Edges</span>
-          </label>
-        </div>
-      </section>
+    <div class="box-highlight-setting">
+      <label class="checkbox-label">
+        <input type="checkbox" id="dialog-snap-to-edges">
+        <span>Snap to Edges</span>
+      </label>
     </div>
   `;
+  content.appendChild(settingsSection);
+
+  // SHORTCUTS SECTION (appears second)
+  var shortcutsSection = document.createElement("section");
+  shortcutsSection.className = "box-highlight-shortcuts-section";
+  shortcutsSection.innerHTML = '<h3>Keyboard Shortcuts</h3>';
+
+  // Render shortcuts from shared data (if available)
+  if (typeof KEYBOARD_SHORTCUTS !== "undefined") {
+    KEYBOARD_SHORTCUTS.forEach(function(category) {
+      var categoryDiv = document.createElement("div");
+      categoryDiv.className = "shortcuts-category";
+
+      var categoryHeading = document.createElement("h4");
+      categoryHeading.textContent = category.category;
+      categoryDiv.appendChild(categoryHeading);
+
+      var table = document.createElement("table");
+      table.className = "shortcuts-table";
+
+      category.shortcuts.forEach(function(shortcut) {
+        var row = document.createElement("tr");
+
+        var keysCell = document.createElement("td");
+        keysCell.className = "shortcut-keys";
+        keysCell.textContent = shortcut.keys;
+        row.appendChild(keysCell);
+
+        var descCell = document.createElement("td");
+        descCell.className = "shortcut-description";
+        descCell.textContent = shortcut.description;
+        row.appendChild(descCell);
+
+        table.appendChild(row);
+      });
+
+      categoryDiv.appendChild(table);
+      shortcutsSection.appendChild(categoryDiv);
+    });
+  }
+
+  content.appendChild(shortcutsSection);
+  dialog.appendChild(content);
 
   return dialog;
 }
@@ -391,26 +359,30 @@ function isHelpUIElement(element) {
 function loadSettingsIntoDialog() {
   if (!helpDialog) return;
 
-  // Load border size
-  var borderSizeSelect = helpDialog.querySelector("#border-size-setting");
-  if (borderSizeSelect) {
-    borderSizeSelect.value = userPreferences.borderSize;
+  // Load border size - set active button
+  var borderButtons = helpDialog.querySelectorAll("#dialog-border-size .button-group-item");
+  for (var i = 0; i < borderButtons.length; i++) {
+    var button = borderButtons[i];
+    if (button.getAttribute("data-value") === userPreferences.borderSize) {
+      button.classList.add("active");
+    } else {
+      button.classList.remove("active");
+    }
   }
 
-  // Load default color
-  var colorButtons = helpDialog.querySelectorAll(".box-highlight-color-option");
-  for (var i = 0; i < colorButtons.length; i++) {
-    var button = colorButtons[i];
-    var colorValue = button.getAttribute("data-color");
-    if (colorValue === userPreferences.defaultColor) {
-      button.classList.add("selected");
+  // Load default color - set active button
+  var colorButtons = helpDialog.querySelectorAll("#dialog-default-color .button-group-item");
+  for (var j = 0; j < colorButtons.length; j++) {
+    var colorButton = colorButtons[j];
+    if (colorButton.getAttribute("data-value") === userPreferences.defaultColor) {
+      colorButton.classList.add("active");
     } else {
-      button.classList.remove("selected");
+      colorButton.classList.remove("active");
     }
   }
 
   // Load snap to edges
-  var snapCheckbox = helpDialog.querySelector("#snap-to-edges-setting");
+  var snapCheckbox = helpDialog.querySelector("#dialog-snap-to-edges");
   if (snapCheckbox) {
     snapCheckbox.checked = userPreferences.snapToEdges;
   }
@@ -427,24 +399,31 @@ function saveSetting(key, value) {
   userPreferences[key] = value;
 }
 
-// Handle border size change
-function handleBorderSizeChange(event) {
-  var newSize = event.target.value;
-  saveSetting("borderSize", newSize);
-}
+// Setup button group for dialog (like options page)
+function setupDialogButtonGroup(groupId, settingKey) {
+  var group = helpDialog.querySelector("#" + groupId);
+  if (!group) return;
 
-// Handle default color change
-function handleDefaultColorChange(event) {
-  var button = event.currentTarget;
-  var newColor = button.getAttribute("data-color");
-  saveSetting("defaultColor", newColor);
+  var buttons = group.querySelectorAll(".button-group-item");
+  for (var i = 0; i < buttons.length; i++) {
+    var button = buttons[i];
+    button.addEventListener("click", function() {
+      var clickedButton = this;
+      var value = clickedButton.getAttribute("data-value");
 
-  // Update UI - mark selected button
-  var colorButtons = helpDialog.querySelectorAll(".box-highlight-color-option");
-  for (var i = 0; i < colorButtons.length; i++) {
-    colorButtons[i].classList.remove("selected");
+      // Remove active from all buttons in this group
+      var allButtons = group.querySelectorAll(".button-group-item");
+      for (var j = 0; j < allButtons.length; j++) {
+        allButtons[j].classList.remove("active");
+      }
+
+      // Add active to clicked button
+      clickedButton.classList.add("active");
+
+      // Save setting
+      saveSetting(settingKey, value);
+    }, true);
   }
-  button.classList.add("selected");
 }
 
 // Handle snap to edges change
@@ -473,18 +452,12 @@ function initHelpSystem() {
   // Close on backdrop click
   helpDialog.addEventListener("click", handleDialogBackdropClick, true);
 
-  // Setup settings event listeners
-  var borderSizeSelect = helpDialog.querySelector("#border-size-setting");
-  if (borderSizeSelect) {
-    borderSizeSelect.addEventListener("change", handleBorderSizeChange, true);
-  }
+  // Setup settings button groups
+  setupDialogButtonGroup("dialog-border-size", "borderSize");
+  setupDialogButtonGroup("dialog-default-color", "defaultColor");
 
-  var colorButtons = helpDialog.querySelectorAll(".box-highlight-color-option");
-  for (var i = 0; i < colorButtons.length; i++) {
-    colorButtons[i].addEventListener("click", handleDefaultColorChange, true);
-  }
-
-  var snapCheckbox = helpDialog.querySelector("#snap-to-edges-setting");
+  // Setup checkbox
+  var snapCheckbox = helpDialog.querySelector("#dialog-snap-to-edges");
   if (snapCheckbox) {
     snapCheckbox.addEventListener("change", handleSnapToEdgesChange, true);
   }

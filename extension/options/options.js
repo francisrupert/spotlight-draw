@@ -72,6 +72,43 @@ function setupButtonGroup(groupId) {
   });
 }
 
+// Render keyboard shortcuts
+function renderShortcuts() {
+  var container = document.getElementById("shortcuts-container");
+  if (!container || typeof KEYBOARD_SHORTCUTS === "undefined") return;
+
+  KEYBOARD_SHORTCUTS.forEach(function(category) {
+    var section = document.createElement("div");
+    section.className = "shortcuts-section";
+
+    var heading = document.createElement("h2");
+    heading.textContent = category.category;
+    section.appendChild(heading);
+
+    var table = document.createElement("table");
+    table.className = "shortcuts-table";
+
+    category.shortcuts.forEach(function(shortcut) {
+      var row = document.createElement("tr");
+
+      var keysCell = document.createElement("td");
+      keysCell.className = "shortcut-keys";
+      keysCell.textContent = shortcut.keys;
+      row.appendChild(keysCell);
+
+      var descCell = document.createElement("td");
+      descCell.className = "shortcut-description";
+      descCell.textContent = shortcut.description;
+      row.appendChild(descCell);
+
+      table.appendChild(row);
+    });
+
+    section.appendChild(table);
+    container.appendChild(section);
+  });
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", function() {
   loadOptions();
@@ -80,4 +117,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // Add event listener for checkbox with auto-save
   document.getElementById("snapToEdges").addEventListener("change", saveOptions);
+
+  // Render shortcuts
+  renderShortcuts();
 });

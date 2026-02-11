@@ -270,9 +270,7 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
 
 /* Settings Section */
 .box-highlight-settings-section {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid ButtonBorder;
+  margin-bottom: 24px;
 }
 
 .box-highlight-setting {
@@ -287,88 +285,144 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
   margin-bottom: 8px;
 }
 
-.box-highlight-setting-control {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  font-size: 13px;
-  padding: 6px 8px;
-  border: 1px solid ButtonBorder;
-  border-radius: 4px;
-  background: Canvas;
-  color: CanvasText;
-  cursor: pointer;
+/* Button group (segmented control) - matches options page */
+.box-highlight-help-dialog .button-group {
+  display: flex;
+  width: 100%;
+  gap: 2px;
 }
 
-.box-highlight-setting-control:focus {
+.box-highlight-help-dialog .button-group-item {
+  flex: 1;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: CanvasText;
+  background: Canvas;
+  border: 1px solid ButtonBorder;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.box-highlight-help-dialog .button-group-item:hover {
+  background-color: color-mix(in srgb, CanvasText 5%, Canvas);
+}
+
+.box-highlight-help-dialog .button-group-item.active {
+  background-color: color-mix(in srgb, CanvasText 15%, Canvas);
+  font-weight: 600;
+}
+
+.box-highlight-help-dialog .button-group-item:focus {
   outline: 2px solid Highlight;
   outline-offset: 2px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Checkbox styling */
-.box-highlight-setting label input[type="checkbox"] {
-  margin-right: 8px;
-  cursor: pointer;
+/* Color button group */
+.box-highlight-help-dialog .color-button {
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  position: relative;
 }
 
-.box-highlight-setting label:has(input[type="checkbox"]) {
+.box-highlight-help-dialog .color-button[data-color="orange"] {
+  background-color: var(--color-orange);
+}
+
+.box-highlight-help-dialog .color-button[data-color="green"] {
+  background-color: var(--color-green);
+}
+
+.box-highlight-help-dialog .color-button[data-color="blue"] {
+  background-color: var(--color-blue);
+}
+
+.box-highlight-help-dialog .color-button[data-color="purple"] {
+  background-color: var(--color-purple);
+}
+
+.box-highlight-help-dialog .color-button[data-color="plain"] {
+  background-color: var(--color-plain);
+}
+
+.box-highlight-help-dialog .color-button.active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Checkbox labels */
+.box-highlight-help-dialog .checkbox-label {
   display: flex;
   align-items: center;
-  cursor: pointer;
-  font-weight: 400;
-}
-
-/* Color Picker */
-.box-highlight-color-picker {
-  display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-}
-
-.box-highlight-color-option {
-  width: 32px;
-  height: 32px;
-  padding: 4px;
-  border: 2px solid ButtonBorder;
-  border-radius: 6px;
-  background: Canvas;
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.1s ease;
+  font-weight: normal;
+  margin-bottom: 0;
 }
 
-.box-highlight-color-option:hover {
-  border-color: CanvasText;
-  transform: scale(1.1);
+.box-highlight-help-dialog .checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
-.box-highlight-color-option.selected {
-  border-color: Highlight;
-  border-width: 3px;
-  padding: 3px;
+.box-highlight-help-dialog .checkbox-label span {
+  user-select: none;
 }
 
-.box-highlight-color-swatch {
-  display: block;
+/* Shortcuts Section */
+.box-highlight-shortcuts-section {
+  padding-top: 20px;
+  border-top: 1px solid ButtonBorder;
+}
+
+.shortcuts-category {
+  margin-bottom: 20px;
+}
+
+.shortcuts-category h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: CanvasText;
+  margin: 0 0 8px 0;
+}
+
+.shortcuts-table {
   width: 100%;
-  height: 100%;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-collapse: collapse;
 }
 
-.box-highlight-color-swatch--orange {
-  background: color-mix(in srgb, var(--color-orange) 90%, transparent);
+.shortcuts-table tr {
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 10%, Canvas);
 }
 
-.box-highlight-color-swatch--green {
-  background: color-mix(in srgb, var(--color-green) 90%, transparent);
+.shortcuts-table tr:last-child {
+  border-bottom: none;
 }
 
-.box-highlight-color-swatch--blue {
-  background: color-mix(in srgb, var(--color-blue) 90%, transparent);
+.shortcut-keys {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: CanvasText;
+  padding: 8px 12px 8px 0;
+  white-space: nowrap;
+  width: 45%;
+  opacity: 0.8;
 }
 
-.box-highlight-color-swatch--purple {
-  background: color-mix(in srgb, var(--color-purple) 90%, transparent);
-}
-
-.box-highlight-color-swatch--plain {
-  background: var(--color-plain);
+.shortcut-description {
+  font-size: 13px;
+  color: CanvasText;
+  padding: 8px 0;
+  opacity: 0.8;
 }
