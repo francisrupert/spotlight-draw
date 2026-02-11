@@ -40,6 +40,14 @@ var repositionStartX = 0;
 var repositionStartY = 0;
 var repositionAxisLocked = null; // "horizontal" or "vertical"
 
+// Element inspection state (when 'f' key is held)
+var isInspecting = false;
+var inspectionRectangle = null;
+var inspectedElement = null;
+var inspectionTraversalPath = []; // Stack of elements for up/down navigation
+var inspectionCurrentIndex = -1; // Current position in traversal path
+var inspectionOriginElement = null; // The starting element
+
 // CSS class names
 var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
 var PAN_MODE_CLASS = "box-highlight-pan-mode";
@@ -619,6 +627,155 @@ function deleteRectangle(rect) {
   }
 }
 
+// Find element at cursor position, excluding extension UI elements
+function getElementAtCursor(x, y) {
+  // Temporarily remove drawing mode class to restore pointer-events
+  // This allows elementFromPoint to detect page elements
+  var wasDrawingMode = document.documentElement.classList.contains(DRAWING_MODE_CLASS);
+  if (wasDrawingMode) {
+    document.documentElement.classList.remove(DRAWING_MODE_CLASS);
+  }
+
+  var hiddenElements = [];
+
+  // Exclude our own rectangles and guide lines by temporarily hiding them
+  var element = document.elementFromPoint(x, y);
+  while (element && (
+    (element.classList && element.classList.contains(RECTANGLE_CLASS)) ||
+    element === horizontalGuideLine ||
+    element === verticalGuideLine
+  )) {
+    hiddenElements.push({ element: element, display: element.style.display });
+    element.style.display = 'none';
+    element = document.elementFromPoint(x, y);
+  }
+
+  // Restore display for hidden elements
+  for (var i = 0; i < hiddenElements.length; i++) {
+    hiddenElements[i].element.style.display = hiddenElements[i].display;
+  }
+
+  // Restore drawing mode class
+  if (wasDrawingMode) {
+    document.documentElement.classList.add(DRAWING_MODE_CLASS);
+  }
+
+  return element;
+}
+
+// Create inspection rectangle from element's bounding rect
+function createInspectionRectangle(element) {
+  if (!element) return null;
+
+  var rect = element.getBoundingClientRect();
+
+  var inspectRect = createRectangle(
+    rect.left,
+    rect.top,
+    rect.width,
+    rect.height
+  );
+
+  inspectRect.style.position = 'fixed';
+
+  return inspectRect;
+}
+
+// Update inspection rectangle to match element
+function updateInspectionRectangle(element) {
+  if (!element || !inspectionRectangle) return;
+
+  var rect = element.getBoundingClientRect();
+  updateRectangle(
+    inspectionRectangle,
+    rect.left,
+    rect.top,
+    rect.width,
+    rect.height
+  );
+}
+
+// Enter inspection mode when 'f' is pressed
+function enterInspectionMode() {
+  if (!isDrawingMode || isCurrentlyDrawing || isDuplicating || isRepositioning) {
+    return false; // Block during other operations
+  }
+
+  isInspecting = true;
+
+  inspectedElement = getElementAtCursor(currentMouseX, currentMouseY);
+
+  if (!inspectedElement) {
+    exitInspectionMode();
+    return false;
+  }
+
+  inspectionOriginElement = inspectedElement;
+  inspectionTraversalPath = [inspectedElement];
+  inspectionCurrentIndex = 0;
+
+  inspectionRectangle = createInspectionRectangle(inspectedElement);
+  if (inspectionRectangle) {
+    document.body.appendChild(inspectionRectangle);
+  }
+
+  document.documentElement.classList.add('box-highlight-inspection-mode');
+
+  return true;
+}
+
+// Exit inspection mode when 'f' is released
+function exitInspectionMode() {
+  if (!isInspecting) return;
+
+  isInspecting = false;
+
+  if (inspectionRectangle && inspectionRectangle.parentNode) {
+    inspectionRectangle.parentNode.removeChild(inspectionRectangle);
+  }
+  inspectionRectangle = null;
+
+  inspectedElement = null;
+  inspectionOriginElement = null;
+  inspectionTraversalPath = [];
+  inspectionCurrentIndex = -1;
+
+  document.documentElement.classList.remove('box-highlight-inspection-mode');
+}
+
+// Traverse up to parent element
+function traverseUp() {
+  if (!isInspecting || !inspectedElement) return;
+
+  var parentElement = inspectedElement.parentElement;
+
+  // Stop at document.body or html
+  if (!parentElement || parentElement === document.documentElement ||
+      parentElement === document.body) {
+    return;
+  }
+
+  // If at end of path, add new parent; otherwise navigate back up
+  if (inspectionCurrentIndex === inspectionTraversalPath.length - 1) {
+    inspectionTraversalPath.push(parentElement);
+    inspectionCurrentIndex++;
+  } else {
+    inspectionCurrentIndex++;
+  }
+
+  inspectedElement = inspectionTraversalPath[inspectionCurrentIndex];
+  updateInspectionRectangle(inspectedElement);
+}
+
+// Traverse down to previous child element
+function traverseDown() {
+  if (!isInspecting || inspectionCurrentIndex <= 0) return;
+
+  inspectionCurrentIndex--;
+  inspectedElement = inspectionTraversalPath[inspectionCurrentIndex];
+  updateInspectionRectangle(inspectedElement);
+}
+
 // Mouse down handler - start drawing, duplication, or repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
@@ -1133,7 +1290,35 @@ function handleSpacebarUp(event) {
 
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
+  // Handle 'f' key for element inspection
+  if (event.key === "f" || event.key === "F") {
+    if (isDrawingMode && !isInspecting) {
+      event.preventDefault();
+      enterInspectionMode();
+      return;
+    }
+  }
+
+  // Handle arrow keys during inspection
+  if (isInspecting) {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      traverseUp();
+      return;
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      traverseDown();
+      return;
+    }
+  }
+
   if (event.key === "Escape" || event.keyCode === 27) {
+    // Exit inspection mode first if active
+    if (isInspecting) {
+      exitInspectionMode();
+      event.preventDefault();
+      return;
+    }
     // If duplicating, cancel duplication
     if (isDuplicating && duplicatingRectangle) {
       if (duplicatingRectangle.parentNode) {
@@ -1158,7 +1343,7 @@ function handleKeyDown(event) {
         targetRect = duplicatingRectangle;
       } else if (isRepositioning && repositioningRectangle) {
         targetRect = repositioningRectangle;
-      } else {
+      } else if (!isInspecting) { // Exclude inspection mode
         // Not actively dragging, check if hovering over a rectangle
         targetRect = getRectangleAtPosition(currentMouseX, currentMouseY);
       }
@@ -1185,6 +1370,15 @@ function handleKeyDown(event) {
 }
 
 function handleKeyUp(event) {
+  // Handle 'f' key release - exit inspection mode
+  if (event.key === "f" || event.key === "F") {
+    if (isInspecting) {
+      event.preventDefault();
+      exitInspectionMode();
+      return;
+    }
+  }
+
   handleSpacebarUp(event);
 }
 
@@ -1217,6 +1411,11 @@ function enableDrawingMode() {
 function disableDrawingMode() {
   if (!isDrawingMode) {
     return;
+  }
+
+  // Exit inspection mode if active
+  if (isInspecting) {
+    exitInspectionMode();
   }
 
   isDrawingMode = false;

@@ -48,6 +48,15 @@ html.box-highlight-dragging-mode * {
   cursor: none !important;
 }
 
+/* Inspection mode - default cursor */
+html.box-highlight-inspection-mode {
+  cursor: default !important;
+}
+
+html.box-highlight-inspection-mode * {
+  cursor: default !important;
+}
+
 :root {
   --box-highlight-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
 }
