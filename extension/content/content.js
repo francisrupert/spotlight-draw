@@ -66,6 +66,10 @@ var userPreferences = {
 // Snap-to-edge configuration
 var SNAP_THRESHOLD = 8; // pixels
 
+// Snap guide lines
+var horizontalGuideLine = null;
+var verticalGuideLine = null;
+
 // Load user preferences from chrome.storage
 function loadPreferences(callback) {
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
@@ -164,6 +168,8 @@ function applySnapping(x, y, width, height, excludeRect) {
   var snappedY = y;
   var snappedWidth = width;
   var snappedHeight = height;
+  var verticalSnapPos = null;
+  var horizontalSnapPos = null;
 
   // Calculate edges of current rectangle
   var left = x;
@@ -176,18 +182,21 @@ function applySnapping(x, y, width, height, excludeRect) {
   if (leftSnap !== null) {
     snappedX = leftSnap;
     snappedWidth = width + (x - leftSnap); // Adjust width to maintain right edge
+    verticalSnapPos = leftSnap;
   }
 
   // Snap right edge
   var rightSnap = findClosestEdge(right, targets.right);
   if (rightSnap !== null && leftSnap === null) {
     snappedWidth = rightSnap - snappedX;
+    verticalSnapPos = rightSnap;
   }
 
   // Also check if right edge should snap to left edges
   var rightToLeftSnap = findClosestEdge(right, targets.left);
   if (rightToLeftSnap !== null && leftSnap === null && rightSnap === null) {
     snappedWidth = rightToLeftSnap - snappedX;
+    verticalSnapPos = rightToLeftSnap;
   }
 
   // Also check if left edge should snap to right edges
@@ -195,6 +204,7 @@ function applySnapping(x, y, width, height, excludeRect) {
   if (leftToRightSnap !== null && leftSnap === null) {
     snappedX = leftToRightSnap;
     snappedWidth = width + (x - leftToRightSnap);
+    verticalSnapPos = leftToRightSnap;
   }
 
   // Snap top edge
@@ -202,18 +212,21 @@ function applySnapping(x, y, width, height, excludeRect) {
   if (topSnap !== null) {
     snappedY = topSnap;
     snappedHeight = height + (y - topSnap); // Adjust height to maintain bottom edge
+    horizontalSnapPos = topSnap;
   }
 
   // Snap bottom edge
   var bottomSnap = findClosestEdge(bottom, targets.bottom);
   if (bottomSnap !== null && topSnap === null) {
     snappedHeight = bottomSnap - snappedY;
+    horizontalSnapPos = bottomSnap;
   }
 
   // Also check if bottom edge should snap to top edges
   var bottomToTopSnap = findClosestEdge(bottom, targets.top);
   if (bottomToTopSnap !== null && topSnap === null && bottomSnap === null) {
     snappedHeight = bottomToTopSnap - snappedY;
+    horizontalSnapPos = bottomToTopSnap;
   }
 
   // Also check if top edge should snap to bottom edges
@@ -221,13 +234,16 @@ function applySnapping(x, y, width, height, excludeRect) {
   if (topToBottomSnap !== null && topSnap === null) {
     snappedY = topToBottomSnap;
     snappedHeight = height + (y - topToBottomSnap);
+    horizontalSnapPos = topToBottomSnap;
   }
 
   return {
     x: snappedX,
     y: snappedY,
     width: snappedWidth,
-    height: snappedHeight
+    height: snappedHeight,
+    verticalSnapPos: verticalSnapPos,
+    horizontalSnapPos: horizontalSnapPos
   };
 }
 
@@ -236,6 +252,8 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
   var snappedX = x;
   var snappedY = y;
+  var verticalSnapPos = null;
+  var horizontalSnapPos = null;
 
   // Calculate edges of current rectangle
   var left = x;
@@ -253,8 +271,10 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
 
   if (leftSnapDistance <= leftRightSnapDistance && leftToLeftSnap !== null) {
     snappedX = leftToLeftSnap;
+    verticalSnapPos = leftToLeftSnap;
   } else if (leftToRightSnap !== null) {
     snappedX = leftToRightSnap;
+    verticalSnapPos = leftToRightSnap;
   }
 
   // Try to snap right edge to any vertical edge (left or right of other rectangles)
@@ -269,8 +289,10 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   if (snappedX === x) {
     if (rightSnapDistance <= rightLeftSnapDistance && rightToRightSnap !== null) {
       snappedX = rightToRightSnap - width; // Adjust x to align right edge
+      verticalSnapPos = rightToRightSnap;
     } else if (rightToLeftSnap !== null) {
       snappedX = rightToLeftSnap - width; // Adjust x to align right edge
+      verticalSnapPos = rightToLeftSnap;
     }
   }
 
@@ -284,8 +306,10 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
 
   if (topSnapDistance <= topBottomSnapDistance && topToTopSnap !== null) {
     snappedY = topToTopSnap;
+    horizontalSnapPos = topToTopSnap;
   } else if (topToBottomSnap !== null) {
     snappedY = topToBottomSnap;
+    horizontalSnapPos = topToBottomSnap;
   }
 
   // Try to snap bottom edge to any horizontal edge (top or bottom of other rectangles)
@@ -300,8 +324,10 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   if (snappedY === y) {
     if (bottomSnapDistance <= bottomTopSnapDistance && bottomToBottomSnap !== null) {
       snappedY = bottomToBottomSnap - height; // Adjust y to align bottom edge
+      horizontalSnapPos = bottomToBottomSnap;
     } else if (bottomToTopSnap !== null) {
       snappedY = bottomToTopSnap - height; // Adjust y to align bottom edge
+      horizontalSnapPos = bottomToTopSnap;
     }
   }
 
@@ -309,7 +335,9 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     x: snappedX,
     y: snappedY,
     width: width, // Keep width unchanged
-    height: height // Keep height unchanged
+    height: height, // Keep height unchanged
+    verticalSnapPos: verticalSnapPos,
+    horizontalSnapPos: horizontalSnapPos
   };
 }
 
@@ -327,6 +355,71 @@ function findClosestEdge(position, edges) {
   }
 
   return closest;
+}
+
+// Create snap guide lines
+function createGuideLines() {
+  // Horizontal guide line
+  horizontalGuideLine = document.createElement("div");
+  horizontalGuideLine.style.position = "fixed";
+  horizontalGuideLine.style.left = "0";
+  horizontalGuideLine.style.width = "100vw";
+  horizontalGuideLine.style.height = "0";
+  horizontalGuideLine.style.borderTop = "0.5px dashed GrayText";
+  horizontalGuideLine.style.pointerEvents = "none";
+  horizontalGuideLine.style.zIndex = "2147483646"; // Just below rectangles
+  horizontalGuideLine.style.display = "none";
+  document.body.appendChild(horizontalGuideLine);
+
+  // Vertical guide line
+  verticalGuideLine = document.createElement("div");
+  verticalGuideLine.style.position = "fixed";
+  verticalGuideLine.style.top = "0";
+  verticalGuideLine.style.height = "100vh";
+  verticalGuideLine.style.width = "0";
+  verticalGuideLine.style.borderLeft = "0.5px dashed GrayText";
+  verticalGuideLine.style.pointerEvents = "none";
+  verticalGuideLine.style.zIndex = "2147483646"; // Just below rectangles
+  verticalGuideLine.style.display = "none";
+  document.body.appendChild(verticalGuideLine);
+}
+
+// Remove snap guide lines
+function removeGuideLines() {
+  if (horizontalGuideLine && horizontalGuideLine.parentNode) {
+    horizontalGuideLine.parentNode.removeChild(horizontalGuideLine);
+    horizontalGuideLine = null;
+  }
+  if (verticalGuideLine && verticalGuideLine.parentNode) {
+    verticalGuideLine.parentNode.removeChild(verticalGuideLine);
+    verticalGuideLine = null;
+  }
+}
+
+// Show horizontal guide line at specific y position
+function showHorizontalGuide(y) {
+  if (horizontalGuideLine) {
+    horizontalGuideLine.style.top = y + "px";
+    horizontalGuideLine.style.display = "block";
+  }
+}
+
+// Show vertical guide line at specific x position
+function showVerticalGuide(x) {
+  if (verticalGuideLine) {
+    verticalGuideLine.style.left = x + "px";
+    verticalGuideLine.style.display = "block";
+  }
+}
+
+// Hide all guide lines
+function hideGuideLines() {
+  if (horizontalGuideLine) {
+    horizontalGuideLine.style.display = "none";
+  }
+  if (verticalGuideLine) {
+    verticalGuideLine.style.display = "none";
+  }
 }
 
 // Calculate rectangle coordinates from start and current mouse position
@@ -622,6 +715,20 @@ function handleMouseMove(event) {
 
     repositioningRectangle.style.left = snapped.x + "px";
     repositioningRectangle.style.top = snapped.y + "px";
+
+    // Show guide lines if snapping occurred
+    if (snapped.verticalSnapPos !== null) {
+      showVerticalGuide(snapped.verticalSnapPos);
+    } else {
+      if (verticalGuideLine) verticalGuideLine.style.display = "none";
+    }
+
+    if (snapped.horizontalSnapPos !== null) {
+      showHorizontalGuide(snapped.horizontalSnapPos);
+    } else {
+      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+    }
+
     event.preventDefault();
     return;
   }
@@ -663,6 +770,20 @@ function handleMouseMove(event) {
 
     duplicatingRectangle.style.left = snapped.x + "px";
     duplicatingRectangle.style.top = snapped.y + "px";
+
+    // Show guide lines if snapping occurred
+    if (snapped.verticalSnapPos !== null) {
+      showVerticalGuide(snapped.verticalSnapPos);
+    } else {
+      if (verticalGuideLine) verticalGuideLine.style.display = "none";
+    }
+
+    if (snapped.horizontalSnapPos !== null) {
+      showHorizontalGuide(snapped.horizontalSnapPos);
+    } else {
+      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+    }
+
     event.preventDefault();
     return;
   }
@@ -704,6 +825,19 @@ function handleMouseMove(event) {
     // Apply position-only snapping during pan mode
     var snapped = applyPositionSnapping(newX, newY, panModeWidth, panModeHeight, currentRectangle);
     updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
+
+    // Show guide lines if snapping occurred
+    if (snapped.verticalSnapPos !== null) {
+      showVerticalGuide(snapped.verticalSnapPos);
+    } else {
+      if (verticalGuideLine) verticalGuideLine.style.display = "none";
+    }
+
+    if (snapped.horizontalSnapPos !== null) {
+      showHorizontalGuide(snapped.horizontalSnapPos);
+    } else {
+      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+    }
   } else {
     // Normal/Alt/Cmd-Ctrl mode: resize the rectangle (from corner or center, with optional axis constraint)
     var coords = calculateRectCoords(currentMouseX, currentMouseY);
@@ -711,6 +845,19 @@ function handleMouseMove(event) {
     // Apply snapping during drawing/resizing
     var snapped = applySnapping(coords.x, coords.y, coords.width, coords.height, currentRectangle);
     updateRectangle(currentRectangle, snapped.x, snapped.y, snapped.width, snapped.height);
+
+    // Show guide lines if snapping occurred
+    if (snapped.verticalSnapPos !== null) {
+      showVerticalGuide(snapped.verticalSnapPos);
+    } else {
+      if (verticalGuideLine) verticalGuideLine.style.display = "none";
+    }
+
+    if (snapped.horizontalSnapPos !== null) {
+      showHorizontalGuide(snapped.horizontalSnapPos);
+    } else {
+      if (horizontalGuideLine) horizontalGuideLine.style.display = "none";
+    }
   }
 
   event.preventDefault();
@@ -718,6 +865,9 @@ function handleMouseMove(event) {
 
 // Mouse up handler - finish drawing, duplication, or repositioning
 function handleMouseUp(event) {
+  // Hide guide lines when releasing mouse
+  hideGuideLines();
+
   // If duplicating, finalize the duplicate placement
   if (isDuplicating && duplicatingRectangle) {
     placedRectangles.push(duplicatingRectangle);
@@ -910,6 +1060,9 @@ function enableDrawingMode() {
     isDrawingMode = true;
     document.documentElement.classList.add(DRAWING_MODE_CLASS);
 
+    // Create snap guide lines
+    createGuideLines();
+
     // Add event listeners
     document.addEventListener("mousedown", handleMouseDown, true);
     document.addEventListener("mousemove", handleMouseMove, true);
@@ -937,6 +1090,9 @@ function disableDrawingMode() {
   document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
   document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
   document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
+
+  // Remove snap guide lines
+  removeGuideLines();
 
   // Remove event listeners
   document.removeEventListener("mousedown", handleMouseDown, true);
