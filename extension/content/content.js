@@ -1514,11 +1514,13 @@ function handleSpacebarDown(event) {
 // Spacebar keyup - exit pan mode and recalculate start position
 function handleSpacebarUp(event) {
   if (event.key === " " || event.keyCode === 32) {
-    if (isCurrentlyDrawing && isSpacebarHeld && currentRectangle) {
+    if (isSpacebarHeld) {
       isSpacebarHeld = false;
 
       // Remove pan mode class to restore cursor
       document.documentElement.classList.remove(PAN_MODE_CLASS);
+    }
+    if (isCurrentlyDrawing && currentRectangle) {
 
       // Recalculate startX and startY based on current rectangle position
       var rectLeft = parseInt(currentRectangle.style.left, 10);
