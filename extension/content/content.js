@@ -1427,7 +1427,6 @@ function handleMouseUp(event) {
   }
 
   isCurrentlyDrawing = false;
-  isSpacebarHeld = false; // Reset spacebar state
   isAltHeld = false; // Reset Alt state
   isCmdCtrlHeld = false; // Reset Cmd/Ctrl state
   axisConstraintMode = null; // Reset axis constraint
@@ -1489,6 +1488,10 @@ function handleContextMenu(event) {
 // Spacebar keydown - enter pan mode during drawing
 function handleSpacebarDown(event) {
   if (event.key === " " || event.keyCode === 32) {
+    // Prevent page scroll when spacebar is pressed during drawing or while pan mode is active
+    if (isCurrentlyDrawing || isSpacebarHeld) {
+      event.preventDefault();
+    }
     if (isCurrentlyDrawing && !isSpacebarHeld && currentRectangle) {
       isSpacebarHeld = true;
 
@@ -1504,8 +1507,6 @@ function handleSpacebarDown(event) {
       var rectTop = parseInt(currentRectangle.style.top, 10);
       panOffsetX = rectLeft - currentMouseX;
       panOffsetY = rectTop - currentMouseY;
-
-      event.preventDefault();
     }
   }
 }
