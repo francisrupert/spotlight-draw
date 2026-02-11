@@ -13,15 +13,6 @@ function saveOptions() {
   chrome.storage.sync.set({
     borderSize: borderSize,
     defaultColor: defaultColor
-  }, function() {
-    // Show success message
-    var status = document.getElementById("status");
-    status.textContent = "Settings saved successfully!";
-    status.className = "show success";
-
-    setTimeout(function() {
-      status.className = "";
-    }, 3000);
   });
 }
 
@@ -53,7 +44,7 @@ function loadOptions() {
   });
 }
 
-// Handle button group clicks
+// Handle button group clicks with auto-save
 function setupButtonGroup(groupId) {
   var group = document.getElementById(groupId);
   var buttons = group.querySelectorAll(".button-group-item");
@@ -66,6 +57,9 @@ function setupButtonGroup(groupId) {
       });
       // Add active to clicked button
       button.classList.add("active");
+
+      // Auto-save on change
+      saveOptions();
     });
   });
 }
@@ -76,4 +70,3 @@ document.addEventListener("DOMContentLoaded", function() {
   setupButtonGroup("borderSize");
   setupButtonGroup("defaultColor");
 });
-document.getElementById("save").addEventListener("click", saveOptions);
