@@ -1,22 +1,22 @@
 body {
   font-family: var(--font-system);
-  padding: 20px;
+  padding: var(--size-16);
   margin: 0;
   background-color: Canvas;
   color: CanvasText;
 }
 
 .container {
-  max-width: 500px;
+  max-inline-size: var(--size-512);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--size-16);
 }
 
 h1 {
-  margin-top: 0;
-  font-size: 24px;
+  margin-block-start: 0;
+  font-size: var(--font-size-24);
   color: CanvasText;
 }
 
@@ -25,8 +25,8 @@ h1 {
 
 label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
+  margin-block-end: var(--size-8);
+  font-size: var(--font-size-14);
   font-weight: 500;
   color: CanvasText;
   opacity: 0.8;
@@ -35,23 +35,24 @@ label {
 /* Button group (segmented control) */
 .button-group {
   display: flex;
-  width: 100%;
-  gap: 2px;
+  inline-size: 100%;
+  gap: var(--size-2);
 }
 
 .button-group-item {
   flex: 1;
-  padding: 8px 16px;
-  font-size: 14px;
+  padding-block: var(--size-8);
+  padding-inline: var(--size-16);
+  font-size: var(--font-size-14);
   color: CanvasText;
   background: Canvas;
-  border: 1px solid ButtonBorder;
-  border-radius: 3px;
+  border: var(--size-1) solid ButtonBorder;
+  border-radius: var(--size-4);
   cursor: pointer;
 }
 
 .button-group-item:last-child {
-  border-right: none;
+  border-inline-end: none;
 }
 
 .button-group-item.active {
@@ -60,8 +61,8 @@ label {
 }
 
 .button-group-item:focus {
-  outline: 2px solid Highlight;
-  outline-offset: 2px;
+  outline: var(--size-2) solid Highlight;
+  outline-offset: var(--size-2);
   position: relative;
   z-index: 1;
 }
@@ -71,8 +72,8 @@ label {
 }
 
 .color-button {
-  width: 100%;
-  height: 32px;
+  inline-size: 100%;
+  block-size: var(--size-32);
   padding: 0;
   position: relative;
 }
@@ -105,22 +106,22 @@ label {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 16px;
+  font-size: var(--font-size-16);
 }
 
 /* Checkbox labels */
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--size-8);
   cursor: pointer;
   font-weight: normal;
-  margin-bottom: 0;
+  margin-block-end: 0;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  inline-size: var(--size-16);
+  block-size: var(--size-16);
   cursor: pointer;
 }
 
@@ -130,44 +131,45 @@ label {
 
 /* Shortcuts section */
 .shortcuts-section {
-  margin-bottom: 24px;
+  margin-block-end: var(--size-32);
 }
 
 .shortcuts-section h2 {
-  font-size: 16px;
+  font-size: var(--font-size-16);
   font-weight: 600;
   color: CanvasText;
-  margin: 0 0 12px 0;
+  margin-block: 0 var(--size-16);
 }
 
 .shortcuts-table {
-  width: 100%;
+  inline-size: 100%;
   border-collapse: collapse;
 }
 
 .shortcuts-table tr {
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 10%, Canvas);
+  border-block-end: var(--size-1) solid color-mix(in srgb, CanvasText 10%, Canvas);
 }
 
 .shortcuts-table tr:last-child {
-  border-bottom: none;
+  border-block-end: none;
 }
 
 .shortcut-keys {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--font-size-12);
   font-weight: 600;
   color: CanvasText;
   opacity: 0.8;
-  padding: 10px 12px 10px 0;
+  padding-block: var(--size-8);
+  padding-inline: 0 var(--size-16);
   white-space: nowrap;
-  width: 40%;
+  inline-size: 40%;
 }
 
 .shortcut-description {
-  font-size: 14px;
+  font-size: var(--font-size-14);
   color: CanvasText;
   opacity: 0.8;
-  padding: 10px 0;
+  padding-block: var(--size-8);
 }
 

@@ -159,12 +159,6 @@ function createHelpButton() {
   helpButton.className = "box-highlight-help__trigger box-highlight-help__trigger--hidden";
   helpButton.textContent = "?";
   helpButton.setAttribute("aria-label", "Show keyboard shortcuts");
-  helpButton.style.position = "fixed";
-  helpButton.style.bottom = "12px";
-  helpButton.style.left = "12px";
-  helpButton.style.width = "24px";
-  helpButton.style.height = "24px";
-  helpButton.style.zIndex = "2147483647";
   helpButton.style.display = "none"; // Hidden by default
 
   return helpButton;
