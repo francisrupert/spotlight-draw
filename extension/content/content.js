@@ -80,9 +80,9 @@ var userPreferences = {
 // Snap-to-edge configuration
 var SNAP_THRESHOLD = 8; // pixels
 
-// Snap guide lines
-var horizontalGuideLine = null;
-var verticalGuideLine = null;
+// Snap guide lines (2 per axis to support dual-edge snapping)
+var horizontalGuideLines = [null, null];
+var verticalGuideLines = [null, null];
 
 // Clamp rectangle coordinates to viewport bounds
 function clampToViewport(x, y, width, height) {
@@ -461,6 +461,13 @@ function getSnapTargets(excludeRect) {
   return targets;
 }
 
+// Pick the closer of two candidate snap values to a given position
+function pickCloserSnap(position, a, b) {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.abs(position - a) <= Math.abs(position - b) ? a : b;
+}
+
 // Apply snapping to rectangle edges (for drawing/resizing - can adjust size)
 function applySnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
@@ -468,8 +475,8 @@ function applySnapping(x, y, width, height, excludeRect) {
   var snappedY = y;
   var snappedWidth = width;
   var snappedHeight = height;
-  var verticalSnapPos = null;
-  var horizontalSnapPos = null;
+  var verticalSnapPositions = [];
+  var horizontalSnapPositions = [];
 
   // Calculate edges and center of current rectangle
   var left = x;
@@ -479,83 +486,71 @@ function applySnapping(x, y, width, height, excludeRect) {
   var centerX = x + width / 2;
   var centerY = y + height / 2;
 
-  // Snap left edge
-  var leftSnap = findClosestEdge(left, targets.left);
-  if (leftSnap !== null) {
-    snappedX = leftSnap;
-    snappedWidth = width + (x - leftSnap); // Adjust width to maintain right edge
-    verticalSnapPos = leftSnap;
+  // --- Horizontal (X-axis): left and right edges snap independently ---
+
+  // Best snap for left edge (to any vertical target)
+  var bestLeftSnap = pickCloserSnap(left,
+    findClosestEdge(left, targets.left),
+    findClosestEdge(left, targets.right));
+
+  // Best snap for right edge (to any vertical target)
+  var bestRightSnap = pickCloserSnap(right,
+    findClosestEdge(right, targets.right),
+    findClosestEdge(right, targets.left));
+
+  // Apply left snap
+  if (bestLeftSnap !== null) {
+    snappedX = bestLeftSnap;
+    snappedWidth = width + (x - bestLeftSnap);
+    verticalSnapPositions.push(bestLeftSnap);
   }
 
-  // Snap right edge
-  var rightSnap = findClosestEdge(right, targets.right);
-  if (rightSnap !== null && leftSnap === null) {
-    snappedWidth = rightSnap - snappedX;
-    verticalSnapPos = rightSnap;
+  // Apply right snap — independently, can coexist with left
+  if (bestRightSnap !== null) {
+    snappedWidth = bestRightSnap - snappedX;
+    verticalSnapPositions.push(bestRightSnap);
   }
 
-  // Also check if right edge should snap to left edges
-  var rightToLeftSnap = findClosestEdge(right, targets.left);
-  if (rightToLeftSnap !== null && leftSnap === null && rightSnap === null) {
-    snappedWidth = rightToLeftSnap - snappedX;
-    verticalSnapPos = rightToLeftSnap;
-  }
-
-  // Also check if left edge should snap to right edges
-  var leftToRightSnap = findClosestEdge(left, targets.right);
-  if (leftToRightSnap !== null && leftSnap === null) {
-    snappedX = leftToRightSnap;
-    snappedWidth = width + (x - leftToRightSnap);
-    verticalSnapPos = leftToRightSnap;
-  }
-
-  // Try to snap center horizontally (only if no edge snapping occurred)
-  if (leftSnap === null && rightSnap === null && rightToLeftSnap === null && leftToRightSnap === null) {
+  // Center snap only if neither edge snapped
+  if (bestLeftSnap === null && bestRightSnap === null) {
     var centerXSnap = findClosestEdge(centerX, targets.centerX);
     if (centerXSnap !== null) {
-      var offset = centerXSnap - centerX;
-      snappedX = x + offset;
-      verticalSnapPos = centerXSnap;
+      snappedX = x + (centerXSnap - centerX);
+      verticalSnapPositions.push(centerXSnap);
     }
   }
 
-  // Snap top edge
-  var topSnap = findClosestEdge(top, targets.top);
-  if (topSnap !== null) {
-    snappedY = topSnap;
-    snappedHeight = height + (y - topSnap); // Adjust height to maintain bottom edge
-    horizontalSnapPos = topSnap;
+  // --- Vertical (Y-axis): top and bottom edges snap independently ---
+
+  // Best snap for top edge (to any horizontal target)
+  var bestTopSnap = pickCloserSnap(top,
+    findClosestEdge(top, targets.top),
+    findClosestEdge(top, targets.bottom));
+
+  // Best snap for bottom edge (to any horizontal target)
+  var bestBottomSnap = pickCloserSnap(bottom,
+    findClosestEdge(bottom, targets.bottom),
+    findClosestEdge(bottom, targets.top));
+
+  // Apply top snap
+  if (bestTopSnap !== null) {
+    snappedY = bestTopSnap;
+    snappedHeight = height + (y - bestTopSnap);
+    horizontalSnapPositions.push(bestTopSnap);
   }
 
-  // Snap bottom edge
-  var bottomSnap = findClosestEdge(bottom, targets.bottom);
-  if (bottomSnap !== null && topSnap === null) {
-    snappedHeight = bottomSnap - snappedY;
-    horizontalSnapPos = bottomSnap;
+  // Apply bottom snap — independently, can coexist with top
+  if (bestBottomSnap !== null) {
+    snappedHeight = bestBottomSnap - snappedY;
+    horizontalSnapPositions.push(bestBottomSnap);
   }
 
-  // Also check if bottom edge should snap to top edges
-  var bottomToTopSnap = findClosestEdge(bottom, targets.top);
-  if (bottomToTopSnap !== null && topSnap === null && bottomSnap === null) {
-    snappedHeight = bottomToTopSnap - snappedY;
-    horizontalSnapPos = bottomToTopSnap;
-  }
-
-  // Also check if top edge should snap to bottom edges
-  var topToBottomSnap = findClosestEdge(top, targets.bottom);
-  if (topToBottomSnap !== null && topSnap === null) {
-    snappedY = topToBottomSnap;
-    snappedHeight = height + (y - topToBottomSnap);
-    horizontalSnapPos = topToBottomSnap;
-  }
-
-  // Try to snap center vertically (only if no edge snapping occurred)
-  if (topSnap === null && bottomSnap === null && bottomToTopSnap === null && topToBottomSnap === null) {
+  // Center snap only if neither edge snapped
+  if (bestTopSnap === null && bestBottomSnap === null) {
     var centerYSnap = findClosestEdge(centerY, targets.centerY);
     if (centerYSnap !== null) {
-      var offset = centerYSnap - centerY;
-      snappedY = y + offset;
-      horizontalSnapPos = centerYSnap;
+      snappedY = y + (centerYSnap - centerY);
+      horizontalSnapPositions.push(centerYSnap);
     }
   }
 
@@ -564,8 +559,8 @@ function applySnapping(x, y, width, height, excludeRect) {
     y: snappedY,
     width: snappedWidth,
     height: snappedHeight,
-    verticalSnapPos: verticalSnapPos,
-    horizontalSnapPos: horizontalSnapPos
+    verticalSnapPositions: verticalSnapPositions,
+    horizontalSnapPositions: horizontalSnapPositions
   };
 }
 
@@ -574,8 +569,8 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
   var snappedX = x;
   var snappedY = y;
-  var verticalSnapPos = null;
-  var horizontalSnapPos = null;
+  var verticalSnapPositions = [];
+  var horizontalSnapPositions = [];
 
   // Calculate edges and center of current rectangle
   var left = x;
@@ -585,101 +580,120 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var centerX = x + width / 2;
   var centerY = y + height / 2;
 
-  // Try to snap left edge to any vertical edge (left or right of other rectangles)
-  var leftToLeftSnap = findClosestEdge(left, targets.left);
-  var leftToRightSnap = findClosestEdge(left, targets.right);
+  // --- Horizontal (X-axis) ---
 
-  // Use whichever is closer
-  var leftSnapDistance = leftToLeftSnap !== null ? Math.abs(left - leftToLeftSnap) : Infinity;
-  var leftRightSnapDistance = leftToRightSnap !== null ? Math.abs(left - leftToRightSnap) : Infinity;
+  // Best snap for left edge (to any vertical target)
+  var bestLeftSnap = pickCloserSnap(left,
+    findClosestEdge(left, targets.left),
+    findClosestEdge(left, targets.right));
 
-  if (leftSnapDistance <= leftRightSnapDistance && leftToLeftSnap !== null) {
-    snappedX = leftToLeftSnap;
-    verticalSnapPos = leftToLeftSnap;
-  } else if (leftToRightSnap !== null) {
-    snappedX = leftToRightSnap;
-    verticalSnapPos = leftToRightSnap;
-  }
+  // Best snap for right edge (to any vertical target)
+  var bestRightSnap = pickCloserSnap(right,
+    findClosestEdge(right, targets.right),
+    findClosestEdge(right, targets.left));
 
-  // Try to snap right edge to any vertical edge (left or right of other rectangles)
-  var rightToRightSnap = findClosestEdge(right, targets.right);
-  var rightToLeftSnap = findClosestEdge(right, targets.left);
+  // For position snapping, both edges can't independently adjust — pick the closer one for position
+  var leftSnapDist = bestLeftSnap !== null ? Math.abs(left - bestLeftSnap) : Infinity;
+  var rightSnapDist = bestRightSnap !== null ? Math.abs(right - bestRightSnap) : Infinity;
 
-  // Use whichever is closer, but only if we haven't already snapped the left edge
-  var rightSnapDistance = rightToRightSnap !== null ? Math.abs(right - rightToRightSnap) : Infinity;
-  var rightLeftSnapDistance = rightToLeftSnap !== null ? Math.abs(right - rightToLeftSnap) : Infinity;
-
-  // Only apply right edge snap if left edge didn't snap
-  if (snappedX === x) {
-    if (rightSnapDistance <= rightLeftSnapDistance && rightToRightSnap !== null) {
-      snappedX = rightToRightSnap - width; // Adjust x to align right edge
-      verticalSnapPos = rightToRightSnap;
-    } else if (rightToLeftSnap !== null) {
-      snappedX = rightToLeftSnap - width; // Adjust x to align right edge
-      verticalSnapPos = rightToLeftSnap;
+  if (leftSnapDist <= rightSnapDist && bestLeftSnap !== null) {
+    snappedX = bestLeftSnap;
+    verticalSnapPositions.push(bestLeftSnap);
+    // Also show right guide if right edge aligns too
+    if (bestRightSnap !== null) {
+      // Recalculate right edge after applying left snap
+      var newRight = bestLeftSnap + width;
+      var rightAfterSnap = pickCloserSnap(newRight,
+        findClosestEdge(newRight, targets.right),
+        findClosestEdge(newRight, targets.left));
+      if (rightAfterSnap !== null) {
+        verticalSnapPositions.push(rightAfterSnap);
+      }
+    }
+  } else if (bestRightSnap !== null) {
+    snappedX = bestRightSnap - width;
+    verticalSnapPositions.push(bestRightSnap);
+    // Also show left guide if left edge aligns too
+    if (bestLeftSnap !== null) {
+      var newLeft = bestRightSnap - width;
+      var leftAfterSnap = pickCloserSnap(newLeft,
+        findClosestEdge(newLeft, targets.left),
+        findClosestEdge(newLeft, targets.right));
+      if (leftAfterSnap !== null) {
+        verticalSnapPositions.push(leftAfterSnap);
+      }
     }
   }
 
-  // Try to snap center horizontally (only if no edge snapping occurred)
-  if (snappedX === x) {
+  // Center snap only if neither edge snapped
+  if (bestLeftSnap === null && bestRightSnap === null) {
     var centerXSnap = findClosestEdge(centerX, targets.centerX);
     if (centerXSnap !== null) {
-      snappedX = centerXSnap - width / 2; // Adjust x to align center
-      verticalSnapPos = centerXSnap;
+      snappedX = centerXSnap - width / 2;
+      verticalSnapPositions.push(centerXSnap);
     }
   }
 
-  // Try to snap top edge to any horizontal edge (top or bottom of other rectangles)
-  var topToTopSnap = findClosestEdge(top, targets.top);
-  var topToBottomSnap = findClosestEdge(top, targets.bottom);
+  // --- Vertical (Y-axis) ---
 
-  // Use whichever is closer
-  var topSnapDistance = topToTopSnap !== null ? Math.abs(top - topToTopSnap) : Infinity;
-  var topBottomSnapDistance = topToBottomSnap !== null ? Math.abs(top - topToBottomSnap) : Infinity;
+  // Best snap for top edge (to any horizontal target)
+  var bestTopSnap = pickCloserSnap(top,
+    findClosestEdge(top, targets.top),
+    findClosestEdge(top, targets.bottom));
 
-  if (topSnapDistance <= topBottomSnapDistance && topToTopSnap !== null) {
-    snappedY = topToTopSnap;
-    horizontalSnapPos = topToTopSnap;
-  } else if (topToBottomSnap !== null) {
-    snappedY = topToBottomSnap;
-    horizontalSnapPos = topToBottomSnap;
-  }
+  // Best snap for bottom edge (to any horizontal target)
+  var bestBottomSnap = pickCloserSnap(bottom,
+    findClosestEdge(bottom, targets.bottom),
+    findClosestEdge(bottom, targets.top));
 
-  // Try to snap bottom edge to any horizontal edge (top or bottom of other rectangles)
-  var bottomToBottomSnap = findClosestEdge(bottom, targets.bottom);
-  var bottomToTopSnap = findClosestEdge(bottom, targets.top);
+  // Pick the closer one for position
+  var topSnapDist = bestTopSnap !== null ? Math.abs(top - bestTopSnap) : Infinity;
+  var bottomSnapDist = bestBottomSnap !== null ? Math.abs(bottom - bestBottomSnap) : Infinity;
 
-  // Use whichever is closer, but only if we haven't already snapped the top edge
-  var bottomSnapDistance = bottomToBottomSnap !== null ? Math.abs(bottom - bottomToBottomSnap) : Infinity;
-  var bottomTopSnapDistance = bottomToTopSnap !== null ? Math.abs(bottom - bottomToTopSnap) : Infinity;
-
-  // Only apply bottom edge snap if top edge didn't snap
-  if (snappedY === y) {
-    if (bottomSnapDistance <= bottomTopSnapDistance && bottomToBottomSnap !== null) {
-      snappedY = bottomToBottomSnap - height; // Adjust y to align bottom edge
-      horizontalSnapPos = bottomToBottomSnap;
-    } else if (bottomToTopSnap !== null) {
-      snappedY = bottomToTopSnap - height; // Adjust y to align bottom edge
-      horizontalSnapPos = bottomToTopSnap;
+  if (topSnapDist <= bottomSnapDist && bestTopSnap !== null) {
+    snappedY = bestTopSnap;
+    horizontalSnapPositions.push(bestTopSnap);
+    // Also show bottom guide if bottom edge aligns too
+    if (bestBottomSnap !== null) {
+      var newBottom = bestTopSnap + height;
+      var bottomAfterSnap = pickCloserSnap(newBottom,
+        findClosestEdge(newBottom, targets.bottom),
+        findClosestEdge(newBottom, targets.top));
+      if (bottomAfterSnap !== null) {
+        horizontalSnapPositions.push(bottomAfterSnap);
+      }
+    }
+  } else if (bestBottomSnap !== null) {
+    snappedY = bestBottomSnap - height;
+    horizontalSnapPositions.push(bestBottomSnap);
+    // Also show top guide if top edge aligns too
+    if (bestTopSnap !== null) {
+      var newTop = bestBottomSnap - height;
+      var topAfterSnap = pickCloserSnap(newTop,
+        findClosestEdge(newTop, targets.top),
+        findClosestEdge(newTop, targets.bottom));
+      if (topAfterSnap !== null) {
+        horizontalSnapPositions.push(topAfterSnap);
+      }
     }
   }
 
-  // Try to snap center vertically (only if no edge snapping occurred)
-  if (snappedY === y) {
+  // Center snap only if neither edge snapped
+  if (bestTopSnap === null && bestBottomSnap === null) {
     var centerYSnap = findClosestEdge(centerY, targets.centerY);
     if (centerYSnap !== null) {
-      snappedY = centerYSnap - height / 2; // Adjust y to align center
-      horizontalSnapPos = centerYSnap;
+      snappedY = centerYSnap - height / 2;
+      horizontalSnapPositions.push(centerYSnap);
     }
   }
 
   return {
     x: snappedX,
     y: snappedY,
-    width: width, // Keep width unchanged
-    height: height, // Keep height unchanged
-    verticalSnapPos: verticalSnapPos,
-    horizontalSnapPos: horizontalSnapPos
+    width: width,
+    height: height,
+    verticalSnapPositions: verticalSnapPositions,
+    horizontalSnapPositions: horizontalSnapPositions
   };
 }
 
@@ -699,68 +713,84 @@ function findClosestEdge(position, edges) {
   return closest;
 }
 
-// Create snap guide lines
+// Create snap guide lines (2 per axis)
 function createGuideLines() {
-  // Horizontal guide line
-  horizontalGuideLine = document.createElement("div");
-  horizontalGuideLine.style.position = "fixed";
-  horizontalGuideLine.style.left = "0";
-  horizontalGuideLine.style.width = "100vw";
-  horizontalGuideLine.style.height = "0";
-  horizontalGuideLine.style.borderTop = "0.5px dashed GrayText";
-  horizontalGuideLine.style.pointerEvents = "none";
-  horizontalGuideLine.style.zIndex = "2147483646"; // Just below rectangles
-  horizontalGuideLine.style.display = "none";
-  document.body.appendChild(horizontalGuideLine);
+  for (var i = 0; i < 2; i++) {
+    // Horizontal guide lines
+    var hLine = document.createElement("div");
+    hLine.style.position = "fixed";
+    hLine.style.left = "0";
+    hLine.style.width = "100vw";
+    hLine.style.height = "0";
+    hLine.style.borderTop = "0.5px dashed GrayText";
+    hLine.style.pointerEvents = "none";
+    hLine.style.zIndex = "2147483646"; // Just below rectangles
+    hLine.style.display = "none";
+    document.body.appendChild(hLine);
+    horizontalGuideLines[i] = hLine;
 
-  // Vertical guide line
-  verticalGuideLine = document.createElement("div");
-  verticalGuideLine.style.position = "fixed";
-  verticalGuideLine.style.top = "0";
-  verticalGuideLine.style.height = "100vh";
-  verticalGuideLine.style.width = "0";
-  verticalGuideLine.style.borderLeft = "0.5px dashed GrayText";
-  verticalGuideLine.style.pointerEvents = "none";
-  verticalGuideLine.style.zIndex = "2147483646"; // Just below rectangles
-  verticalGuideLine.style.display = "none";
-  document.body.appendChild(verticalGuideLine);
+    // Vertical guide lines
+    var vLine = document.createElement("div");
+    vLine.style.position = "fixed";
+    vLine.style.top = "0";
+    vLine.style.height = "100vh";
+    vLine.style.width = "0";
+    vLine.style.borderLeft = "0.5px dashed GrayText";
+    vLine.style.pointerEvents = "none";
+    vLine.style.zIndex = "2147483646"; // Just below rectangles
+    vLine.style.display = "none";
+    document.body.appendChild(vLine);
+    verticalGuideLines[i] = vLine;
+  }
 }
 
 // Remove snap guide lines
 function removeGuideLines() {
-  if (horizontalGuideLine && horizontalGuideLine.parentNode) {
-    horizontalGuideLine.parentNode.removeChild(horizontalGuideLine);
-    horizontalGuideLine = null;
-  }
-  if (verticalGuideLine && verticalGuideLine.parentNode) {
-    verticalGuideLine.parentNode.removeChild(verticalGuideLine);
-    verticalGuideLine = null;
-  }
-}
-
-// Show horizontal guide line at specific y position
-function showHorizontalGuide(y) {
-  if (horizontalGuideLine) {
-    horizontalGuideLine.style.top = y + "px";
-    horizontalGuideLine.style.display = "block";
+  for (var i = 0; i < 2; i++) {
+    if (horizontalGuideLines[i] && horizontalGuideLines[i].parentNode) {
+      horizontalGuideLines[i].parentNode.removeChild(horizontalGuideLines[i]);
+      horizontalGuideLines[i] = null;
+    }
+    if (verticalGuideLines[i] && verticalGuideLines[i].parentNode) {
+      verticalGuideLines[i].parentNode.removeChild(verticalGuideLines[i]);
+      verticalGuideLines[i] = null;
+    }
   }
 }
 
-// Show vertical guide line at specific x position
-function showVerticalGuide(x) {
-  if (verticalGuideLine) {
-    verticalGuideLine.style.left = x + "px";
-    verticalGuideLine.style.display = "block";
+// Show horizontal guide lines at given Y positions (array of 0-2 values)
+function showHorizontalGuides(positions) {
+  for (var i = 0; i < 2; i++) {
+    if (i < positions.length && horizontalGuideLines[i]) {
+      horizontalGuideLines[i].style.top = positions[i] + "px";
+      horizontalGuideLines[i].style.display = "block";
+    } else if (horizontalGuideLines[i]) {
+      horizontalGuideLines[i].style.display = "none";
+    }
+  }
+}
+
+// Show vertical guide lines at given X positions (array of 0-2 values)
+function showVerticalGuides(positions) {
+  for (var i = 0; i < 2; i++) {
+    if (i < positions.length && verticalGuideLines[i]) {
+      verticalGuideLines[i].style.left = positions[i] + "px";
+      verticalGuideLines[i].style.display = "block";
+    } else if (verticalGuideLines[i]) {
+      verticalGuideLines[i].style.display = "none";
+    }
   }
 }
 
 // Hide all guide lines
 function hideGuideLines() {
-  if (horizontalGuideLine) {
-    horizontalGuideLine.style.display = "none";
-  }
-  if (verticalGuideLine) {
-    verticalGuideLine.style.display = "none";
+  for (var i = 0; i < 2; i++) {
+    if (horizontalGuideLines[i]) {
+      horizontalGuideLines[i].style.display = "none";
+    }
+    if (verticalGuideLines[i]) {
+      verticalGuideLines[i].style.display = "none";
+    }
   }
 }
 
@@ -770,22 +800,14 @@ function applySnapClampAndGuides(x, y, width, height, excludeRect, snapFn) {
   if (userPreferences.snapToEdges) {
     snapped = snapFn(x, y, width, height, excludeRect);
   } else {
-    snapped = { x: x, y: y, width: width, height: height, verticalSnapPos: null, horizontalSnapPos: null };
+    snapped = { x: x, y: y, width: width, height: height, verticalSnapPositions: [], horizontalSnapPositions: [] };
   }
 
   var clamped = clampToViewport(snapped.x, snapped.y, snapped.width, snapped.height);
 
   if (userPreferences.snapToEdges) {
-    if (snapped.verticalSnapPos !== null) {
-      showVerticalGuide(snapped.verticalSnapPos);
-    } else if (verticalGuideLine) {
-      verticalGuideLine.style.display = "none";
-    }
-    if (snapped.horizontalSnapPos !== null) {
-      showHorizontalGuide(snapped.horizontalSnapPos);
-    } else if (horizontalGuideLine) {
-      horizontalGuideLine.style.display = "none";
-    }
+    showVerticalGuides(snapped.verticalSnapPositions);
+    showHorizontalGuides(snapped.horizontalSnapPositions);
   }
 
   return clamped;
@@ -942,8 +964,8 @@ function getElementAtCursor(x, y) {
   var element = document.elementFromPoint(x, y);
   while (element && (
     (element.classList && element.classList.contains(RECTANGLE_CLASS)) ||
-    element === horizontalGuideLine ||
-    element === verticalGuideLine
+    horizontalGuideLines.indexOf(element) !== -1 ||
+    verticalGuideLines.indexOf(element) !== -1
   )) {
     hiddenElements.push({ element: element, display: element.style.display });
     element.style.display = 'none';
