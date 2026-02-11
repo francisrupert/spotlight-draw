@@ -1,60 +1,18 @@
-/* Drawing mode cursor and interaction blocking */
-html.box-highlight-drawing-mode {
-  cursor: crosshair !important;
-  user-select: none !important;
-}
+/* Cursor modes — each mode class sets --bh-cursor, drawing-mode base applies it */
+html.box-highlight-drawing-mode { --bh-cursor: crosshair; }
+html.box-highlight-pan-mode { --bh-cursor: none; }
+html.box-highlight-repositioning-mode { --bh-cursor: default; }
+html.box-highlight-duplication-hover-mode { --bh-cursor: copy; }
+html.box-highlight-dragging-mode { --bh-cursor: none; }
+html.box-highlight-inspection-mode { --bh-cursor: default; }
 
+html.box-highlight-drawing-mode,
 html.box-highlight-drawing-mode *,
 html.box-highlight-drawing-mode body,
 html.box-highlight-drawing-mode body * {
-  cursor: crosshair !important;
+  cursor: var(--bh-cursor) !important;
   pointer-events: none !important;
   user-select: none !important;
-}
-
-/* Pan mode - hide cursor when spacebar is held */
-html.box-highlight-pan-mode {
-  cursor: none !important;
-}
-
-html.box-highlight-pan-mode * {
-  cursor: none !important;
-}
-
-/* Repositioning mode - default cursor (hover only) */
-html.box-highlight-repositioning-mode {
-  cursor: default !important;
-}
-
-html.box-highlight-repositioning-mode * {
-  cursor: default !important;
-}
-
-/* Duplication mode - copy cursor (hover with Alt key) */
-html.box-highlight-duplication-hover-mode {
-  cursor: copy !important;
-}
-
-html.box-highlight-duplication-hover-mode * {
-  cursor: copy !important;
-}
-
-/* Dragging mode - hide cursor (when actively dragging) */
-html.box-highlight-dragging-mode {
-  cursor: none !important;
-}
-
-html.box-highlight-dragging-mode * {
-  cursor: none !important;
-}
-
-/* Inspection mode - default cursor */
-html.box-highlight-inspection-mode {
-  cursor: default !important;
-}
-
-html.box-highlight-inspection-mode * {
-  cursor: default !important;
 }
 
 :root {
@@ -86,19 +44,11 @@ html.box-highlight-inspection-mode * {
   /* green */
   --box-highlight-color: var(--color-green);
 }
-.asdf {
-  color: graytext;
-  color: oklch(0.7397 0.2057 47.88);
-  color: oklch(0.6295 0.2128 246.71);
-  color: oklch(0.7384 0.2783 342);
-  color: oklch(0.7634 0.1947 159.75);
-}
-
 /* Help Button - must override pointer-events: none from drawing mode */
 /* Use high specificity to beat html.box-highlight-drawing-mode body * */
-html.box-highlight-drawing-mode body .box-highlight-help-button,
-html.box-highlight-drawing-mode .box-highlight-help-button,
-.box-highlight-help-button {
+html.box-highlight-drawing-mode body .box-highlight-help__trigger,
+html.box-highlight-drawing-mode .box-highlight-help__trigger,
+.box-highlight-help__trigger {
   /* Critical override to make button clickable */
   pointer-events: auto !important;
   user-select: auto !important;
@@ -118,7 +68,7 @@ html.box-highlight-drawing-mode .box-highlight-help-button,
   border-radius: 50%;
 
   /* Typography - system font stack */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-system);
   font-size: 14px;
   font-weight: 600;
   color: white;
@@ -131,31 +81,31 @@ html.box-highlight-drawing-mode .box-highlight-help-button,
 }
 
 /* Hidden state - off-screen to the left */
-.box-highlight-help-button.hidden {
+.box-highlight-help__trigger--hidden {
   transform: translateX(-60px) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
 /* Visible state - slide in from left */
-.box-highlight-help-button.visible {
+.box-highlight-help__trigger--visible {
   transform: translateX(0) !important;
   opacity: 0.9 !important;
 }
 
-.box-highlight-help-button:hover {
+.box-highlight-help__trigger:hover {
   opacity: 1;
 }
 
-.box-highlight-help-button:active {
+.box-highlight-help__trigger:active {
   transform: scale(0.95);
 }
 
 /* Help Dialog - must override pointer-events: none */
 /* Use high specificity to beat html.box-highlight-drawing-mode body * */
-html.box-highlight-drawing-mode body .box-highlight-help-dialog,
-html.box-highlight-drawing-mode .box-highlight-help-dialog,
-.box-highlight-help-dialog {
+html.box-highlight-drawing-mode body .box-highlight-help__dialog,
+html.box-highlight-drawing-mode .box-highlight-help__dialog,
+.box-highlight-help__dialog {
   /* Critical override to make dialog interactive */
   pointer-events: auto !important;
   user-select: auto !important;
@@ -177,26 +127,26 @@ html.box-highlight-drawing-mode .box-highlight-help-dialog,
   overflow-y: auto;
 
   /* System font stack */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-system);
 }
 
 /* Dialog backdrop */
-.box-highlight-help-dialog::backdrop {
+.box-highlight-help__dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
   pointer-events: auto !important;
 }
 
 /* All dialog children must be interactive */
-html.box-highlight-drawing-mode body .box-highlight-help-dialog *,
-html.box-highlight-drawing-mode .box-highlight-help-dialog *,
-.box-highlight-help-dialog * {
+html.box-highlight-drawing-mode body .box-highlight-help__dialog *,
+html.box-highlight-drawing-mode .box-highlight-help__dialog *,
+.box-highlight-help__dialog * {
   pointer-events: auto !important;
   user-select: auto !important;
   cursor: auto !important;
 }
 
 /* Minimal structure styling for dialog header and content */
-.box-highlight-help-header {
+.box-highlight-help__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -204,52 +154,33 @@ html.box-highlight-drawing-mode .box-highlight-help-dialog *,
   border-bottom: 1px solid ButtonBorder;
 }
 
-.box-highlight-help-header h2 {
+.box-highlight-help__header h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: CanvasText;
 }
 
-.box-highlight-help-content {
+.box-highlight-help__body {
   padding: 20px;
   color: CanvasText;
 }
 
-.box-highlight-help-content h3 {
+.box-highlight-help__body h3 {
   margin: 16px 0 8px 0;
   font-size: 14px;
   font-weight: 600;
   color: CanvasText;
 }
 
-.box-highlight-help-content h3:first-child {
+.box-highlight-help__body h3:first-child {
   margin-top: 0;
 }
 
-.box-highlight-help-content dl {
-  margin: 0 0 16px 0;
-}
-
-.box-highlight-help-content dt {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: 12px;
-  font-weight: 600;
-  color: CanvasText;
-  margin-top: 8px;
-}
-
-.box-highlight-help-content dd {
-  margin: 2px 0 0 16px;
-  font-size: 13px;
-  color: CanvasText;
-  opacity: 0.8;
-}
-
 /* Close button must also override pointer-events */
-html.box-highlight-drawing-mode body .box-highlight-help-close,
-html.box-highlight-drawing-mode .box-highlight-help-close,
-.box-highlight-help-close {
+html.box-highlight-drawing-mode body .box-highlight-help__close,
+html.box-highlight-drawing-mode .box-highlight-help__close,
+.box-highlight-help__close {
   background: none;
   border: none;
   font-size: 28px;
@@ -264,20 +195,20 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
   transition: opacity 0.2s ease;
 }
 
-.box-highlight-help-close:hover {
+.box-highlight-help__close:hover {
   opacity: 1;
 }
 
 /* Settings Section */
-.box-highlight-settings-section {
+.box-highlight-help__settings {
   margin-bottom: 24px;
 }
 
-.box-highlight-setting {
+.box-highlight-help__setting {
   margin: 16px 0;
 }
 
-.box-highlight-setting label {
+.box-highlight-help__setting label {
   display: block;
   font-size: 13px;
   font-weight: 600;
@@ -286,13 +217,13 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
 }
 
 /* Button group (segmented control) - matches options page */
-.box-highlight-help-dialog .button-group {
+.box-highlight-help__dialog .button-group {
   display: flex;
   width: 100%;
   gap: 2px;
 }
 
-.box-highlight-help-dialog .button-group-item {
+.box-highlight-help__dialog .button-group-item {
   flex: 1;
   padding: 8px 16px;
   font-size: 14px;
@@ -304,16 +235,16 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
   transition: background-color 0.2s ease;
 }
 
-.box-highlight-help-dialog .button-group-item:hover {
+.box-highlight-help__dialog .button-group-item:hover {
   background-color: color-mix(in srgb, CanvasText 5%, Canvas);
 }
 
-.box-highlight-help-dialog .button-group-item.active {
+.box-highlight-help__dialog .button-group-item.active {
   background-color: color-mix(in srgb, CanvasText 15%, Canvas);
   font-weight: 600;
 }
 
-.box-highlight-help-dialog .button-group-item:focus {
+.box-highlight-help__dialog .button-group-item:focus {
   outline: 2px solid Highlight;
   outline-offset: 2px;
   position: relative;
@@ -321,34 +252,34 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
 }
 
 /* Color button group */
-.box-highlight-help-dialog .color-button {
+.box-highlight-help__dialog .color-button {
   width: 100%;
   height: 32px;
   padding: 0;
   position: relative;
 }
 
-.box-highlight-help-dialog .color-button[data-color="orange"] {
+.box-highlight-help__dialog .color-button[data-color="orange"] {
   background-color: var(--color-orange);
 }
 
-.box-highlight-help-dialog .color-button[data-color="green"] {
+.box-highlight-help__dialog .color-button[data-color="green"] {
   background-color: var(--color-green);
 }
 
-.box-highlight-help-dialog .color-button[data-color="blue"] {
+.box-highlight-help__dialog .color-button[data-color="blue"] {
   background-color: var(--color-blue);
 }
 
-.box-highlight-help-dialog .color-button[data-color="purple"] {
+.box-highlight-help__dialog .color-button[data-color="purple"] {
   background-color: var(--color-purple);
 }
 
-.box-highlight-help-dialog .color-button[data-color="plain"] {
+.box-highlight-help__dialog .color-button[data-color="plain"] {
   background-color: var(--color-plain);
 }
 
-.box-highlight-help-dialog .color-button.active::after {
+.box-highlight-help__dialog .color-button.active::after {
   content: '✓';
   position: absolute;
   top: 50%;
@@ -360,7 +291,7 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
 }
 
 /* Checkbox labels */
-.box-highlight-help-dialog .checkbox-label {
+.box-highlight-help__dialog .checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -369,18 +300,18 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
   margin-bottom: 0;
 }
 
-.box-highlight-help-dialog .checkbox-label input[type="checkbox"] {
+.box-highlight-help__dialog .checkbox-label input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
 }
 
-.box-highlight-help-dialog .checkbox-label span {
+.box-highlight-help__dialog .checkbox-label span {
   user-select: none;
 }
 
 /* Shortcuts Section */
-.box-highlight-shortcuts-section {
+.box-highlight-help__shortcuts {
   padding-top: 20px;
   border-top: 1px solid ButtonBorder;
 }
@@ -410,7 +341,7 @@ html.box-highlight-drawing-mode .box-highlight-help-close,
 }
 
 .shortcut-keys {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
   color: CanvasText;

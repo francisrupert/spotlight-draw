@@ -1,4 +1,4 @@
-// Shared keyboard shortcuts data for both options page and help dialog
+// Shared keyboard shortcuts data and utilities for both options page and help dialog
 var KEYBOARD_SHORTCUTS = [
   {
     category: "Drawing Mode",
@@ -18,6 +18,7 @@ var KEYBOARD_SHORTCUTS = [
       { keys: "Cmd/Ctrl + Drag (over rectangle)", description: "Reposition rectangle" },
       { keys: "Tab (over rectangle)", description: "Cycle rectangle colors" },
       { keys: "Delete / Backspace (over rectangle)", description: "Remove rectangle" },
+      { keys: "U (in drawing mode)", description: "Undo last deleted rectangle" },
       { keys: "Right-click + Drag", description: "Multi-rectangle mode (like Shift)" }
     ]
   },
@@ -39,3 +40,40 @@ var KEYBOARD_SHORTCUTS = [
     ]
   }
 ];
+
+// Shared renderer — used by both options page and content script help dialog
+function renderShortcutsInto(container, headingTag, categoryClass) {
+  if (!container || typeof KEYBOARD_SHORTCUTS === "undefined") return;
+  KEYBOARD_SHORTCUTS.forEach(function(category) {
+    var section = document.createElement("div");
+    section.className = categoryClass;
+
+    var heading = document.createElement(headingTag);
+    heading.textContent = category.category;
+    section.appendChild(heading);
+
+    var table = document.createElement("table");
+    table.className = "shortcuts-table";
+    category.shortcuts.forEach(function(shortcut) {
+      var row = document.createElement("tr");
+      var keysCell = document.createElement("td");
+      keysCell.className = "shortcut-keys";
+      keysCell.textContent = shortcut.keys;
+      row.appendChild(keysCell);
+      var descCell = document.createElement("td");
+      descCell.className = "shortcut-description";
+      descCell.textContent = shortcut.description;
+      row.appendChild(descCell);
+      table.appendChild(row);
+    });
+    section.appendChild(table);
+    container.appendChild(section);
+  });
+}
+
+// Shared preference defaults
+var DEFAULT_PREFERENCES = {
+  borderSize: "1",
+  defaultColor: "",
+  snapToEdges: true
+};

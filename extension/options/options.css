@@ -1,8 +1,9 @@
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-system);
   padding: 20px;
   margin: 0;
-  background-color: #f5f5f5;
+  background-color: Canvas;
+  color: CanvasText;
 }
 
 .container {
@@ -16,7 +17,7 @@ body {
 h1 {
   margin-top: 0;
   font-size: 24px;
-  color: #333;
+  color: CanvasText;
 }
 
 .setting-group {
@@ -27,7 +28,8 @@ label {
   margin-bottom: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: #555;
+  color: CanvasText;
+  opacity: 0.8;
 }
 
 /* Button group (segmented control) */
@@ -41,9 +43,11 @@ label {
   flex: 1;
   padding: 8px 16px;
   font-size: 14px;
-  color: #555;
-  border: none;
+  color: CanvasText;
+  background: Canvas;
+  border: 1px solid ButtonBorder;
   border-radius: 3px;
+  cursor: pointer;
 }
 
 .button-group-item:last-child {
@@ -51,12 +55,13 @@ label {
 }
 
 .button-group-item.active {
-  background-color: #dedede;
-  color: #000;
+  background-color: color-mix(in srgb, CanvasText 15%, Canvas);
+  font-weight: 600;
 }
 
 .button-group-item:focus {
-  outline: none;
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
   position: relative;
   z-index: 1;
 }
@@ -94,7 +99,7 @@ label {
 
 .color-button.active::after {
   content: '✓';
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-system);
   position: absolute;
   top: 50%;
   left: 50%;
@@ -131,7 +136,7 @@ label {
 .shortcuts-section h2 {
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: CanvasText;
   margin: 0 0 12px 0;
 }
 
@@ -141,7 +146,7 @@ label {
 }
 
 .shortcuts-table tr {
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 10%, Canvas);
 }
 
 .shortcuts-table tr:last-child {
@@ -149,10 +154,11 @@ label {
 }
 
 .shortcut-keys {
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: CanvasText;
+  opacity: 0.8;
   padding: 10px 12px 10px 0;
   white-space: nowrap;
   width: 40%;
@@ -160,7 +166,8 @@ label {
 
 .shortcut-description {
   font-size: 14px;
-  color: #555;
+  color: CanvasText;
+  opacity: 0.8;
   padding: 10px 0;
 }
 
