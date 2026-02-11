@@ -37,6 +37,7 @@
         "content/content.js"
       ],
       "css": [
+        "tokens.css",
         "content/content.css"
       ]
     }
