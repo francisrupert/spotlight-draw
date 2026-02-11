@@ -48,7 +48,7 @@
     Load this page with the Box Highlight extension enabled.
   </div>
 
-  <h2>Test Scenario 1: Horizontal Even Spacing</h2>
+  <h2>Test Scenario 1: Horizontal Even Spacing (Between)</h2>
   <ol>
     <li>Press <code>D</code> to enable drawing mode</li>
     <li>Draw two rectangles with a horizontal gap between them:
@@ -57,11 +57,27 @@
         <li>Rectangle B: to the right of A with a noticeable gap</li>
       </ul>
     </li>
-    <li>Draw a third rectangle and drag it between A and B</li>
-    <li><strong>Expected:</strong> When the rectangle is positioned to create equal spacing on both sides, it should snap and show a vertical guide line in the center of the gap</li>
+    <li>Draw a third rectangle C and drag it between A and B</li>
+    <li><strong>Expected:</strong> When C is positioned to create equal spacing on both sides, it should snap and show a vertical guide line in the gap between A and C (or C and B)</li>
   </ol>
 
-  <h2>Test Scenario 2: Vertical Even Spacing</h2>
+  <h2>Test Scenario 1b: Horizontal Even Spacing (Right)</h2>
+  <ol>
+    <li>With the same two rectangles A and B from above</li>
+    <li>Draw a third rectangle C and drag it to the RIGHT of B</li>
+    <li><strong>Expected:</strong> When C is positioned so the gap between B and C equals the gap between A and B, it should snap and show a vertical guide line in the gap between B and C</li>
+    <li><strong>Pattern:</strong> <code>[A] gap [B] gap [C]</code> with equal gaps</li>
+  </ol>
+
+  <h2>Test Scenario 1c: Horizontal Even Spacing (Left)</h2>
+  <ol>
+    <li>With the same two rectangles A and B</li>
+    <li>Draw a third rectangle C and drag it to the LEFT of A</li>
+    <li><strong>Expected:</strong> When C is positioned so the gap between C and A equals the gap between A and B, it should snap and show a vertical guide line in the gap between C and A</li>
+    <li><strong>Pattern:</strong> <code>[C] gap [A] gap [B]</code> with equal gaps</li>
+  </ol>
+
+  <h2>Test Scenario 2: Vertical Even Spacing (Between)</h2>
   <ol>
     <li>Draw two rectangles with a vertical gap:
       <ul>
@@ -69,8 +85,24 @@
         <li>Rectangle B: below A with a noticeable gap</li>
       </ul>
     </li>
-    <li>Draw a third rectangle and drag it between A and B</li>
-    <li><strong>Expected:</strong> When positioned for equal spacing, it should snap and show a horizontal guide line in the center of the gap</li>
+    <li>Draw a third rectangle C and drag it between A and B</li>
+    <li><strong>Expected:</strong> When positioned for equal spacing, it should snap and show a horizontal guide line in the gap between A and C (or C and B)</li>
+  </ol>
+
+  <h2>Test Scenario 2b: Vertical Even Spacing (Below)</h2>
+  <ol>
+    <li>With the same two rectangles A and B from above</li>
+    <li>Draw a third rectangle C and drag it BELOW B</li>
+    <li><strong>Expected:</strong> When C is positioned so the gap between B and C equals the gap between A and B, it should snap and show a horizontal guide line in the gap between B and C</li>
+    <li><strong>Pattern:</strong> <code>[A] gap [B] gap [C]</code> vertically with equal gaps</li>
+  </ol>
+
+  <h2>Test Scenario 2c: Vertical Even Spacing (Above)</h2>
+  <ol>
+    <li>With the same two rectangles A and B</li>
+    <li>Draw a third rectangle C and drag it ABOVE A</li>
+    <li><strong>Expected:</strong> When C is positioned so the gap between C and A equals the gap between A and B, it should snap and show a horizontal guide line in the gap between C and A</li>
+    <li><strong>Pattern:</strong> <code>[C] gap [A] gap [B]</code> vertically with equal gaps</li>
   </ol>
 
   <h2>Test Scenario 3: Duplication with Even Spacing</h2>

@@ -531,13 +531,13 @@ function getEvenSpacingTargets(rect, excludeRect) {
     var aRight = rectA.left + rectA.width;
     var bLeft = rectB.left;
 
-    // Check if there's an actual gap
+    // Check if there's an actual gap between A and B
     if (bLeft > aRight) {
-      var availableSpace = bLeft - aRight;
+      var existingGap = bLeft - aRight;
 
-      // Can rect fit with even spacing?
-      if (availableSpace > rectWidth) {
-        var gap = (availableSpace - rectWidth) / 2;
+      // Case 1: Position rect BETWEEN A and B with even spacing
+      if (existingGap > rectWidth) {
+        var gap = (existingGap - rectWidth) / 2;
         var evenPosition = aRight + gap;
 
         result.horizontal.push({
@@ -548,6 +548,30 @@ function getEvenSpacingTargets(rect, excludeRect) {
           gapEnd: bLeft
         });
       }
+
+      // Case 2: Position rect to the LEFT of A to match the A-B gap
+      // Pattern: [rect] gap [A] gap [B] where both gaps are equal
+      var leftPosition = rectA.left - existingGap - rectWidth;
+      result.horizontal.push({
+        position: leftPosition,
+        gap: existingGap,
+        between: null, // Not between, but to the left
+        referenceRects: [rectA, rectB],
+        gapStart: leftPosition + rectWidth,
+        gapEnd: rectA.left
+      });
+
+      // Case 3: Position rect to the RIGHT of B to match the A-B gap
+      // Pattern: [A] gap [B] gap [rect] where both gaps are equal
+      var rightPosition = rectB.left + rectB.width + existingGap;
+      result.horizontal.push({
+        position: rightPosition,
+        gap: existingGap,
+        between: null, // Not between, but to the right
+        referenceRects: [rectA, rectB],
+        gapStart: rectB.left + rectB.width,
+        gapEnd: rightPosition
+      });
     }
   }
 
@@ -562,13 +586,13 @@ function getEvenSpacingTargets(rect, excludeRect) {
     var aBottom = rectA.top + rectA.height;
     var bTop = rectB.top;
 
-    // Check if there's an actual gap
+    // Check if there's an actual gap between A and B
     if (bTop > aBottom) {
-      var availableSpace = bTop - aBottom;
+      var existingGap = bTop - aBottom;
 
-      // Can rect fit with even spacing?
-      if (availableSpace > rectHeight) {
-        var gap = (availableSpace - rectHeight) / 2;
+      // Case 1: Position rect BETWEEN A and B with even spacing
+      if (existingGap > rectHeight) {
+        var gap = (existingGap - rectHeight) / 2;
         var evenPosition = aBottom + gap;
 
         result.vertical.push({
@@ -579,6 +603,30 @@ function getEvenSpacingTargets(rect, excludeRect) {
           gapEnd: bTop
         });
       }
+
+      // Case 2: Position rect ABOVE A to match the A-B gap
+      // Pattern: [rect] gap [A] gap [B] where both gaps are equal
+      var topPosition = rectA.top - existingGap - rectHeight;
+      result.vertical.push({
+        position: topPosition,
+        gap: existingGap,
+        between: null, // Not between, but above
+        referenceRects: [rectA, rectB],
+        gapStart: topPosition + rectHeight,
+        gapEnd: rectA.top
+      });
+
+      // Case 3: Position rect BELOW B to match the A-B gap
+      // Pattern: [A] gap [B] gap [rect] where both gaps are equal
+      var bottomPosition = rectB.top + rectB.height + existingGap;
+      result.vertical.push({
+        position: bottomPosition,
+        gap: existingGap,
+        between: null, // Not between, but below
+        referenceRects: [rectA, rectB],
+        gapStart: rectB.top + rectB.height,
+        gapEnd: bottomPosition
+      });
     }
   }
 
@@ -776,6 +824,31 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
       var dist = Math.abs(left - target.position);
       if (dist <= SNAP_THRESHOLD) {
         snappedX = target.position;
+
+        // For left/right positioning cases, compute moved rectangle bounds
+        // and use it with the adjacent reference rect for visual extent
+        var visualExtentRects = target.between;
+        if (!target.between && target.referenceRects) {
+          // Compute moved rectangle's bounds after snapping
+          var movedRectBounds = {
+            left: target.position,
+            top: y,
+            width: width,
+            height: height
+          };
+          // Use the closer reference rect for visual extent
+          var rectA = target.referenceRects[0];
+          var rectB = target.referenceRects[1];
+          // Determine if moved rect is to the left or right
+          if (target.position < rectA.left) {
+            // Left case: use moved rect and rectA
+            visualExtentRects = [movedRectBounds, rectA];
+          } else {
+            // Right case: use rectB and moved rect
+            visualExtentRects = [rectB, movedRectBounds];
+          }
+        }
+
         // Store spacing guide info
         spacingGuides.push({
           axis: 'horizontal',
@@ -783,7 +856,8 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
           gapStart: target.gapStart,
           gapEnd: target.gapEnd,
           gap: target.gap,
-          between: target.between
+          between: target.between,
+          referenceRects: visualExtentRects
         });
         break; // Use first (closest) spacing target
       }
@@ -859,6 +933,31 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
       var dist = Math.abs(top - target.position);
       if (dist <= SNAP_THRESHOLD) {
         snappedY = target.position;
+
+        // For above/below positioning cases, compute moved rectangle bounds
+        // and use it with the adjacent reference rect for visual extent
+        var visualExtentRects = target.between;
+        if (!target.between && target.referenceRects) {
+          // Compute moved rectangle's bounds after snapping
+          var movedRectBounds = {
+            left: x,
+            top: target.position,
+            width: width,
+            height: height
+          };
+          // Use the closer reference rect for visual extent
+          var rectA = target.referenceRects[0];
+          var rectB = target.referenceRects[1];
+          // Determine if moved rect is above or below
+          if (target.position < rectA.top) {
+            // Above case: use moved rect and rectA
+            visualExtentRects = [movedRectBounds, rectA];
+          } else {
+            // Below case: use rectB and moved rect
+            visualExtentRects = [rectB, movedRectBounds];
+          }
+        }
+
         // Store spacing guide info
         spacingGuides.push({
           axis: 'vertical',
@@ -866,7 +965,8 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
           gapStart: target.gapStart,
           gapEnd: target.gapEnd,
           gap: target.gap,
-          between: target.between
+          between: target.between,
+          referenceRects: visualExtentRects
         });
         break; // Use first (closest) spacing target
       }
@@ -902,6 +1002,30 @@ function findClosestEdge(position, edges) {
 
 // Create snap guide lines (2 per axis)
 function createGuideLines() {
+  // Compute spacing guide color from CSS variable
+  // CSS variables cannot be resolved in JavaScript inline styles, so we need to
+  // compute the actual color value at runtime
+  var spacingGuideColor = "oklch(0.7397 0.2057 47.88)"; // Fallback to orange
+
+  try {
+    // Create temporary rectangle to compute the color
+    var tempRect = document.createElement("div");
+    tempRect.className = "spotlight-draw-rectangle";
+    tempRect.style.position = "fixed";
+    tempRect.style.visibility = "hidden";
+    document.body.appendChild(tempRect);
+
+    // Get the computed border color which uses --spotlight-draw-color
+    var borderColor = getComputedStyle(tempRect).borderColor;
+    if (borderColor && borderColor !== "rgba(0, 0, 0, 0)") {
+      spacingGuideColor = borderColor;
+    }
+
+    document.body.removeChild(tempRect);
+  } catch (e) {
+    // Use fallback color if computation fails
+  }
+
   for (var i = 0; i < 2; i++) {
     // Horizontal guide lines
     var hLine = document.createElement("div");
@@ -935,7 +1059,7 @@ function createGuideLines() {
   spacingGuideHorizontal = document.createElement("div");
   spacingGuideHorizontal.style.position = "fixed";
   spacingGuideHorizontal.style.width = "0";
-  spacingGuideHorizontal.style.borderLeft = "1px solid var(--spotlight-draw-color)";
+  spacingGuideHorizontal.style.borderLeft = "1px solid " + spacingGuideColor;
   spacingGuideHorizontal.style.pointerEvents = "none";
   spacingGuideHorizontal.style.zIndex = Z_INDEX_GUIDE;
   spacingGuideHorizontal.style.display = "none";
@@ -945,7 +1069,7 @@ function createGuideLines() {
   spacingGuideVertical = document.createElement("div");
   spacingGuideVertical.style.position = "fixed";
   spacingGuideVertical.style.height = "0";
-  spacingGuideVertical.style.borderTop = "1px solid var(--spotlight-draw-color)";
+  spacingGuideVertical.style.borderTop = "1px solid " + spacingGuideColor;
   spacingGuideVertical.style.pointerEvents = "none";
   spacingGuideVertical.style.zIndex = Z_INDEX_GUIDE;
   spacingGuideVertical.style.display = "none";
@@ -1019,11 +1143,12 @@ function showSpacingGuides(guides) {
         // Position at midpoint of the gap
         var gapMidX = (guide.gapStart + guide.gapEnd) / 2;
         spacingGuideHorizontal.style.left = gapMidX + "px";
-        // Span the entire gap vertically (use between rectangles to determine range)
-        var topExtent = Math.min(guide.between[0].top, guide.between[1].top);
+        // Span the entire gap vertically (use reference rectangles to determine range)
+        var rectsForExtent = guide.between || guide.referenceRects;
+        var topExtent = Math.min(rectsForExtent[0].top, rectsForExtent[1].top);
         var bottomExtent = Math.max(
-          guide.between[0].top + guide.between[0].height,
-          guide.between[1].top + guide.between[1].height
+          rectsForExtent[0].top + rectsForExtent[0].height,
+          rectsForExtent[1].top + rectsForExtent[1].height
         );
         spacingGuideHorizontal.style.top = topExtent + "px";
         spacingGuideHorizontal.style.height = (bottomExtent - topExtent) + "px";
@@ -1035,11 +1160,12 @@ function showSpacingGuides(guides) {
         // Position at midpoint of the gap
         var gapMidY = (guide.gapStart + guide.gapEnd) / 2;
         spacingGuideVertical.style.top = gapMidY + "px";
-        // Span the entire gap horizontally (use between rectangles to determine range)
-        var leftExtent = Math.min(guide.between[0].left, guide.between[1].left);
+        // Span the entire gap horizontally (use reference rectangles to determine range)
+        var rectsForExtent = guide.between || guide.referenceRects;
+        var leftExtent = Math.min(rectsForExtent[0].left, rectsForExtent[1].left);
         var rightExtent = Math.max(
-          guide.between[0].left + guide.between[0].width,
-          guide.between[1].left + guide.between[1].width
+          rectsForExtent[0].left + rectsForExtent[0].width,
+          rectsForExtent[1].left + rectsForExtent[1].width
         );
         spacingGuideVertical.style.left = leftExtent + "px";
         spacingGuideVertical.style.width = (rightExtent - leftExtent) + "px";
