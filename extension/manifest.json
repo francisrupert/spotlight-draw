@@ -39,6 +39,7 @@
       ],
       "css": [
         "tokens.css",
+        "components.css",
         "content/content.css"
       ]
     }

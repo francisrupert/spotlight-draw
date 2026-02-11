@@ -80,6 +80,13 @@ var userPreferences = {
 // Snap-to-edge configuration
 var SNAP_THRESHOLD = 8; // pixels
 
+// Constants
+var Z_INDEX_RECTANGLE = "2147483647";
+var Z_INDEX_GUIDE = "2147483646";
+var MIN_RECT_SIZE = 3;
+var GUIDE_BORDER_STYLE = "0.5px dashed GrayText";
+var ANIMATION_DURATION = 300;
+
 // Snap guide lines (2 per axis to support dual-edge snapping)
 var horizontalGuideLines = [null, null];
 var verticalGuideLines = [null, null];
@@ -103,6 +110,62 @@ function clampToViewport(x, y, width, height) {
     width: clampedWidth,
     height: clampedHeight
   };
+}
+
+// Read a rectangle's current position and size from inline styles
+function getRectBounds(rect) {
+  return {
+    left: parseInt(rect.style.left, 10),
+    top: parseInt(rect.style.top, 10),
+    width: parseInt(rect.style.width, 10),
+    height: parseInt(rect.style.height, 10)
+  };
+}
+
+// Clamp a mouse coordinate to the viewport
+function clampMouse(x, y) {
+  return {
+    x: Math.max(0, Math.min(x, window.innerWidth)),
+    y: Math.max(0, Math.min(y, window.innerHeight))
+  };
+}
+
+// Apply shift-axis locking to a drag operation
+function applyAxisLock(newX, newY, startX, startY, axisLocked, shiftKey) {
+  if (shiftKey) {
+    if (!axisLocked) {
+      var deltaX = Math.abs(newX - startX);
+      var deltaY = Math.abs(newY - startY);
+      axisLocked = deltaX > deltaY ? "horizontal" : "vertical";
+    }
+    if (axisLocked === "horizontal") {
+      newY = startY;
+    } else if (axisLocked === "vertical") {
+      newX = startX;
+    }
+  } else {
+    axisLocked = null;
+  }
+  return { x: newX, y: newY, axisLocked: axisLocked };
+}
+
+// Remove all color-variant classes from a rectangle
+function removeColorClasses(rect) {
+  for (var i = 0; i < COLOR_CLASSES.length; i++) {
+    if (COLOR_CLASSES[i]) {
+      rect.classList.remove(COLOR_CLASSES[i]);
+    }
+  }
+}
+
+// Reset shared drag state (not isSpacebarHeld — it has its own keyup lifecycle)
+function resetDragState() {
+  isCurrentlyDrawing = false;
+  isAltHeld = false;
+  isCmdCtrlHeld = false;
+  axisConstraintMode = null;
+  duplicateAxisLocked = null;
+  repositionAxisLocked = null;
 }
 
 // Load user preferences from chrome.storage
@@ -134,7 +197,7 @@ function createRectangle(x, y, width, height) {
   rect.style.width = width + "px";
   rect.style.height = height + "px";
   rect.style.pointerEvents = "none";
-  rect.style.zIndex = "2147483647"; // Maximum z-index
+  rect.style.zIndex = Z_INDEX_RECTANGLE;
 
   // Apply user preference for border size
   rect.style.borderWidth = userPreferences.borderSize + "px";
@@ -267,7 +330,7 @@ function hideHelpButton() {
       if (helpButton && helpButton.classList.contains("box-highlight-help__trigger--hidden")) {
         helpButton.style.display = "none";
       }
-    }, 300);
+    }, ANIMATION_DURATION);
   }
 }
 
@@ -347,32 +410,7 @@ function saveSetting(key, value) {
   userPreferences[key] = value;
 }
 
-// Setup button group for dialog (like options page)
-function setupDialogButtonGroup(groupId, settingKey) {
-  var group = helpDialog.querySelector("#" + groupId);
-  if (!group) return;
-
-  var buttons = group.querySelectorAll(".button-group-item");
-  for (var i = 0; i < buttons.length; i++) {
-    var button = buttons[i];
-    button.addEventListener("click", function() {
-      var clickedButton = this;
-      var value = clickedButton.getAttribute("data-value");
-
-      // Remove active from all buttons in this group
-      var allButtons = group.querySelectorAll(".button-group-item");
-      for (var j = 0; j < allButtons.length; j++) {
-        allButtons[j].classList.remove("active");
-      }
-
-      // Add active to clicked button
-      clickedButton.classList.add("active");
-
-      // Save setting
-      saveSetting(settingKey, value);
-    }, true);
-  }
-}
+// Setup button groups in dialog using shared helper
 
 // Handle snap to edges change
 function handleSnapToEdgesChange(event) {
@@ -400,9 +438,9 @@ function initHelpSystem() {
   // Close on backdrop click
   helpDialog.addEventListener("click", handleDialogBackdropClick, true);
 
-  // Setup settings button groups
-  setupDialogButtonGroup("dialog-border-size", "borderSize");
-  setupDialogButtonGroup("dialog-default-color", "defaultColor");
+  // Setup settings button groups using shared helper
+  setupButtonGroup(helpDialog, "dialog-border-size", function(value) { saveSetting("borderSize", value); });
+  setupButtonGroup(helpDialog, "dialog-default-color", function(value) { saveSetting("defaultColor", value); });
 
   // Setup checkbox
   var snapCheckbox = helpDialog.querySelector("#dialog-snap-to-edges");
@@ -441,18 +479,15 @@ function getSnapTargets(excludeRect) {
       continue;
     }
 
-    var left = parseInt(rect.style.left, 10);
-    var top = parseInt(rect.style.top, 10);
-    var width = parseInt(rect.style.width, 10);
-    var height = parseInt(rect.style.height, 10);
-    var right = left + width;
-    var bottom = top + height;
-    var centerX = left + width / 2;
-    var centerY = top + height / 2;
+    var b = getRectBounds(rect);
+    var right = b.left + b.width;
+    var bottom = b.top + b.height;
+    var centerX = b.left + b.width / 2;
+    var centerY = b.top + b.height / 2;
 
-    targets.left.push(left);
+    targets.left.push(b.left);
     targets.right.push(right);
-    targets.top.push(top);
+    targets.top.push(b.top);
     targets.bottom.push(bottom);
     targets.centerX.push(centerX);
     targets.centerY.push(centerY);
@@ -722,9 +757,9 @@ function createGuideLines() {
     hLine.style.left = "0";
     hLine.style.width = "100vw";
     hLine.style.height = "0";
-    hLine.style.borderTop = "0.5px dashed GrayText";
+    hLine.style.borderTop = GUIDE_BORDER_STYLE;
     hLine.style.pointerEvents = "none";
-    hLine.style.zIndex = "2147483646"; // Just below rectangles
+    hLine.style.zIndex = Z_INDEX_GUIDE;
     hLine.style.display = "none";
     document.body.appendChild(hLine);
     horizontalGuideLines[i] = hLine;
@@ -735,9 +770,9 @@ function createGuideLines() {
     vLine.style.top = "0";
     vLine.style.height = "100vh";
     vLine.style.width = "0";
-    vLine.style.borderLeft = "0.5px dashed GrayText";
+    vLine.style.borderLeft = GUIDE_BORDER_STYLE;
     vLine.style.pointerEvents = "none";
-    vLine.style.zIndex = "2147483646"; // Just below rectangles
+    vLine.style.zIndex = Z_INDEX_GUIDE;
     vLine.style.display = "none";
     document.body.appendChild(vLine);
     verticalGuideLines[i] = vLine;
@@ -880,12 +915,9 @@ function getRectangleAtPosition(x, y) {
   // Iterate in reverse order to check top-most rectangles first
   for (var i = placedRectangles.length - 1; i >= 0; i--) {
     var rect = placedRectangles[i];
-    var left = parseInt(rect.style.left, 10);
-    var top = parseInt(rect.style.top, 10);
-    var width = parseInt(rect.style.width, 10);
-    var height = parseInt(rect.style.height, 10);
+    var b = getRectBounds(rect);
 
-    if (x >= left && x <= left + width && y >= top && y <= top + height) {
+    if (x >= b.left && x <= b.left + b.width && y >= b.top && y <= b.top + b.height) {
       return rect;
     }
   }
@@ -905,11 +937,7 @@ function cycleRectangleColor(rect) {
   var nextIndex = (currentIndex + 1) % COLOR_CLASSES.length;
 
   // Remove all color classes
-  for (var i = 0; i < COLOR_CLASSES.length; i++) {
-    if (COLOR_CLASSES[i]) {
-      rect.classList.remove(COLOR_CLASSES[i]);
-    }
-  }
+  removeColorClasses(rect);
 
   // Add new color class (if not default)
   if (COLOR_CLASSES[nextIndex]) {
@@ -927,11 +955,12 @@ function deleteRectangle(rect) {
   }
 
   // Snapshot for undo
+  var b = getRectBounds(rect);
   lastDeletedRect = {
-    left: parseInt(rect.style.left, 10),
-    top: parseInt(rect.style.top, 10),
-    width: parseInt(rect.style.width, 10),
-    height: parseInt(rect.style.height, 10),
+    left: b.left,
+    top: b.top,
+    width: b.width,
+    height: b.height,
     borderWidth: rect.style.borderWidth,
     colorIndex: rect.getAttribute("data-color-index") || "0",
     colorClass: COLOR_CLASSES[parseInt(rect.getAttribute("data-color-index") || "0", 10)] || ""
@@ -1142,12 +1171,9 @@ function handleMouseDown(event) {
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Create a duplicate of the rectangle under mouse
-      var rectLeft = parseInt(rectUnderMouse.style.left, 10);
-      var rectTop = parseInt(rectUnderMouse.style.top, 10);
-      var rectWidth = parseInt(rectUnderMouse.style.width, 10);
-      var rectHeight = parseInt(rectUnderMouse.style.height, 10);
+      var b = getRectBounds(rectUnderMouse);
 
-      duplicatingRectangle = createRectangle(rectLeft, rectTop, rectWidth, rectHeight);
+      duplicatingRectangle = createRectangle(b.left, b.top, b.width, b.height);
 
       // Copy color from original rectangle
       var colorIndex = rectUnderMouse.getAttribute("data-color-index") || "0";
@@ -1185,14 +1211,13 @@ function handleMouseDown(event) {
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);
 
       // Calculate offset from cursor to rectangle top-left
-      var rectLeft = parseInt(rectUnderMouse.style.left, 10);
-      var rectTop = parseInt(rectUnderMouse.style.top, 10);
-      repositionOffsetX = rectLeft - event.clientX;
-      repositionOffsetY = rectTop - event.clientY;
+      var rb = getRectBounds(rectUnderMouse);
+      repositionOffsetX = rb.left - event.clientX;
+      repositionOffsetY = rb.top - event.clientY;
 
       // Store starting position for axis locking
-      repositionStartX = rectLeft;
-      repositionStartY = rectTop;
+      repositionStartX = rb.left;
+      repositionStartY = rb.top;
       repositionAxisLocked = null;
 
       event.preventDefault();
@@ -1260,40 +1285,21 @@ function handleMouseMove(event) {
   // Handle repositioning mode
   if (isRepositioning && repositioningRectangle) {
     // Clamp mouse position to viewport bounds
-    var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
-    var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+    var cm = clampMouse(currentMouseX, currentMouseY);
+    var clampedMouseX = cm.x;
+    var clampedMouseY = cm.y;
 
     var newX = clampedMouseX + repositionOffsetX;
     var newY = clampedMouseY + repositionOffsetY;
 
     // Handle Shift for axis locking during repositioning
-    if (event.shiftKey) {
-      // Determine axis lock if not already set
-      if (!repositionAxisLocked) {
-        var deltaX = Math.abs(newX - repositionStartX);
-        var deltaY = Math.abs(newY - repositionStartY);
+    var locked = applyAxisLock(newX, newY, repositionStartX, repositionStartY, repositionAxisLocked, event.shiftKey);
+    newX = locked.x;
+    newY = locked.y;
+    repositionAxisLocked = locked.axisLocked;
 
-        if (deltaX > deltaY) {
-          repositionAxisLocked = "horizontal";
-        } else {
-          repositionAxisLocked = "vertical";
-        }
-      }
-
-      // Apply axis constraint
-      if (repositionAxisLocked === "horizontal") {
-        newY = repositionStartY; // Lock Y, only move X
-      } else if (repositionAxisLocked === "vertical") {
-        newX = repositionStartX; // Lock X, only move Y
-      }
-    } else {
-      // Shift released, clear axis lock
-      repositionAxisLocked = null;
-    }
-
-    var rectWidth = parseInt(repositioningRectangle.style.width, 10);
-    var rectHeight = parseInt(repositioningRectangle.style.height, 10);
-    var clamped = applySnapClampAndGuides(newX, newY, rectWidth, rectHeight, repositioningRectangle, applyPositionSnapping);
+    var rb = getRectBounds(repositioningRectangle);
+    var clamped = applySnapClampAndGuides(newX, newY, rb.width, rb.height, repositioningRectangle, applyPositionSnapping);
 
     repositioningRectangle.style.left = clamped.x + "px";
     repositioningRectangle.style.top = clamped.y + "px";
@@ -1305,40 +1311,21 @@ function handleMouseMove(event) {
   // Handle duplication drag mode
   if (isDuplicating && duplicatingRectangle) {
     // Clamp mouse position to viewport bounds
-    var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
-    var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+    var cm = clampMouse(currentMouseX, currentMouseY);
+    var clampedMouseX = cm.x;
+    var clampedMouseY = cm.y;
 
     var newX = clampedMouseX + duplicateOffsetX;
     var newY = clampedMouseY + duplicateOffsetY;
 
     // Handle Shift for axis locking during duplication
-    if (event.shiftKey) {
-      // Determine axis lock if not already set
-      if (!duplicateAxisLocked) {
-        var deltaX = Math.abs(newX - duplicateStartX);
-        var deltaY = Math.abs(newY - duplicateStartY);
+    var locked = applyAxisLock(newX, newY, duplicateStartX, duplicateStartY, duplicateAxisLocked, event.shiftKey);
+    newX = locked.x;
+    newY = locked.y;
+    duplicateAxisLocked = locked.axisLocked;
 
-        if (deltaX > deltaY) {
-          duplicateAxisLocked = "horizontal";
-        } else {
-          duplicateAxisLocked = "vertical";
-        }
-      }
-
-      // Apply axis constraint
-      if (duplicateAxisLocked === "horizontal") {
-        newY = duplicateStartY; // Lock Y, only move X
-      } else if (duplicateAxisLocked === "vertical") {
-        newX = duplicateStartX; // Lock X, only move Y
-      }
-    } else {
-      // Shift released, clear axis lock
-      duplicateAxisLocked = null;
-    }
-
-    var rectWidth = parseInt(duplicatingRectangle.style.width, 10);
-    var rectHeight = parseInt(duplicatingRectangle.style.height, 10);
-    var clamped = applySnapClampAndGuides(newX, newY, rectWidth, rectHeight, duplicatingRectangle, applyPositionSnapping);
+    var db = getRectBounds(duplicatingRectangle);
+    var clamped = applySnapClampAndGuides(newX, newY, db.width, db.height, duplicatingRectangle, applyPositionSnapping);
 
     duplicatingRectangle.style.left = clamped.x + "px";
     duplicatingRectangle.style.top = clamped.y + "px";
@@ -1377,8 +1364,9 @@ function handleMouseMove(event) {
   }
 
   // Clamp mouse position to viewport bounds for drawing calculations
-  var clampedMouseX = Math.max(0, Math.min(currentMouseX, window.innerWidth));
-  var clampedMouseY = Math.max(0, Math.min(currentMouseY, window.innerHeight));
+  var cm = clampMouse(currentMouseX, currentMouseY);
+  var clampedMouseX = cm.x;
+  var clampedMouseY = cm.y;
 
   if (isSpacebarHeld) {
     // Pan mode: move the entire rectangle without resizing
@@ -1426,17 +1414,13 @@ function handleMouseUp(event) {
     return;
   }
 
-  isCurrentlyDrawing = false;
-  isAltHeld = false; // Reset Alt state
-  isCmdCtrlHeld = false; // Reset Cmd/Ctrl state
-  axisConstraintMode = null; // Reset axis constraint
+  resetDragState();
 
   // Keep the rectangle if it has some size
   if (currentRectangle) {
-    var width = parseInt(currentRectangle.style.width, 10);
-    var height = parseInt(currentRectangle.style.height, 10);
+    var b = getRectBounds(currentRectangle);
 
-    if (width > 3 && height > 3) {
+    if (b.width > MIN_RECT_SIZE && b.height > MIN_RECT_SIZE) {
       // Add to the array of placed rectangles
       placedRectangles.push(currentRectangle);
     } else {
@@ -1499,14 +1483,13 @@ function handleSpacebarDown(event) {
       document.documentElement.classList.add(PAN_MODE_CLASS);
 
       // Store current rectangle dimensions
-      panModeWidth = parseInt(currentRectangle.style.width, 10);
-      panModeHeight = parseInt(currentRectangle.style.height, 10);
+      var b = getRectBounds(currentRectangle);
+      panModeWidth = b.width;
+      panModeHeight = b.height;
 
       // Calculate offset from cursor to rectangle top-left using tracked mouse position
-      var rectLeft = parseInt(currentRectangle.style.left, 10);
-      var rectTop = parseInt(currentRectangle.style.top, 10);
-      panOffsetX = rectLeft - currentMouseX;
-      panOffsetY = rectTop - currentMouseY;
+      panOffsetX = b.left - currentMouseX;
+      panOffsetY = b.top - currentMouseY;
     }
   }
 }
@@ -1523,23 +1506,20 @@ function handleSpacebarUp(event) {
     if (isCurrentlyDrawing && currentRectangle) {
 
       // Recalculate startX and startY based on current rectangle position
-      var rectLeft = parseInt(currentRectangle.style.left, 10);
-      var rectTop = parseInt(currentRectangle.style.top, 10);
-      var rectWidth = parseInt(currentRectangle.style.width, 10);
-      var rectHeight = parseInt(currentRectangle.style.height, 10);
+      var b = getRectBounds(currentRectangle);
 
       // Determine which corner should be the fixed anchor point
       // based on where the cursor is relative to the rectangle
-      if (currentMouseX >= rectLeft + rectWidth / 2) {
-        startX = rectLeft;
+      if (currentMouseX >= b.left + b.width / 2) {
+        startX = b.left;
       } else {
-        startX = rectLeft + rectWidth;
+        startX = b.left + b.width;
       }
 
-      if (currentMouseY >= rectTop + rectHeight / 2) {
-        startY = rectTop;
+      if (currentMouseY >= b.top + b.height / 2) {
+        startY = b.top;
         } else {
-        startY = rectTop + rectHeight;
+        startY = b.top + b.height;
       }
 
       event.preventDefault();
@@ -1662,9 +1642,7 @@ function handleKeyDown(event) {
       // Restore original border width
       restored.style.borderWidth = lastDeletedRect.borderWidth;
       // Restore original color (createRectangle applies default color, so remove it first)
-      for (var i = 0; i < COLOR_CLASSES.length; i++) {
-        if (COLOR_CLASSES[i]) restored.classList.remove(COLOR_CLASSES[i]);
-      }
+      removeColorClasses(restored);
       if (lastDeletedRect.colorClass) {
         restored.classList.add(lastDeletedRect.colorClass);
       }
@@ -1742,8 +1720,7 @@ function disableDrawingMode() {
 
   isDrawingMode = false;
   isSpacebarHeld = false;
-  isAltHeld = false;
-  isCmdCtrlHeld = false;
+  resetDragState();
   isDuplicating = false;
   isRepositioning = false;
   lastDeletedRect = null;

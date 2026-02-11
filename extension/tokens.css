@@ -20,4 +20,6 @@
   --font-size-16: 16px;
   --font-size-24: 24px;
   --font-size-32: 32px;
+  --shadow-dialog: rgba(0, 0, 0, 0.3);
+  --backdrop-overlay: rgba(0, 0, 0, 0.5);
 }

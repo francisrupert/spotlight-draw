@@ -1,0 +1,132 @@
+/* Button group (segmented control) */
+.button-group {
+  display: flex;
+  inline-size: 100%;
+  gap: var(--size-2);
+}
+
+.button-group-item {
+  flex: 1;
+  padding-block: var(--size-8);
+  padding-inline: var(--size-16);
+  font-size: var(--font-size-14);
+  color: CanvasText;
+  background: Canvas;
+  border: var(--size-1) solid ButtonBorder;
+  border-radius: var(--size-4);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button-group-item:last-child {
+  border-inline-end: none;
+}
+
+.button-group-item:hover {
+  background-color: color-mix(in srgb, CanvasText 5%, Canvas);
+}
+
+.button-group-item.active {
+  background-color: color-mix(in srgb, CanvasText 15%, Canvas);
+  font-weight: 600;
+}
+
+.button-group-item:focus {
+  outline: var(--size-2) solid Highlight;
+  outline-offset: var(--size-2);
+  position: relative;
+  z-index: 1;
+}
+
+/* Color buttons */
+.color-button {
+  inline-size: 100%;
+  block-size: var(--size-32);
+  padding: 0;
+  position: relative;
+}
+
+.color-button[data-color="orange"] {
+  background-color: var(--color-orange);
+}
+
+.color-button[data-color="green"] {
+  background-color: var(--color-green);
+}
+
+.color-button[data-color="blue"] {
+  background-color: var(--color-blue);
+}
+
+.color-button[data-color="purple"] {
+  background-color: var(--color-purple);
+}
+
+.color-button[data-color="plain"] {
+  background-color: var(--color-plain);
+}
+
+.color-button.active::after {
+  content: '✓';
+  font-family: var(--font-system);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: var(--font-size-16);
+  font-weight: bold;
+}
+
+/* Checkbox labels */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--size-8);
+  cursor: pointer;
+  font-weight: normal;
+  margin-block-end: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  inline-size: var(--size-16);
+  block-size: var(--size-16);
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  user-select: none;
+}
+
+/* Shortcuts table */
+.shortcuts-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.shortcuts-table tr {
+  border-block-end: var(--size-1) solid color-mix(in srgb, CanvasText 10%, Canvas);
+}
+
+.shortcuts-table tr:last-child {
+  border-block-end: none;
+}
+
+.shortcut-keys {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-12);
+  font-weight: 600;
+  color: CanvasText;
+  padding-block: var(--size-8);
+  padding-inline: 0 var(--size-16);
+  white-space: nowrap;
+  inline-size: 45%;
+  opacity: 0.8;
+}
+
+.shortcut-description {
+  font-size: var(--font-size-14);
+  color: CanvasText;
+  padding-block: var(--size-8);
+  opacity: 0.8;
+}

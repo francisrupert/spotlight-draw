@@ -48,25 +48,7 @@ function loadOptions() {
   });
 }
 
-// Handle button group clicks with auto-save
-function setupButtonGroup(groupId) {
-  var group = document.getElementById(groupId);
-  var buttons = group.querySelectorAll(".button-group-item");
-
-  buttons.forEach(function(button) {
-    button.addEventListener("click", function() {
-      // Remove active from all buttons in this group
-      buttons.forEach(function(btn) {
-        btn.classList.remove("active");
-      });
-      // Add active to clicked button
-      button.classList.add("active");
-
-      // Auto-save on change
-      saveOptions();
-    });
-  });
-}
+// Setup button groups using shared helper with auto-save
 
 // Render keyboard shortcuts using shared renderer
 function renderShortcuts() {
@@ -77,8 +59,8 @@ function renderShortcuts() {
 // Initialize
 document.addEventListener("DOMContentLoaded", function() {
   loadOptions();
-  setupButtonGroup("borderSize");
-  setupButtonGroup("defaultColor");
+  setupButtonGroup(document, "borderSize", function() { saveOptions(); });
+  setupButtonGroup(document, "defaultColor", function() { saveOptions(); });
 
   // Add event listener for checkbox with auto-save
   document.getElementById("snapToEdges").addEventListener("change", saveOptions);
