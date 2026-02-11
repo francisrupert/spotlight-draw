@@ -43,6 +43,7 @@ Access the options page to customize your experience:
 2. Go to `chrome://extensions`, find **Box Highlight**, and click **Options**
 
 **Available settings:**
+
 - **Border Size**: Choose between 0.5px, 1px (default), 2px, or 3px
 - **Default Color**: Set your preferred starting color (orange, green, blue, purple, or gray)
 
