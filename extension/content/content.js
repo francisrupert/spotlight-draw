@@ -152,13 +152,15 @@ function updateRectangle(rect, x, y, width, height) {
   rect.style.height = Math.abs(height) + "px";
 }
 
-// Get all snap target edges from placed rectangles (excluding specified rectangle)
+// Get all snap target edges and centers from placed rectangles (excluding specified rectangle)
 function getSnapTargets(excludeRect) {
   var targets = {
     left: [],
     right: [],
     top: [],
-    bottom: []
+    bottom: [],
+    centerX: [],
+    centerY: []
   };
 
   for (var i = 0; i < placedRectangles.length; i++) {
@@ -175,11 +177,15 @@ function getSnapTargets(excludeRect) {
     var height = parseInt(rect.style.height, 10);
     var right = left + width;
     var bottom = top + height;
+    var centerX = left + width / 2;
+    var centerY = top + height / 2;
 
     targets.left.push(left);
     targets.right.push(right);
     targets.top.push(top);
     targets.bottom.push(bottom);
+    targets.centerX.push(centerX);
+    targets.centerY.push(centerY);
   }
 
   return targets;
@@ -195,11 +201,13 @@ function applySnapping(x, y, width, height, excludeRect) {
   var verticalSnapPos = null;
   var horizontalSnapPos = null;
 
-  // Calculate edges of current rectangle
+  // Calculate edges and center of current rectangle
   var left = x;
   var right = x + width;
   var top = y;
   var bottom = y + height;
+  var centerX = x + width / 2;
+  var centerY = y + height / 2;
 
   // Snap left edge
   var leftSnap = findClosestEdge(left, targets.left);
@@ -229,6 +237,16 @@ function applySnapping(x, y, width, height, excludeRect) {
     snappedX = leftToRightSnap;
     snappedWidth = width + (x - leftToRightSnap);
     verticalSnapPos = leftToRightSnap;
+  }
+
+  // Try to snap center horizontally (only if no edge snapping occurred)
+  if (leftSnap === null && rightSnap === null && rightToLeftSnap === null && leftToRightSnap === null) {
+    var centerXSnap = findClosestEdge(centerX, targets.centerX);
+    if (centerXSnap !== null) {
+      var offset = centerXSnap - centerX;
+      snappedX = x + offset;
+      verticalSnapPos = centerXSnap;
+    }
   }
 
   // Snap top edge
@@ -261,6 +279,16 @@ function applySnapping(x, y, width, height, excludeRect) {
     horizontalSnapPos = topToBottomSnap;
   }
 
+  // Try to snap center vertically (only if no edge snapping occurred)
+  if (topSnap === null && bottomSnap === null && bottomToTopSnap === null && topToBottomSnap === null) {
+    var centerYSnap = findClosestEdge(centerY, targets.centerY);
+    if (centerYSnap !== null) {
+      var offset = centerYSnap - centerY;
+      snappedY = y + offset;
+      horizontalSnapPos = centerYSnap;
+    }
+  }
+
   return {
     x: snappedX,
     y: snappedY,
@@ -279,11 +307,13 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
   var verticalSnapPos = null;
   var horizontalSnapPos = null;
 
-  // Calculate edges of current rectangle
+  // Calculate edges and center of current rectangle
   var left = x;
   var right = x + width;
   var top = y;
   var bottom = y + height;
+  var centerX = x + width / 2;
+  var centerY = y + height / 2;
 
   // Try to snap left edge to any vertical edge (left or right of other rectangles)
   var leftToLeftSnap = findClosestEdge(left, targets.left);
@@ -320,6 +350,15 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     }
   }
 
+  // Try to snap center horizontally (only if no edge snapping occurred)
+  if (snappedX === x) {
+    var centerXSnap = findClosestEdge(centerX, targets.centerX);
+    if (centerXSnap !== null) {
+      snappedX = centerXSnap - width / 2; // Adjust x to align center
+      verticalSnapPos = centerXSnap;
+    }
+  }
+
   // Try to snap top edge to any horizontal edge (top or bottom of other rectangles)
   var topToTopSnap = findClosestEdge(top, targets.top);
   var topToBottomSnap = findClosestEdge(top, targets.bottom);
@@ -352,6 +391,15 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     } else if (bottomToTopSnap !== null) {
       snappedY = bottomToTopSnap - height; // Adjust y to align bottom edge
       horizontalSnapPos = bottomToTopSnap;
+    }
+  }
+
+  // Try to snap center vertically (only if no edge snapping occurred)
+  if (snappedY === y) {
+    var centerYSnap = findClosestEdge(centerY, targets.centerY);
+    if (centerYSnap !== null) {
+      snappedY = centerYSnap - height / 2; // Adjust y to align center
+      horizontalSnapPos = centerYSnap;
     }
   }
 
