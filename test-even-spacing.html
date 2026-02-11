@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Even Spacing Feature Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    h2 {
+      font-size: 18px;
+      margin-top: 30px;
+      margin-bottom: 10px;
+    }
+    ol {
+      margin-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    .note {
+      background: #f0f0f0;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    code {
+      background: #e0e0e0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Even Spacing Feature - Manual Test Guide</h1>
+
+  <div class="note">
+    <strong>Note:</strong> This page is for testing the even spacing snap-to feature.
+    Load this page with the Box Highlight extension enabled.
+  </div>
+
+  <h2>Test Scenario 1: Horizontal Even Spacing</h2>
+  <ol>
+    <li>Press <code>D</code> to enable drawing mode</li>
+    <li>Draw two rectangles with a horizontal gap between them:
+      <ul>
+        <li>Rectangle A: anywhere on the left side</li>
+        <li>Rectangle B: to the right of A with a noticeable gap</li>
+      </ul>
+    </li>
+    <li>Draw a third rectangle and drag it between A and B</li>
+    <li><strong>Expected:</strong> When the rectangle is positioned to create equal spacing on both sides, it should snap and show a vertical guide line in the center of the gap</li>
+  </ol>
+
+  <h2>Test Scenario 2: Vertical Even Spacing</h2>
+  <ol>
+    <li>Draw two rectangles with a vertical gap:
+      <ul>
+        <li>Rectangle A: anywhere at the top</li>
+        <li>Rectangle B: below A with a noticeable gap</li>
+      </ul>
+    </li>
+    <li>Draw a third rectangle and drag it between A and B</li>
+    <li><strong>Expected:</strong> When positioned for equal spacing, it should snap and show a horizontal guide line in the center of the gap</li>
+  </ol>
+
+  <h2>Test Scenario 3: Duplication with Even Spacing</h2>
+  <ol>
+    <li>Draw two rectangles with a gap</li>
+    <li>Draw a third rectangle anywhere on the page</li>
+    <li>Hold <code>Alt</code> and click on the third rectangle to duplicate it</li>
+    <li>Drag the duplicate between the first two rectangles</li>
+    <li><strong>Expected:</strong> Even spacing snap should work during duplication</li>
+  </ol>
+
+  <h2>Test Scenario 4: Repositioning with Even Spacing</h2>
+  <ol>
+    <li>Draw three rectangles (any arrangement)</li>
+    <li>Hold <code>Cmd/Ctrl</code> and click on one rectangle to reposition it</li>
+    <li>Drag it to create even spacing with other rectangles</li>
+    <li><strong>Expected:</strong> Even spacing snap should work during repositioning</li>
+  </ol>
+
+  <h2>Test Scenario 5: Priority (Edge Alignment vs Even Spacing)</h2>
+  <ol>
+    <li>Draw two rectangles with a gap</li>
+    <li>Position a third rectangle so it would both:
+      <ul>
+        <li>Align with the edge of one rectangle</li>
+        <li>Create even spacing between the two rectangles</li>
+      </ul>
+    </li>
+    <li><strong>Expected:</strong> Edge alignment should take priority over even spacing (edge guides shown, not spacing guides)</li>
+  </ol>
+
+  <h2>Test Scenario 6: Rectangle Too Large</h2>
+  <ol>
+    <li>Draw two rectangles very close together (small gap)</li>
+    <li>Try to drag a large rectangle between them</li>
+    <li><strong>Expected:</strong> No even spacing snap should occur if the rectangle doesn't fit with room for spacing</li>
+  </ol>
+
+  <h2>What to Look For</h2>
+  <ul>
+    <li><strong>Spacing guide appearance:</strong> Solid colored line (not dashed) using the extension's accent color</li>
+    <li><strong>Spacing guide position:</strong> Line appears at the midpoint of the gap</li>
+    <li><strong>Spacing guide length:</strong> Line spans only the gap region, not the full viewport</li>
+    <li><strong>Snap behavior:</strong> Rectangle snaps smoothly when positioned for even spacing</li>
+    <li><strong>Guide disappears:</strong> Spacing guide disappears when you move away from even spacing position</li>
+  </ul>
+
+  <div class="note">
+    <strong>Tip:</strong> Use <code>?</code> to open the shortcuts dialog and verify "Snap to Edges" is enabled in settings.
+  </div>
+</body>
+</html>

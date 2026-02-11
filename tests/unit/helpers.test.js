@@ -305,3 +305,212 @@ QUnit.test("resets state when already in reset state", function(assert) {
   assert.equal(dragStartX, 0, "still 0");
   assert.equal(dragStartY, 0, "still 0");
 });
+
+// ============================================================================
+// getEvenSpacingTargets() Tests
+// ============================================================================
+
+QUnit.module("Helper Functions - getEvenSpacingTargets", {
+  beforeEach: function() {
+    // Clear placed rectangles
+    placedRectangles = [];
+  },
+  afterEach: function() {
+    // Clean up
+    placedRectangles = [];
+  }
+});
+
+QUnit.test("finds horizontal even spacing between two rectangles", function(assert) {
+  // Create two rectangles with a gap of 200px
+  // Rect A: x=0, width=100 (right edge at 100)
+  // Rect B: x=300, width=100 (left edge at 300)
+  // Gap: 200px (300 - 100)
+  var rectA = document.createElement("div");
+  rectA.style.left = "0px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "300px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: width=50
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "150px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "50px";
+  movingRect.style.height = "50px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  assert.equal(targets.horizontal.length, 1, "found one horizontal spacing target");
+  assert.equal(targets.horizontal[0].position, 175, "even position calculated correctly (100 + 75)");
+  assert.equal(targets.horizontal[0].gap, 75, "gap size calculated correctly ((200 - 50) / 2)");
+});
+
+QUnit.test("finds vertical even spacing between two rectangles", function(assert) {
+  // Create two rectangles with a vertical gap of 200px
+  var rectA = document.createElement("div");
+  rectA.style.left = "100px";
+  rectA.style.top = "0px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "100px";
+  rectB.style.top = "300px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: height=50
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "100px";
+  movingRect.style.top = "150px";
+  movingRect.style.width = "50px";
+  movingRect.style.height = "50px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  assert.equal(targets.vertical.length, 1, "found one vertical spacing target");
+  assert.equal(targets.vertical[0].position, 175, "even position calculated correctly (100 + 75)");
+  assert.equal(targets.vertical[0].gap, 75, "gap size calculated correctly");
+});
+
+QUnit.test("ignores gaps where rectangle is too large to fit", function(assert) {
+  // Create two rectangles with a small gap of 40px
+  var rectA = document.createElement("div");
+  rectA.style.left = "0px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "140px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle: width=50 (too large for 40px gap)
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "120px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "50px";
+  movingRect.style.height = "50px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  assert.equal(targets.horizontal.length, 0, "no spacing target when rectangle too large");
+});
+
+QUnit.test("handles multiple spacing opportunities", function(assert) {
+  // Create three rectangles in a row with gaps
+  var rectA = document.createElement("div");
+  rectA.style.left = "0px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "300px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  var rectC = document.createElement("div");
+  rectC.style.left = "600px";
+  rectC.style.top = "100px";
+  rectC.style.width = "100px";
+  rectC.style.height = "100px";
+  placedRectangles.push(rectC);
+
+  // Moving rectangle: width=50
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "150px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "50px";
+  movingRect.style.height = "50px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  assert.equal(targets.horizontal.length, 2, "found two horizontal spacing targets");
+});
+
+QUnit.test("excludes specified rectangle from calculations", function(assert) {
+  var rectA = document.createElement("div");
+  rectA.style.left = "0px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "300px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  // Moving rectangle
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "150px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "50px";
+  movingRect.style.height = "50px";
+
+  // Exclude rectB from calculations
+  var targets = getEvenSpacingTargets(movingRect, rectB);
+
+  assert.equal(targets.horizontal.length, 0, "no spacing targets when only one rectangle remains");
+});
+
+QUnit.test("handles no rectangles", function(assert) {
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "150px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "50px";
+  movingRect.style.height = "50px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  assert.equal(targets.horizontal.length, 0, "no horizontal targets with no rectangles");
+  assert.equal(targets.vertical.length, 0, "no vertical targets with no rectangles");
+});
+
+QUnit.test("ignores overlapping rectangles", function(assert) {
+  // Create two overlapping rectangles (no gap)
+  var rectA = document.createElement("div");
+  rectA.style.left = "0px";
+  rectA.style.top = "100px";
+  rectA.style.width = "100px";
+  rectA.style.height = "100px";
+  placedRectangles.push(rectA);
+
+  var rectB = document.createElement("div");
+  rectB.style.left = "50px";
+  rectB.style.top = "100px";
+  rectB.style.width = "100px";
+  rectB.style.height = "100px";
+  placedRectangles.push(rectB);
+
+  var movingRect = document.createElement("div");
+  movingRect.style.left = "75px";
+  movingRect.style.top = "100px";
+  movingRect.style.width = "30px";
+  movingRect.style.height = "30px";
+
+  var targets = getEvenSpacingTargets(movingRect, null);
+
+  assert.equal(targets.horizontal.length, 0, "no spacing targets for overlapping rectangles");
+});
