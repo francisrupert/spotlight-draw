@@ -1,54 +1,54 @@
-/* Cursor modes — each mode class sets --bh-cursor, drawing-mode base applies it */
-html.box-highlight-drawing-mode { --bh-cursor: crosshair; }
-html.box-highlight-pan-mode { --bh-cursor: none; }
-html.box-highlight-repositioning-mode { --bh-cursor: default; }
-html.box-highlight-duplication-hover-mode { --bh-cursor: copy; }
-html.box-highlight-dragging-mode { --bh-cursor: none; }
-html.box-highlight-inspection-mode { --bh-cursor: default; }
+/* Cursor modes — each mode class sets --sd-cursor, drawing-mode base applies it */
+html.spotlight-draw-drawing-mode { --sd-cursor: crosshair; }
+html.spotlight-draw-pan-mode { --sd-cursor: none; }
+html.spotlight-draw-repositioning-mode { --sd-cursor: default; }
+html.spotlight-draw-duplication-hover-mode { --sd-cursor: copy; }
+html.spotlight-draw-dragging-mode { --sd-cursor: none; }
+html.spotlight-draw-inspection-mode { --sd-cursor: default; }
 
-html.box-highlight-drawing-mode,
-html.box-highlight-drawing-mode *,
-html.box-highlight-drawing-mode body,
-html.box-highlight-drawing-mode body * {
-  cursor: var(--bh-cursor) !important;
+html.spotlight-draw-drawing-mode,
+html.spotlight-draw-drawing-mode *,
+html.spotlight-draw-drawing-mode body,
+html.spotlight-draw-drawing-mode body * {
+  cursor: var(--sd-cursor) !important;
   pointer-events: none !important;
   user-select: none !important;
 }
 
 :root {
-  --box-highlight-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
+  --spotlight-draw-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
 }
 
 /* Rectangle style */
-.box-highlight-rectangle {
+.spotlight-draw-rectangle {
   /* orange */
-  border: var(--size-1) solid var(--box-highlight-color);
-  background-color: color-mix(in srgb, var(--box-highlight-color) 15%, transparent);
+  border: var(--size-1) solid var(--spotlight-draw-color);
+  background-color: color-mix(in srgb, var(--spotlight-draw-color) 15%, transparent);
   box-sizing: border-box;
   pointer-events: none;
   border-radius: var(--size-4);
 }
-.box-highlight-rectangle--plain {
+.spotlight-draw-rectangle--plain {
   /* gray */
-  --box-highlight-color: var(--color-plain);
+  --spotlight-draw-color: var(--color-plain);
 }
-.box-highlight-rectangle--blue {
+.spotlight-draw-rectangle--blue {
   /* blue */
-  --box-highlight-color: var(--color-blue);
+  --spotlight-draw-color: var(--color-blue);
 }
-.box-highlight-rectangle--purple {
+.spotlight-draw-rectangle--purple {
   /* purple */
-  --box-highlight-color: var(--color-purple);
+  --spotlight-draw-color: var(--color-purple);
 }
-.box-highlight-rectangle--green {
+.spotlight-draw-rectangle--green {
   /* green */
-  --box-highlight-color: var(--color-green);
+  --spotlight-draw-color: var(--color-green);
 }
 /* Help Button - must override pointer-events: none from drawing mode */
-/* Use high specificity to beat html.box-highlight-drawing-mode body * */
-html.box-highlight-drawing-mode body .box-highlight-help__trigger,
-html.box-highlight-drawing-mode .box-highlight-help__trigger,
-.box-highlight-help__trigger {
+/* Use high specificity to beat html.spotlight-draw-drawing-mode body * */
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__trigger,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__trigger,
+.spotlight-draw-help__trigger {
   /* Critical override to make button clickable */
   pointer-events: auto !important;
   user-select: auto !important;
@@ -63,7 +63,7 @@ html.box-highlight-drawing-mode .box-highlight-help__trigger,
   z-index: 2147483647;
 
   /* Visual styling */
-  background-color: var(--box-highlight-color);
+  background-color: var(--spotlight-draw-color);
   border: none;
   border-radius: 50%;
 
@@ -81,31 +81,31 @@ html.box-highlight-drawing-mode .box-highlight-help__trigger,
 }
 
 /* Hidden state - off-screen to the left */
-.box-highlight-help__trigger--hidden {
+.spotlight-draw-help__trigger--hidden {
   transform: translateX(calc(-1 * var(--size-64))) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
 /* Visible state - slide in from left */
-.box-highlight-help__trigger--visible {
+.spotlight-draw-help__trigger--visible {
   transform: translateX(0) !important;
   opacity: 0.9 !important;
 }
 
-.box-highlight-help__trigger:hover {
+.spotlight-draw-help__trigger:hover {
   opacity: 1;
 }
 
-.box-highlight-help__trigger:active {
+.spotlight-draw-help__trigger:active {
   transform: scale(0.95);
 }
 
 /* Help Dialog - must override pointer-events: none */
-/* Use high specificity to beat html.box-highlight-drawing-mode body * */
-html.box-highlight-drawing-mode body .box-highlight-help__dialog,
-html.box-highlight-drawing-mode .box-highlight-help__dialog,
-.box-highlight-help__dialog {
+/* Use high specificity to beat html.spotlight-draw-drawing-mode body * */
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__dialog,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__dialog,
+.spotlight-draw-help__dialog {
   /* Critical override to make dialog interactive */
   pointer-events: auto !important;
   user-select: auto !important;
@@ -131,22 +131,22 @@ html.box-highlight-drawing-mode .box-highlight-help__dialog,
 }
 
 /* Dialog backdrop */
-.box-highlight-help__dialog::backdrop {
+.spotlight-draw-help__dialog::backdrop {
   background: var(--backdrop-overlay);
   pointer-events: auto !important;
 }
 
 /* All dialog children must be interactive */
-html.box-highlight-drawing-mode body .box-highlight-help__dialog *,
-html.box-highlight-drawing-mode .box-highlight-help__dialog *,
-.box-highlight-help__dialog * {
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__dialog *,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__dialog *,
+.spotlight-draw-help__dialog * {
   pointer-events: auto !important;
   user-select: auto !important;
   cursor: auto !important;
 }
 
 /* Minimal structure styling for dialog header and content */
-.box-highlight-help__header {
+.spotlight-draw-help__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -154,33 +154,33 @@ html.box-highlight-drawing-mode .box-highlight-help__dialog *,
   border-block-end: var(--size-1) solid ButtonBorder;
 }
 
-.box-highlight-help__header h2 {
+.spotlight-draw-help__header h2 {
   margin: 0;
   font-size: var(--font-size-16);
   font-weight: 600;
   color: CanvasText;
 }
 
-.box-highlight-help__body {
+.spotlight-draw-help__body {
   padding: var(--size-16);
   color: CanvasText;
 }
 
-.box-highlight-help__body h3 {
+.spotlight-draw-help__body h3 {
   margin-block: var(--size-16) var(--size-8);
   font-size: var(--font-size-14);
   font-weight: 600;
   color: CanvasText;
 }
 
-.box-highlight-help__body h3:first-child {
+.spotlight-draw-help__body h3:first-child {
   margin-block-start: 0;
 }
 
 /* Close button must also override pointer-events */
-html.box-highlight-drawing-mode body .box-highlight-help__close,
-html.box-highlight-drawing-mode .box-highlight-help__close,
-.box-highlight-help__close {
+html.spotlight-draw-drawing-mode body .spotlight-draw-help__close,
+html.spotlight-draw-drawing-mode .spotlight-draw-help__close,
+.spotlight-draw-help__close {
   background: none;
   border: none;
   font-size: var(--font-size-32);
@@ -195,20 +195,20 @@ html.box-highlight-drawing-mode .box-highlight-help__close,
   transition: opacity 0.2s ease;
 }
 
-.box-highlight-help__close:hover {
+.spotlight-draw-help__close:hover {
   opacity: 1;
 }
 
 /* Settings Section */
-.box-highlight-help__settings {
+.spotlight-draw-help__settings {
   margin-block-end: var(--size-32);
 }
 
-.box-highlight-help__setting {
+.spotlight-draw-help__setting {
   margin-block: var(--size-16);
 }
 
-.box-highlight-help__setting label {
+.spotlight-draw-help__setting label {
   display: block;
   font-size: var(--font-size-14);
   font-weight: 600;
@@ -217,7 +217,7 @@ html.box-highlight-drawing-mode .box-highlight-help__close,
 }
 
 /* Shortcuts Section */
-.box-highlight-help__shortcuts {
+.spotlight-draw-help__shortcuts {
   padding-block-start: var(--size-16);
   border-block-start: var(--size-1) solid ButtonBorder;
 }

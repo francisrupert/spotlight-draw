@@ -1,6 +1,6 @@
-# Box Highlight Extension - Test Suite
+# SpotlightDraw Extension - Test Suite
 
-This directory contains the test suite for the Box Highlight Chrome Extension. Tests are written using **QUnit** and run directly in the browser without requiring Node.js or a build process.
+This directory contains the test suite for the SpotlightDraw Chrome Extension. Tests are written using **QUnit** and run directly in the browser without requiring Node.js or a build process.
 
 ## Running Tests
 
@@ -128,7 +128,7 @@ handleSpacebarDown({
    ```javascript
    afterEach: function() {
      if (isDrawingMode) disableDrawingMode();
-     var rects = document.querySelectorAll(".box-highlight-rectangle");
+     var rects = document.querySelectorAll(".spotlight-draw-rectangle");
      rects.forEach(function(rect) { rect.parentNode.removeChild(rect); });
    }
    ```

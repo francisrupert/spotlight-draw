@@ -31,11 +31,11 @@ Code review identified significant duplication between `content.css` and `option
 
 **Edit** `extension/options/options.html` — add `<link rel="stylesheet" href="../components.css">` between the tokens and options links (between lines 7 and 8).
 
-**Edit** `extension/content/content.css` — delete lines 219–312 (the 11 dialog-scoped `.box-highlight-help__dialog .xxx` rules for button-group, color-button, and checkbox-label). Also delete lines 331–361 (shortcuts-table, shortcut-keys, shortcut-description). Keep lines 314–329 (`.box-highlight-help__shortcuts`, `.shortcuts-category`, `.shortcuts-category h4` — these are content-specific layout).
+**Edit** `extension/content/content.css` — delete lines 219–312 (the 11 dialog-scoped `.spotlight-draw-help__dialog .xxx` rules for button-group, color-button, and checkbox-label). Also delete lines 331–361 (shortcuts-table, shortcut-keys, shortcut-description). Keep lines 314–329 (`.spotlight-draw-help__shortcuts`, `.shortcuts-category`, `.shortcuts-category h4` — these are content-specific layout).
 
 **Edit** `extension/options/options.css` — delete lines 35–130 (button-group through checkbox-label) and lines 144–174 (shortcuts-table through shortcut-description). Also delete the 2 dead empty rules: `.setting-group {}` (line 23–24) and `.color-group {}` (line 71–72). Keep lines 132–142 (`.shortcuts-section`, `.shortcuts-section h2` — options-specific layout).
 
-**Verification:** Open options popup — button groups, color buttons, checkbox, shortcuts table should render identically. Activate drawing mode, press `?` — help dialog components should render correctly inside the dialog (the `!important` wildcard override on `.box-highlight-help__dialog *` at content.css lines 140–146 already handles pointer-events).
+**Verification:** Open options popup — button groups, color buttons, checkbox, shortcuts table should render identically. Activate drawing mode, press `?` — help dialog components should render correctly inside the dialog (the `!important` wildcard override on `.spotlight-draw-help__dialog *` at content.css lines 140–146 already handles pointer-events).
 
 ---
 
@@ -288,7 +288,7 @@ Note: `isSpacebarHeld` is deliberately NOT in `resetDragState()` — it has its 
 ### Considered from peer review (01a) but skipped
 
 - **Split `shortcuts-data.js` into 3 files** (preferences.js, shortcuts.js, segmented.js) — the file is 80 lines; splitting adds file management overhead without meaningful benefit
-- **BEM pass on options page** (`.container` → `.box-highlight-options__container`, etc.) — the options page is isolated in its own HTML with no collision risk; renaming everything is cosmetic overhead
+- **BEM pass on options page** (`.container` → `.spotlight-draw-options__container`, etc.) — the options page is isolated in its own HTML with no collision risk; renaming everything is cosmetic overhead
 - **`var` → `let/const` migration** — valid modernization but a massive diff orthogonal to DRY/BEM focus; better as a separate dedicated pass
 - **IIFE wrapper for content script** — nice hygiene but unrelated to the DRY/BEM goals
 - **CSS custom properties for z-index** — z-index is set via JS inline styles, not CSS rules; the JS constants in Phase 5 are sufficient

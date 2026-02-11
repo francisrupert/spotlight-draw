@@ -54,20 +54,20 @@ var helpButton = null;
 var helpDialog = null;
 
 // CSS class names
-var DRAWING_MODE_CLASS = "box-highlight-drawing-mode";
-var PAN_MODE_CLASS = "box-highlight-pan-mode";
-var REPOSITIONING_MODE_CLASS = "box-highlight-repositioning-mode";
-var DUPLICATION_HOVER_CLASS = "box-highlight-duplication-hover-mode";
-var DRAGGING_MODE_CLASS = "box-highlight-dragging-mode";
-var RECTANGLE_CLASS = "box-highlight-rectangle";
+var DRAWING_MODE_CLASS = "spotlight-draw-drawing-mode";
+var PAN_MODE_CLASS = "spotlight-draw-pan-mode";
+var REPOSITIONING_MODE_CLASS = "spotlight-draw-repositioning-mode";
+var DUPLICATION_HOVER_CLASS = "spotlight-draw-duplication-hover-mode";
+var DRAGGING_MODE_CLASS = "spotlight-draw-dragging-mode";
+var RECTANGLE_CLASS = "spotlight-draw-rectangle";
 
 // Color cycling (order: orange, green, blue, purple, plain)
 var COLOR_CLASSES = [
   "",                                    // orange (default)
-  "box-highlight-rectangle--green",     // green
-  "box-highlight-rectangle--blue",      // blue
-  "box-highlight-rectangle--purple",    // purple
-  "box-highlight-rectangle--plain"      // plain
+  "spotlight-draw-rectangle--green",     // green
+  "spotlight-draw-rectangle--blue",      // blue
+  "spotlight-draw-rectangle--purple",    // purple
+  "spotlight-draw-rectangle--plain"      // plain
 ];
 
 // User preferences (loaded from chrome.storage)
@@ -219,7 +219,7 @@ function createRectangle(x, y, width, height) {
 // Create help button
 function createHelpButton() {
   var helpButton = document.createElement("button");
-  helpButton.className = "box-highlight-help__trigger box-highlight-help__trigger--hidden";
+  helpButton.className = "spotlight-draw-help__trigger spotlight-draw-help__trigger--hidden";
   helpButton.textContent = "?";
   helpButton.setAttribute("aria-label", "Show keyboard shortcuts");
   helpButton.style.display = "none"; // Hidden by default
@@ -230,28 +230,28 @@ function createHelpButton() {
 // Create help dialog
 function createHelpDialog() {
   var dialog = document.createElement("dialog");
-  dialog.className = "box-highlight-help__dialog";
+  dialog.className = "spotlight-draw-help__dialog";
 
   // Create header
   var header = document.createElement("div");
-  header.className = "box-highlight-help__header";
+  header.className = "spotlight-draw-help__header";
   header.innerHTML = `
     <h2>Shortcuts & Settings</h2>
-    <button class="box-highlight-help__close" aria-label="Close">×</button>
+    <button class="spotlight-draw-help__close" aria-label="Close">×</button>
   `;
   dialog.appendChild(header);
 
   // Create content container
   var content = document.createElement("div");
-  content.className = "box-highlight-help__body";
+  content.className = "spotlight-draw-help__body";
 
   // SETTINGS SECTION (appears first)
   var settingsSection = document.createElement("section");
-  settingsSection.className = "box-highlight-help__settings";
+  settingsSection.className = "spotlight-draw-help__settings";
   settingsSection.innerHTML = `
     <h3>Settings</h3>
 
-    <div class="box-highlight-help__setting">
+    <div class="spotlight-draw-help__setting">
       <label>Border</label>
       <div class="button-group" id="dialog-border-size">
         <button type="button" class="button-group-item" data-value="0.5">0.5</button>
@@ -261,18 +261,18 @@ function createHelpDialog() {
       </div>
     </div>
 
-    <div class="box-highlight-help__setting">
+    <div class="spotlight-draw-help__setting">
       <label>Color</label>
       <div class="button-group color-group" id="dialog-default-color">
         <button type="button" class="button-group-item color-button" data-value="" data-color="orange" aria-label="Orange"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--green" data-color="green" aria-label="Green"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--blue" data-color="blue" aria-label="Blue"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--purple" data-color="purple" aria-label="Purple"></button>
-        <button type="button" class="button-group-item color-button" data-value="box-highlight-rectangle--plain" data-color="plain" aria-label="Gray"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--green" data-color="green" aria-label="Green"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--blue" data-color="blue" aria-label="Blue"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--purple" data-color="purple" aria-label="Purple"></button>
+        <button type="button" class="button-group-item color-button" data-value="spotlight-draw-rectangle--plain" data-color="plain" aria-label="Gray"></button>
       </div>
     </div>
 
-    <div class="box-highlight-help__setting">
+    <div class="spotlight-draw-help__setting">
       <label class="checkbox-label">
         <input type="checkbox" id="dialog-snap-to-edges">
         <span>Snap to Edges</span>
@@ -283,7 +283,7 @@ function createHelpDialog() {
 
   // SHORTCUTS SECTION (appears second)
   var shortcutsSection = document.createElement("section");
-  shortcutsSection.className = "box-highlight-help__shortcuts";
+  shortcutsSection.className = "spotlight-draw-help__shortcuts";
   shortcutsSection.innerHTML = '<h3>Keyboard Shortcuts</h3>';
 
   // Render shortcuts from shared data
@@ -315,19 +315,19 @@ function showHelpButton() {
     helpButton.style.display = "block";
     // Force reflow to ensure transition works
     helpButton.offsetHeight;
-    helpButton.classList.add("box-highlight-help__trigger--visible");
-    helpButton.classList.remove("box-highlight-help__trigger--hidden");
+    helpButton.classList.add("spotlight-draw-help__trigger--visible");
+    helpButton.classList.remove("spotlight-draw-help__trigger--hidden");
   }
 }
 
 // Hide help button with slide-out animation
 function hideHelpButton() {
   if (helpButton) {
-    helpButton.classList.add("box-highlight-help__trigger--hidden");
-    helpButton.classList.remove("box-highlight-help__trigger--visible");
+    helpButton.classList.add("spotlight-draw-help__trigger--hidden");
+    helpButton.classList.remove("spotlight-draw-help__trigger--visible");
     // Hide completely after animation completes
     setTimeout(function() {
-      if (helpButton && helpButton.classList.contains("box-highlight-help__trigger--hidden")) {
+      if (helpButton && helpButton.classList.contains("spotlight-draw-help__trigger--hidden")) {
         helpButton.style.display = "none";
       }
     }, ANIMATION_DURATION);
@@ -430,7 +430,7 @@ function initHelpSystem() {
   document.body.appendChild(helpDialog);
 
   // Setup dialog event listeners
-  var closeButton = helpDialog.querySelector(".box-highlight-help__close");
+  var closeButton = helpDialog.querySelector(".spotlight-draw-help__close");
   if (closeButton) {
     closeButton.addEventListener("click", handleDialogCloseClick, true);
   }

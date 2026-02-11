@@ -1,6 +1,6 @@
 # Chrome Extension Scaffold (Active Plan)
 
-This document tracks the plan and progress for scaffolding the Box Highlight Chrome extension in this repository.
+This document tracks the plan and progress for scaffolding the SpotlightDraw Chrome extension in this repository.
 
 ## Status Overview
 
@@ -57,8 +57,8 @@ The extension now focuses on **interactive rectangle drawing**:
 
 - [x] Tooling and developer experience
   - `package.json` added at repo root with scripts:
-    - `npm run zip`: Creates versioned zip file (e.g., `box-highlight-0.1.0.zip`)
-    - `npm run zip:latest`: Creates generic `box-highlight-latest.zip` for testing
+    - `npm run zip`: Creates versioned zip file (e.g., `spotlight-draw-0.1.0.zip`)
+    - `npm run zip:latest`: Creates generic `spotlight-draw-latest.zip` for testing
     - `npm run clean`: Removes all `.zip` build artifacts
   - `.gitignore` added to exclude node_modules, build artifacts, and OS files.
   - Root `README.md` added with project overview, quick start, and documentation links.

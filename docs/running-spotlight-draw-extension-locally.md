@@ -1,6 +1,6 @@
-# Running the Box Highlight Chrome Extension Locally
+# Running the SpotlightDraw Chrome Extension Locally
 
-This document describes how to load and run the Box Highlight Chrome extension from this repository on your local machine.
+This document describes how to load and run the SpotlightDraw Chrome extension from this repository on your local machine.
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ You will point Chrome to this `extension/` directory when loading the extension.
 3. In the top-right corner of the Extensions page, enable **Developer mode**.
 4. Click the **Load unpacked** button.
 5. In the folder picker dialog, select the `extension/` directory in this repository and confirm.
-6. Verify that "Box Highlight" now appears in the list of installed extensions and is enabled.
+6. Verify that "SpotlightDraw" now appears in the list of installed extensions and is enabled.
 
 If you prefer to work with relative paths:
 
@@ -52,7 +52,7 @@ If you prefer to work with relative paths:
 
 ## Configuring settings
 
-Right-click the extension icon and select **Options** (or go to `chrome://extensions` → Box Highlight → Options) to access:
+Right-click the extension icon and select **Options** (or go to `chrome://extensions` → SpotlightDraw → Options) to access:
 
 - **Border Size**: 0.5px, 1px (default), 2px, or 3px
 - **Default Color**: Orange (default), green, blue, purple, or gray
@@ -65,7 +65,7 @@ When you modify files under `extension/` (such as content scripts, options page,
 
 1. Save your changes in your editor.
 2. Return to `chrome://extensions`.
-3. Find the **Box Highlight** extension.
+3. Find the **SpotlightDraw** extension.
 4. Click the **Reload** button (🔄) for the extension.
 5. Refresh any open pages where you are testing the extension.
 

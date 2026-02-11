@@ -1,8 +1,8 @@
-# Box Highlight Extension - Testing Implementation
+# SpotlightDraw Extension - Testing Implementation
 
 ## Overview
 
-This document describes the testing infrastructure implemented for the Box Highlight Chrome Extension. The test suite uses **QUnit** to provide comprehensive test coverage while maintaining the project's zero-dependency, vanilla JavaScript approach.
+This document describes the testing infrastructure implemented for the SpotlightDraw Chrome Extension. The test suite uses **QUnit** to provide comprehensive test coverage while maintaining the project's zero-dependency, vanilla JavaScript approach.
 
 ## Implementation Summary
 
@@ -169,7 +169,7 @@ QUnit.module("Feature Tests", {
   afterEach: function() {
     // Cleanup DOM, disable modes
     if (isDrawingMode) disableDrawingMode();
-    var rects = document.querySelectorAll(".box-highlight-rectangle");
+    var rects = document.querySelectorAll(".spotlight-draw-rectangle");
     rects.forEach(function(rect) { rect.parentNode.removeChild(rect); });
   }
 });
@@ -299,7 +299,7 @@ QUnit.module("Feature Tests", {
 
 ## Conclusion
 
-The Box Highlight Extension now has a solid testing foundation with 52 automated tests covering critical helper functions and two major bug fixes. The test suite:
+The SpotlightDraw Extension now has a solid testing foundation with 52 automated tests covering critical helper functions and two major bug fixes. The test suite:
 
 - ✅ Runs in under 5 seconds
 - ✅ Requires zero npm dependencies
