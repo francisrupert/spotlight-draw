@@ -16,19 +16,19 @@ var KEYBOARD_SHORTCUTS = [
     shortcuts: [
       { keys: "Alt + Drag (over rectangle)", description: "Duplicate rectangle" },
       { keys: "Cmd/Ctrl + Drag (over rectangle)", description: "Reposition rectangle" },
-      { keys: "Tab", description: "Cycle hovered rectangle colors" },
-      { keys: "Delete / Backspace", description: "Remove hovered rectangle" },
-      { keys: "Right-click", description: "Multi-rectangle mode (like Shift)" }
+      { keys: "Tab (over rectangle)", description: "Cycle rectangle colors" },
+      { keys: "Delete / Backspace (over rectangle)", description: "Remove rectangle" },
+      { keys: "Right-click + Drag", description: "Multi-rectangle mode (like Shift)" }
     ]
   },
   {
     category: "Element Inspection",
     shortcuts: [
       { keys: "F (hold)", description: "Element inspection mode" },
-      { keys: "Arrow Up (in inspection)", description: "Traverse to parent element" },
-      { keys: "Arrow Down (in inspection)", description: "Traverse to child element" },
-      { keys: "Tab (in inspection)", description: "Next sibling element" },
-      { keys: "Shift + Tab (in inspection)", description: "Previous sibling element" }
+      { keys: "Arrow Up (in inspection)", description: "Highlight parent element" },
+      { keys: "Arrow Down (in inspection)", description: "Highlight child element" },
+      { keys: "Tab (in inspection)", description: "Highlight next sibling element" },
+      { keys: "Shift + Tab (in inspection)", description: "Highlight previous sibling element" }
     ]
   },
   {
