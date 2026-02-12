@@ -58,6 +58,7 @@ var DRAWING_MODE_CLASS = "spotlight-draw-drawing-mode";
 var PAN_MODE_CLASS = "spotlight-draw-pan-mode";
 var REPOSITIONING_MODE_CLASS = "spotlight-draw-repositioning-mode";
 var DUPLICATION_HOVER_CLASS = "spotlight-draw-duplication-hover-mode";
+var DUPLICATION_DRAGGING_CLASS = "spotlight-draw-duplication-dragging-mode";
 var DRAGGING_MODE_CLASS = "spotlight-draw-dragging-mode";
 var RECTANGLE_CLASS = "spotlight-draw-rectangle";
 
@@ -1632,9 +1633,9 @@ function handleMouseDown(event) {
     if (rectUnderMouse) {
       isDuplicating = true;
 
-      // Hide cursor during duplication drag
+      // Show copy cursor during duplication drag
       document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
-      document.documentElement.classList.add(DRAGGING_MODE_CLASS);
+      document.documentElement.classList.add(DUPLICATION_DRAGGING_CLASS);
 
       // Create a duplicate of the rectangle under mouse
       var b = getRectBounds(rectUnderMouse);
@@ -1861,7 +1862,7 @@ function handleMouseUp(event) {
     duplicatingRectangle = null;
     isDuplicating = false;
     duplicateAxisLocked = null;
-    document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
+    document.documentElement.classList.remove(DUPLICATION_DRAGGING_CLASS);
     event.preventDefault();
     return;
   }
@@ -2194,6 +2195,7 @@ function disableDrawingMode() {
   document.documentElement.classList.remove(PAN_MODE_CLASS);
   document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
   document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
+  document.documentElement.classList.remove(DUPLICATION_DRAGGING_CLASS);
   document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
 
   // Remove snap guide lines

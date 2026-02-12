@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SpotlightDraw",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "Annotate web pages during presentations and screen recordings with customizable drawing tools.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -11,7 +11,7 @@
   "commands": {
     "toggle-drawing-mode": {
       "suggested_key": {
-        "default": "Alt+A"
+        "default": "Alt+F"
       },
       "description": "Toggle rectangle drawing mode"
     }
