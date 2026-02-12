@@ -1672,7 +1672,7 @@ function handleMouseDown(event) {
       isRepositioning = true;
       repositioningRectangle = rectUnderMouse;
 
-      // Remove move cursor and hide cursor during drag
+      // Switch to grabbed cursor during drag
       document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
       document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
       document.documentElement.classList.add(DRAGGING_MODE_CLASS);

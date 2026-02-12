@@ -4,7 +4,7 @@ html.spotlight-draw-pan-mode { --sd-cursor: none; }
 html.spotlight-draw-repositioning-mode { --sd-cursor: var(--cursor-default); }
 html.spotlight-draw-duplication-hover-mode { --sd-cursor: var(--cursor-copy); }
 html.spotlight-draw-duplication-dragging-mode { --sd-cursor: var(--cursor-copy); }
-html.spotlight-draw-dragging-mode { --sd-cursor: var(--cursor-grabbed); }
+html.spotlight-draw-dragging-mode { --sd-cursor: var(--cursor-default); }
 html.spotlight-draw-inspection-mode { --sd-cursor: default; }
 
 html.spotlight-draw-drawing-mode,
