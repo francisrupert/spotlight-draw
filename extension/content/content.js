@@ -41,6 +41,12 @@ var repositionStartX = 0;
 var repositionStartY = 0;
 var repositionAxisLocked = null; // "horizontal" or "vertical"
 
+// Resize state (when dragging edge/corner of existing rectangle)
+var isResizing = false;
+var resizingRectangle = null;
+var resizeHandle = null;       // "n","s","e","w","ne","nw","se","sw"
+var resizeStartBounds = null;  // { left, top, width, height }
+
 // Element inspection state (when 'f' key is held)
 var isInspecting = false;
 var inspectionRectangle = null;
@@ -87,6 +93,7 @@ var Z_INDEX_GUIDE = "2147483646";
 var MIN_RECT_SIZE = 3;
 var GUIDE_BORDER_STYLE = "0.5px dashed GrayText";
 var ANIMATION_DURATION = 300;
+var RESIZE_HANDLE_SIZE = 6; // pixels — edge/corner hit zone
 
 // Snap guide lines (2 per axis to support dual-edge snapping)
 var horizontalGuideLines = [null, null];
@@ -170,6 +177,10 @@ function resetDragState() {
   axisConstraintMode = null;
   duplicateAxisLocked = null;
   repositionAxisLocked = null;
+  isResizing = false;
+  resizingRectangle = null;
+  resizeHandle = null;
+  resizeStartBounds = null;
 }
 
 // Load user preferences from chrome.storage
@@ -835,6 +846,346 @@ function findAllGapsOfSize(targetGapSize, axis, excludeRect, movedRectBounds, to
   return gaps;
 }
 
+// Collect all gaps between adjacent rectangle pairs (excluding a given rect)
+function collectExistingGaps(axis, excludeRect) {
+  var rects = [];
+  for (var i = 0; i < placedRectangles.length; i++) {
+    if (placedRectangles[i] !== excludeRect) {
+      rects.push(getRectBounds(placedRectangles[i]));
+    }
+  }
+  var gaps = [];
+  if (axis === 'horizontal') {
+    rects.sort(function(a, b) { return a.left - b.left; });
+    for (var i = 0; i < rects.length - 1; i++) {
+      var aRight = rects[i].left + rects[i].width;
+      var bLeft = rects[i + 1].left;
+      if (bLeft > aRight) {
+        gaps.push({ gapSize: bLeft - aRight, gapStart: aRight, gapEnd: bLeft, rectA: rects[i], rectB: rects[i + 1] });
+      }
+    }
+  } else {
+    rects.sort(function(a, b) { return a.top - b.top; });
+    for (var i = 0; i < rects.length - 1; i++) {
+      var aBottom = rects[i].top + rects[i].height;
+      var bTop = rects[i + 1].top;
+      if (bTop > aBottom) {
+        gaps.push({ gapSize: bTop - aBottom, gapStart: aBottom, gapEnd: bTop, rectA: rects[i], rectB: rects[i + 1] });
+      }
+    }
+  }
+  return gaps;
+}
+
+// Apply snapping for resize (only snap moved edges based on resizeHandle)
+function applyResizeSnapping(x, y, width, height, excludeRect) {
+  var targets = getSnapTargets(excludeRect);
+  var snappedX = x;
+  var snappedY = y;
+  var snappedWidth = width;
+  var snappedHeight = height;
+  var verticalSnapPositions = [];
+  var horizontalSnapPositions = [];
+  var spacingGuides = [];
+
+  var movesLeft = resizeHandle === "w" || resizeHandle === "nw" || resizeHandle === "sw";
+  var movesRight = resizeHandle === "e" || resizeHandle === "ne" || resizeHandle === "se";
+  var movesTop = resizeHandle === "n" || resizeHandle === "nw" || resizeHandle === "ne";
+  var movesBottom = resizeHandle === "s" || resizeHandle === "sw" || resizeHandle === "se";
+
+  var left = x;
+  var right = x + width;
+  var top = y;
+  var bottom = y + height;
+
+  // --- Horizontal edge alignment (only snap moved edges) ---
+  var xEdgeSnapped = false;
+
+  if (movesLeft) {
+    var bestSnap = pickCloserSnap(left,
+      findClosestEdge(left, targets.left),
+      findClosestEdge(left, targets.right));
+    if (bestSnap !== null) {
+      snappedX = bestSnap;
+      snappedWidth = right - bestSnap;
+      verticalSnapPositions.push(bestSnap);
+      xEdgeSnapped = true;
+    }
+  }
+
+  if (movesRight) {
+    var bestSnap = pickCloserSnap(right,
+      findClosestEdge(right, targets.right),
+      findClosestEdge(right, targets.left));
+    if (bestSnap !== null) {
+      snappedWidth = bestSnap - snappedX;
+      verticalSnapPositions.push(bestSnap);
+      xEdgeSnapped = true;
+    }
+  }
+
+  // --- Horizontal gap snapping (fallback when no edge alignment) ---
+  if (!xEdgeSnapped && (movesLeft || movesRight)) {
+    var existingHGaps = collectExistingGaps('horizontal', excludeRect);
+    if (existingHGaps.length > 0) {
+      var bestDist = Infinity;
+      var bestSnapResult = null;
+
+      if (movesRight) {
+        var currentRight = snappedX + snappedWidth;
+        var nearestRightLeft = Infinity;
+        var nearestRightRect = null;
+        for (var i = 0; i < placedRectangles.length; i++) {
+          if (placedRectangles[i] === excludeRect) continue;
+          var b = getRectBounds(placedRectangles[i]);
+          if (b.left >= currentRight - SNAP_THRESHOLD && b.left < nearestRightLeft) {
+            nearestRightLeft = b.left;
+            nearestRightRect = b;
+          }
+        }
+        if (nearestRightRect) {
+          var currentGap = nearestRightRect.left - currentRight;
+          for (var j = 0; j < existingHGaps.length; j++) {
+            var diff = Math.abs(currentGap - existingHGaps[j].gapSize);
+            if (diff <= SNAP_THRESHOLD && diff < bestDist) {
+              bestDist = diff;
+              bestSnapResult = { edge: 'right', target: nearestRightRect.left - existingHGaps[j].gapSize };
+            }
+          }
+        }
+      }
+
+      if (movesLeft && !bestSnapResult) {
+        var currentLeft = snappedX;
+        var nearestLeftRight = -Infinity;
+        var nearestLeftRect = null;
+        for (var i = 0; i < placedRectangles.length; i++) {
+          if (placedRectangles[i] === excludeRect) continue;
+          var b = getRectBounds(placedRectangles[i]);
+          var bRight = b.left + b.width;
+          if (bRight <= currentLeft + SNAP_THRESHOLD && bRight > nearestLeftRight) {
+            nearestLeftRight = bRight;
+            nearestLeftRect = b;
+          }
+        }
+        if (nearestLeftRect) {
+          var nRight = nearestLeftRect.left + nearestLeftRect.width;
+          var currentGap = currentLeft - nRight;
+          for (var j = 0; j < existingHGaps.length; j++) {
+            var diff = Math.abs(currentGap - existingHGaps[j].gapSize);
+            if (diff <= SNAP_THRESHOLD && diff < bestDist) {
+              bestDist = diff;
+              bestSnapResult = { edge: 'left', target: nRight + existingHGaps[j].gapSize };
+            }
+          }
+        }
+      }
+
+      if (bestSnapResult) {
+        if (bestSnapResult.edge === 'right') {
+          snappedWidth = bestSnapResult.target - snappedX;
+        } else {
+          var fixedRight = snappedX + snappedWidth;
+          snappedX = bestSnapResult.target;
+          snappedWidth = fixedRight - snappedX;
+        }
+      }
+    }
+  }
+
+  // --- Vertical edge alignment (only snap moved edges) ---
+  var yEdgeSnapped = false;
+
+  if (movesTop) {
+    var bestSnap = pickCloserSnap(top,
+      findClosestEdge(top, targets.top),
+      findClosestEdge(top, targets.bottom));
+    if (bestSnap !== null) {
+      snappedY = bestSnap;
+      snappedHeight = bottom - bestSnap;
+      horizontalSnapPositions.push(bestSnap);
+      yEdgeSnapped = true;
+    }
+  }
+
+  if (movesBottom) {
+    var bestSnap = pickCloserSnap(bottom,
+      findClosestEdge(bottom, targets.bottom),
+      findClosestEdge(bottom, targets.top));
+    if (bestSnap !== null) {
+      snappedHeight = bestSnap - snappedY;
+      horizontalSnapPositions.push(bestSnap);
+      yEdgeSnapped = true;
+    }
+  }
+
+  // --- Vertical gap snapping (fallback when no edge alignment) ---
+  if (!yEdgeSnapped && (movesTop || movesBottom)) {
+    var existingVGaps = collectExistingGaps('vertical', excludeRect);
+    if (existingVGaps.length > 0) {
+      var bestDist = Infinity;
+      var bestSnapResult = null;
+
+      if (movesBottom) {
+        var currentBottom = snappedY + snappedHeight;
+        var nearestBelowTop = Infinity;
+        var nearestBelowRect = null;
+        for (var i = 0; i < placedRectangles.length; i++) {
+          if (placedRectangles[i] === excludeRect) continue;
+          var b = getRectBounds(placedRectangles[i]);
+          if (b.top >= currentBottom - SNAP_THRESHOLD && b.top < nearestBelowTop) {
+            nearestBelowTop = b.top;
+            nearestBelowRect = b;
+          }
+        }
+        if (nearestBelowRect) {
+          var currentGap = nearestBelowRect.top - currentBottom;
+          for (var j = 0; j < existingVGaps.length; j++) {
+            var diff = Math.abs(currentGap - existingVGaps[j].gapSize);
+            if (diff <= SNAP_THRESHOLD && diff < bestDist) {
+              bestDist = diff;
+              bestSnapResult = { edge: 'bottom', target: nearestBelowRect.top - existingVGaps[j].gapSize };
+            }
+          }
+        }
+      }
+
+      if (movesTop && !bestSnapResult) {
+        var currentTop = snappedY;
+        var nearestAboveBottom = -Infinity;
+        var nearestAboveRect = null;
+        for (var i = 0; i < placedRectangles.length; i++) {
+          if (placedRectangles[i] === excludeRect) continue;
+          var b = getRectBounds(placedRectangles[i]);
+          var bBottom = b.top + b.height;
+          if (bBottom <= currentTop + SNAP_THRESHOLD && bBottom > nearestAboveBottom) {
+            nearestAboveBottom = bBottom;
+            nearestAboveRect = b;
+          }
+        }
+        if (nearestAboveRect) {
+          var nBottom = nearestAboveRect.top + nearestAboveRect.height;
+          var currentGap = currentTop - nBottom;
+          for (var j = 0; j < existingVGaps.length; j++) {
+            var diff = Math.abs(currentGap - existingVGaps[j].gapSize);
+            if (diff <= SNAP_THRESHOLD && diff < bestDist) {
+              bestDist = diff;
+              bestSnapResult = { edge: 'top', target: nBottom + existingVGaps[j].gapSize };
+            }
+          }
+        }
+      }
+
+      if (bestSnapResult) {
+        if (bestSnapResult.edge === 'bottom') {
+          snappedHeight = bestSnapResult.target - snappedY;
+        } else {
+          var fixedBottom = snappedY + snappedHeight;
+          snappedY = bestSnapResult.target;
+          snappedHeight = fixedBottom - snappedY;
+        }
+      }
+    }
+  }
+
+  // --- Gap guide display (always, after all snapping) ---
+  var finalBounds = { left: snappedX, top: snappedY, width: snappedWidth, height: snappedHeight };
+
+  if (movesRight || movesLeft) {
+    var allHRects = [{ bounds: finalBounds, isResized: true }];
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i] !== excludeRect) {
+        allHRects.push({ bounds: getRectBounds(placedRectangles[i]), isResized: false });
+      }
+    }
+    allHRects.sort(function(a, b) { return a.bounds.left - b.bounds.left; });
+    var ourIdx = -1;
+    for (var i = 0; i < allHRects.length; i++) {
+      if (allHRects[i].isResized) { ourIdx = i; break; }
+    }
+
+    var hGapSizes = [];
+    if (movesRight && ourIdx < allHRects.length - 1) {
+      var ourRight = finalBounds.left + finalBounds.width;
+      var nextLeft = allHRects[ourIdx + 1].bounds.left;
+      if (nextLeft > ourRight) hGapSizes.push(nextLeft - ourRight);
+    }
+    if (movesLeft && ourIdx > 0) {
+      var prevRight = allHRects[ourIdx - 1].bounds.left + allHRects[ourIdx - 1].bounds.width;
+      if (finalBounds.left > prevRight) hGapSizes.push(finalBounds.left - prevRight);
+    }
+
+    for (var g = 0; g < hGapSizes.length; g++) {
+      var allGaps = findAllGapsOfSize(hGapSizes[g], 'horizontal', excludeRect, finalBounds, 1);
+      if (allGaps.length >= 2) {
+        for (var j = 0; j < allGaps.length; j++) {
+          spacingGuides.push({
+            axis: 'horizontal',
+            position: (allGaps[j].gapStart + allGaps[j].gapEnd) / 2,
+            gapStart: allGaps[j].gapStart,
+            gapEnd: allGaps[j].gapEnd,
+            gap: allGaps[j].gap,
+            between: allGaps[j].between,
+            referenceRects: allGaps[j].referenceRects
+          });
+        }
+      }
+    }
+  }
+
+  if (movesTop || movesBottom) {
+    var allVRects = [{ bounds: finalBounds, isResized: true }];
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i] !== excludeRect) {
+        allVRects.push({ bounds: getRectBounds(placedRectangles[i]), isResized: false });
+      }
+    }
+    allVRects.sort(function(a, b) { return a.bounds.top - b.bounds.top; });
+    var ourIdx = -1;
+    for (var i = 0; i < allVRects.length; i++) {
+      if (allVRects[i].isResized) { ourIdx = i; break; }
+    }
+
+    var vGapSizes = [];
+    if (movesBottom && ourIdx < allVRects.length - 1) {
+      var ourBottom = finalBounds.top + finalBounds.height;
+      var nextTop = allVRects[ourIdx + 1].bounds.top;
+      if (nextTop > ourBottom) vGapSizes.push(nextTop - ourBottom);
+    }
+    if (movesTop && ourIdx > 0) {
+      var prevBottom = allVRects[ourIdx - 1].bounds.top + allVRects[ourIdx - 1].bounds.height;
+      if (finalBounds.top > prevBottom) vGapSizes.push(finalBounds.top - prevBottom);
+    }
+
+    for (var g = 0; g < vGapSizes.length; g++) {
+      var allGaps = findAllGapsOfSize(vGapSizes[g], 'vertical', excludeRect, finalBounds, 1);
+      if (allGaps.length >= 2) {
+        for (var j = 0; j < allGaps.length; j++) {
+          spacingGuides.push({
+            axis: 'vertical',
+            position: (allGaps[j].gapStart + allGaps[j].gapEnd) / 2,
+            gapStart: allGaps[j].gapStart,
+            gapEnd: allGaps[j].gapEnd,
+            gap: allGaps[j].gap,
+            between: allGaps[j].between,
+            referenceRects: allGaps[j].referenceRects
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    x: snappedX,
+    y: snappedY,
+    width: snappedWidth,
+    height: snappedHeight,
+    verticalSnapPositions: verticalSnapPositions,
+    horizontalSnapPositions: horizontalSnapPositions,
+    spacingGuides: spacingGuides
+  };
+}
+
 // Apply snapping for moving rectangles (repositioning/duplicating - only adjusts position, keeps size fixed)
 function applyPositionSnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
@@ -1399,6 +1750,135 @@ function getRectangleAtPosition(x, y) {
   return null;
 }
 
+// Find resize handle (edge/corner) at mouse position
+function getResizeHandle(x, y) {
+  for (var i = placedRectangles.length - 1; i >= 0; i--) {
+    var rect = placedRectangles[i];
+    var b = getRectBounds(rect);
+    var sz = RESIZE_HANDLE_SIZE;
+
+    var nearLeft = Math.abs(x - b.left) <= sz;
+    var nearRight = Math.abs(x - (b.left + b.width)) <= sz;
+    var nearTop = Math.abs(y - b.top) <= sz;
+    var nearBottom = Math.abs(y - (b.top + b.height)) <= sz;
+
+    var inHorizontalRange = x >= b.left - sz && x <= b.left + b.width + sz;
+    var inVerticalRange = y >= b.top - sz && y <= b.top + b.height + sz;
+
+    // Check corners first (where two edge zones overlap)
+    if (nearTop && nearLeft && inHorizontalRange && inVerticalRange) {
+      return { rect: rect, handle: "nw" };
+    }
+    if (nearTop && nearRight && inHorizontalRange && inVerticalRange) {
+      return { rect: rect, handle: "ne" };
+    }
+    if (nearBottom && nearLeft && inHorizontalRange && inVerticalRange) {
+      return { rect: rect, handle: "sw" };
+    }
+    if (nearBottom && nearRight && inHorizontalRange && inVerticalRange) {
+      return { rect: rect, handle: "se" };
+    }
+
+    // Check edges
+    if (nearTop && inHorizontalRange && inVerticalRange) {
+      return { rect: rect, handle: "n" };
+    }
+    if (nearBottom && inHorizontalRange && inVerticalRange) {
+      return { rect: rect, handle: "s" };
+    }
+    if (nearLeft && inVerticalRange && inHorizontalRange) {
+      return { rect: rect, handle: "w" };
+    }
+    if (nearRight && inVerticalRange && inHorizontalRange) {
+      return { rect: rect, handle: "e" };
+    }
+
+    // Inside rect but not near any edge — interior hit, stop checking rects behind
+    if (x >= b.left && x <= b.left + b.width && y >= b.top && y <= b.top + b.height) {
+      return null;
+    }
+  }
+  return null;
+}
+
+// Calculate new bounds during resize
+function calculateResizeBounds(mouseX, mouseY, handle, startBounds, altHeld) {
+  var left = startBounds.left;
+  var top = startBounds.top;
+  var right = startBounds.left + startBounds.width;
+  var bottom = startBounds.top + startBounds.height;
+
+  // Determine which edges the handle moves
+  var movesLeft = handle === "w" || handle === "nw" || handle === "sw";
+  var movesRight = handle === "e" || handle === "ne" || handle === "se";
+  var movesTop = handle === "n" || handle === "nw" || handle === "ne";
+  var movesBottom = handle === "s" || handle === "sw" || handle === "se";
+
+  if (altHeld) {
+    // Symmetric resize around center
+    var centerX = startBounds.left + startBounds.width / 2;
+    var centerY = startBounds.top + startBounds.height / 2;
+
+    if (movesLeft) {
+      var dx = centerX - mouseX;
+      if (dx < MIN_RECT_SIZE / 2) dx = MIN_RECT_SIZE / 2;
+      left = Math.round(centerX - dx);
+      right = Math.round(centerX + dx);
+    }
+    if (movesRight) {
+      var dx = mouseX - centerX;
+      if (dx < MIN_RECT_SIZE / 2) dx = MIN_RECT_SIZE / 2;
+      left = Math.round(centerX - dx);
+      right = Math.round(centerX + dx);
+    }
+    if (movesTop) {
+      var dy = centerY - mouseY;
+      if (dy < MIN_RECT_SIZE / 2) dy = MIN_RECT_SIZE / 2;
+      top = Math.round(centerY - dy);
+      bottom = Math.round(centerY + dy);
+    }
+    if (movesBottom) {
+      var dy = mouseY - centerY;
+      if (dy < MIN_RECT_SIZE / 2) dy = MIN_RECT_SIZE / 2;
+      top = Math.round(centerY - dy);
+      bottom = Math.round(centerY + dy);
+    }
+  } else {
+    // Normal resize — move the dragged edge(s) to mouse position
+    if (movesLeft) {
+      left = Math.round(Math.min(mouseX, right - MIN_RECT_SIZE));
+    }
+    if (movesRight) {
+      right = Math.round(Math.max(mouseX, left + MIN_RECT_SIZE));
+    }
+    if (movesTop) {
+      top = Math.round(Math.min(mouseY, bottom - MIN_RECT_SIZE));
+    }
+    if (movesBottom) {
+      bottom = Math.round(Math.max(mouseY, top + MIN_RECT_SIZE));
+    }
+  }
+
+  return {
+    left: left,
+    top: top,
+    width: right - left,
+    height: bottom - top
+  };
+}
+
+// Set resize cursor via inline style on <html>
+function setResizeCursor(handle) {
+  var map = { n: "n-resize", s: "s-resize", e: "e-resize", w: "w-resize",
+              ne: "ne-resize", nw: "nw-resize", se: "se-resize", sw: "sw-resize" };
+  document.documentElement.style.setProperty("--sd-cursor", map[handle]);
+}
+
+// Clear resize cursor (remove inline override, class value takes over)
+function clearResizeCursor() {
+  document.documentElement.style.removeProperty("--sd-cursor");
+}
+
 // Cycle through rectangle colors
 function cycleRectangleColor(rect) {
   if (!rect) {
@@ -1627,9 +2107,20 @@ function traverseSibling(direction) {
 
 // Update hover cursor classes based on modifier key state and mouse position
 function updateHoverCursors(metaOrCtrl, alt) {
-  if (!isDrawingMode || isCurrentlyDrawing || isDuplicating || isRepositioning) {
+  if (!isDrawingMode || isCurrentlyDrawing || isDuplicating || isRepositioning || isResizing) {
     return;
   }
+
+  // Edge/corner detection has highest priority — regardless of modifiers
+  var resizeHit = getResizeHandle(currentMouseX, currentMouseY);
+  if (resizeHit) {
+    setResizeCursor(resizeHit.handle);
+    document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+    document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
+    return;
+  }
+
+  clearResizeCursor();
 
   if (metaOrCtrl && !alt) {
     var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
@@ -1704,11 +2195,27 @@ function handleMouseDown(event) {
     return;
   }
 
+  // Edge/corner resize has highest priority — regardless of modifier keys
+  if (!isCurrentlyDrawing) {
+    var resizeHit = getResizeHandle(event.clientX, event.clientY);
+    if (resizeHit) {
+      isResizing = true;
+      resizingRectangle = resizeHit.rect;
+      resizeHandle = resizeHit.handle;
+      var rb = getRectBounds(resizeHit.rect);
+      resizeStartBounds = { left: rb.left, top: rb.top, width: rb.width, height: rb.height };
+      setResizeCursor(resizeHit.handle);
+      event.preventDefault();
+      return;
+    }
+  }
+
   // If Alt is held and mouse is over a rectangle, start duplicating (Figma-style)
   // Alt takes priority over Cmd/Ctrl — Cmd+Alt starts duplication, not repositioning
   if (event.altKey && !isCurrentlyDrawing) {
     var rectUnderMouse = getRectangleAtPosition(event.clientX, event.clientY);
     if (rectUnderMouse) {
+      clearResizeCursor();
       isDuplicating = true;
 
       // Show copy cursor during duplication drag
@@ -1747,6 +2254,7 @@ function handleMouseDown(event) {
   if ((event.metaKey || event.ctrlKey) && !isCurrentlyDrawing) {
     var rectUnderMouse = getRectangleAtPosition(event.clientX, event.clientY);
     if (rectUnderMouse) {
+      clearResizeCursor();
       isRepositioning = true;
       repositioningRectangle = rectUnderMouse;
 
@@ -1785,6 +2293,7 @@ function handleMouseDown(event) {
   startY = event.clientY;
 
   // Remove hover cursor classes when starting to draw
+  clearResizeCursor();
   document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
   document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
 
@@ -1803,6 +2312,19 @@ function handleMouseMove(event) {
 
   // Update hover cursors based on modifier keys and mouse position
   updateHoverCursors(event.metaKey || event.ctrlKey, event.altKey);
+
+  // Handle resize mode
+  if (isResizing && resizingRectangle) {
+    var cm = clampMouse(currentMouseX, currentMouseY);
+    var newBounds = calculateResizeBounds(cm.x, cm.y, resizeHandle, resizeStartBounds, event.altKey);
+    var clamped = applySnapClampAndGuides(newBounds.left, newBounds.top, newBounds.width, newBounds.height, resizingRectangle, applyResizeSnapping);
+    resizingRectangle.style.left = clamped.x + "px";
+    resizingRectangle.style.top = clamped.y + "px";
+    resizingRectangle.style.width = clamped.width + "px";
+    resizingRectangle.style.height = clamped.height + "px";
+    event.preventDefault();
+    return;
+  }
 
   // Handle repositioning mode
   if (isRepositioning && repositioningRectangle) {
@@ -1916,6 +2438,17 @@ function handleMouseMove(event) {
 function handleMouseUp(event) {
   // Hide guide lines when releasing mouse
   hideGuideLines();
+
+  // If resizing, finalize the resize
+  if (isResizing && resizingRectangle) {
+    isResizing = false;
+    resizingRectangle = null;
+    resizeHandle = null;
+    resizeStartBounds = null;
+    clearResizeCursor();
+    event.preventDefault();
+    return;
+  }
 
   // If duplicating, finalize the duplicate placement
   if (isDuplicating && duplicatingRectangle) {
@@ -2123,6 +2656,21 @@ function handleKeyDown(event) {
       event.preventDefault();
       return;
     }
+    // If resizing, cancel and revert to original bounds
+    if (isResizing && resizingRectangle && resizeStartBounds) {
+      hideGuideLines();
+      resizingRectangle.style.left = resizeStartBounds.left + "px";
+      resizingRectangle.style.top = resizeStartBounds.top + "px";
+      resizingRectangle.style.width = resizeStartBounds.width + "px";
+      resizingRectangle.style.height = resizeStartBounds.height + "px";
+      isResizing = false;
+      resizingRectangle = null;
+      resizeHandle = null;
+      resizeStartBounds = null;
+      clearResizeCursor();
+      event.preventDefault();
+      return;
+    }
     disableDrawingMode();
   } else if (event.key === "Tab" || event.keyCode === 9) {
     // Tab key - cycle through colors
@@ -2136,6 +2684,8 @@ function handleKeyDown(event) {
         targetRect = duplicatingRectangle;
       } else if (isRepositioning && repositioningRectangle) {
         targetRect = repositioningRectangle;
+      } else if (isResizing && resizingRectangle) {
+        targetRect = resizingRectangle;
       } else if (!isInspecting) { // Exclude inspection mode
         // Not actively dragging, check if hovering over a rectangle
         targetRect = getRectangleAtPosition(currentMouseX, currentMouseY);
@@ -2149,7 +2699,7 @@ function handleKeyDown(event) {
     }
   } else if (event.key === "Delete" || event.key === "Backspace" || event.keyCode === 46 || event.keyCode === 8) {
     // Delete/Backspace key - remove rectangle if hovering over one
-    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning) {
+    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning && !isResizing) {
       var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
       if (rectUnderMouse) {
         event.preventDefault();
@@ -2159,7 +2709,7 @@ function handleKeyDown(event) {
     }
   } else if (event.key === "u" || event.key === "U") {
     // Undo last deleted rectangle
-    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning && !isInspecting && lastDeletedRect) {
+    if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning && !isResizing && !isInspecting && lastDeletedRect) {
       event.preventDefault();
       var restored = createRectangle(
         lastDeletedRect.left,
@@ -2257,6 +2807,10 @@ function disableDrawingMode() {
   resetDragState();
   isDuplicating = false;
   isRepositioning = false;
+  isResizing = false;
+  resizingRectangle = null;
+  resizeHandle = null;
+  resizeStartBounds = null;
   lastDeletedRect = null;
   document.documentElement.classList.remove(DRAWING_MODE_CLASS);
   document.documentElement.classList.remove(PAN_MODE_CLASS);
@@ -2264,6 +2818,7 @@ function disableDrawingMode() {
   document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
   document.documentElement.classList.remove(DUPLICATION_DRAGGING_CLASS);
   document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
+  clearResizeCursor();
 
   // Remove snap guide lines
   removeGuideLines();
