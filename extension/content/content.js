@@ -1631,7 +1631,7 @@ function updateHoverCursors(metaOrCtrl, alt) {
     return;
   }
 
-  if (metaOrCtrl) {
+  if (metaOrCtrl && !alt) {
     var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
     if (rectUnderMouse) {
       document.documentElement.classList.add(REPOSITIONING_MODE_CLASS);
@@ -1642,7 +1642,7 @@ function updateHoverCursors(metaOrCtrl, alt) {
     document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
   }
 
-  if (alt && !metaOrCtrl) {
+  if (alt) {
     var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
     if (rectUnderMouse) {
       document.documentElement.classList.add(DUPLICATION_HOVER_CLASS);
@@ -1652,6 +1652,45 @@ function updateHoverCursors(metaOrCtrl, alt) {
   } else {
     document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
   }
+}
+
+// Switch from repositioning to duplicating mid-drag (when Alt is pressed during Cmd+drag)
+function switchRepositionToDuplicate() {
+  // Revert the original rectangle to its starting position
+  repositioningRectangle.style.left = repositionStartX + "px";
+  repositioningRectangle.style.top = repositionStartY + "px";
+
+  // Create a clone from the original rectangle
+  var b = getRectBounds(repositioningRectangle);
+  duplicatingRectangle = createRectangle(b.left, b.top, b.width, b.height);
+
+  // Copy color from original rectangle
+  var colorIndex = repositioningRectangle.getAttribute("data-color-index") || "0";
+  duplicatingRectangle.setAttribute("data-color-index", colorIndex);
+  if (COLOR_CLASSES[parseInt(colorIndex, 10)]) {
+    duplicatingRectangle.classList.add(COLOR_CLASSES[parseInt(colorIndex, 10)]);
+  }
+
+  document.body.appendChild(duplicatingRectangle);
+
+  // Transfer offsets (cursor-to-corner offset is the same)
+  duplicateOffsetX = repositionOffsetX;
+  duplicateOffsetY = repositionOffsetY;
+  duplicateStartX = repositionStartX;
+  duplicateStartY = repositionStartY;
+  duplicateAxisLocked = repositionAxisLocked;
+
+  // Flip state flags
+  isRepositioning = false;
+  isDuplicating = true;
+
+  // Swap CSS classes
+  document.documentElement.classList.remove(DRAGGING_MODE_CLASS);
+  document.documentElement.classList.add(DUPLICATION_DRAGGING_CLASS);
+
+  // Clear repositioning state
+  repositioningRectangle = null;
+  repositionAxisLocked = null;
 }
 
 // Mouse down handler - start drawing, duplication, or repositioning
@@ -1666,7 +1705,8 @@ function handleMouseDown(event) {
   }
 
   // If Alt is held and mouse is over a rectangle, start duplicating (Figma-style)
-  if (event.altKey && !isCurrentlyDrawing && !event.metaKey && !event.ctrlKey) {
+  // Alt takes priority over Cmd/Ctrl — Cmd+Alt starts duplication, not repositioning
+  if (event.altKey && !isCurrentlyDrawing) {
     var rectUnderMouse = getRectangleAtPosition(event.clientX, event.clientY);
     if (rectUnderMouse) {
       isDuplicating = true;
@@ -1766,6 +1806,12 @@ function handleMouseMove(event) {
 
   // Handle repositioning mode
   if (isRepositioning && repositioningRectangle) {
+    // Mid-drag switch: if Alt is pressed during reposition, switch to duplication
+    if (event.altKey) {
+      switchRepositionToDuplicate();
+      return;
+    }
+
     // Clamp mouse position to viewport bounds
     var cm = clampMouse(currentMouseX, currentMouseY);
     var clampedMouseX = cm.x;

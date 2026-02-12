@@ -789,7 +789,7 @@ QUnit.test("removes duplication class when Alt held but not over rectangle", fun
   );
 });
 
-QUnit.test("Cmd/Ctrl takes priority over Alt (no duplication class)", function(assert) {
+QUnit.test("Alt takes priority over Cmd/Ctrl (duplication class shown)", function(assert) {
   var rect = document.createElement("div");
   rect.style.cssText = "position:fixed;left:100px;top:100px;width:200px;height:200px;";
   document.body.appendChild(rect);
@@ -800,13 +800,13 @@ QUnit.test("Cmd/Ctrl takes priority over Alt (no duplication class)", function(a
 
   updateHoverCursors(true, true);
 
-  assert.ok(
-    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
-    "repositioning class added (Cmd/Ctrl wins)"
-  );
   assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "repositioning class not added when Alt also held"
+  );
+  assert.ok(
     document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
-    "duplication class not added when Cmd/Ctrl held"
+    "duplication class added (Alt wins over Cmd/Ctrl)"
   );
 });
 
