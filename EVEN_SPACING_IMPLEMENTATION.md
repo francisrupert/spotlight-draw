@@ -80,20 +80,23 @@ var spacingGuideVertical = null;
 ```
 
 ### Modified: `applyPositionSnapping()`
-**Location**: Lines 603-867
+**Location**: Lines 603-1100 (expanded significantly)
 
 **Changes**:
 1. Added `spacingGuides` array to return value
 2. Track whether edge/center snapping occurred (`xSnapped`, `ySnapped`)
-3. If no edge/center snap:
+3. **Snapping Phase** (only if no edge/center snap):
    - Call `getEvenSpacingTargets()`
-   - Check if current position is within threshold of any spacing target
-   - If yes: snap to position and store guide info
+   - Find closest spacing target within threshold
+   - Snap position to target
+4. **Visualization Phase** (ALWAYS, even if edge/center snap occurred):
+   - Check if final position creates equal spacing
+   - Call `findAllGapsOfSize()` to find ALL matching gaps
+   - Store guide info: axis, gapStart, gapEnd, between, referenceRects
+   - Return all matching guides (not just first)
 
-**Priority Order**:
-1. Edge alignment (existing)
-2. Center alignment (existing)
-3. Even spacing (new) - only if neither edge nor center snapped
+**Priority Order**: edge alignment → center alignment → even spacing (for snapping)
+**Guide Display**: Independent of snap type (always show if equal spacing exists)
 
 ### Modified: `applySnapping()`
 **Returns**: Added `spacingGuides: []` for consistency (drawing mode doesn't use spacing)
@@ -110,6 +113,58 @@ var spacingGuideVertical = null;
 - For vertical spacing (horizontal line):
   - Position at gap midpoint
   - Span horizontally using `between` rectangles' extent
+
+### Rendering Implementation Details
+
+#### Multi-Guide Display Enhancement
+
+The implementation was extended beyond the initial plan to support displaying multiple guide lines simultaneously:
+
+**Original Plan**: Display guide for the first matching spacing target
+**Actual Implementation**: Display guides for ALL gaps matching the snapped spacing size (within 1px tolerance)
+
+**Example**: Three rectangles with 100px gaps: [A] 100px [B] 100px [C]
+- When dragging a fourth rectangle to create a 100px gap
+- Shows guide lines in BOTH existing 100px gaps (A-B and B-C)
+- Snaps to the closest target but displays all matching guides
+
+#### Dynamic Guide Element Creation
+
+Unlike edge/center guides (pre-created, reusable elements), spacing guides are created dynamically:
+
+**Edge/Center Guides**:
+- Pre-created: `horizontalGuideLines[2]`, `verticalGuideLines[2]`
+- Reused: Show/hide via `display` property
+- Style: 0.5px dashed GrayText, span full viewport
+
+**Spacing Guides**:
+- Dynamic: Created per guide in `spacingGuideElements[]` array
+- Destroyed: Removed and recreated on each call
+- Style: 1px solid GrayText, span only the gap length
+- Appended directly to `document.body`
+
+**Why Dynamic?** Unknown number of guides (0 to N), variable positioning, clean state management.
+
+#### Guide Positioning Logic
+
+**Horizontal Spacing (vertical line)**:
+- Spans gap horizontally: `left = gapStart`, `width = gapEnd - gapStart`
+- Positioned at vertical midpoint: `midY = (topExtent + bottomExtent) / 2`
+
+**Vertical Spacing (horizontal line)**:
+- Spans gap vertically: `top = gapStart`, `height = gapEnd - gapStart`
+- Positioned at horizontal midpoint: `midX = (leftExtent + rightExtent) / 2`
+
+#### Edge Case Fix: Guides Show During Edge/Center Snap
+
+**Issue Discovered**: When edge/center snap occurred, spacing guides weren't shown even if equal gaps existed.
+
+**Fix**: Separated snapping from guide visualization:
+- Snapping priority unchanged: edge → center → spacing
+- Guide visualization now happens REGARDLESS of snap type
+- If final position creates equal spacing (whether from spacing snap OR edge snap), guides appear
+
+This ensures users see ALL relevant spacing relationships, providing clearer visual feedback.
 
 ### Modified: `createGuideLines()`
 **Changes**: Added creation of spacing guide elements
@@ -131,10 +186,10 @@ var spacingGuideVertical = null;
 
 ## Testing
 
-### Unit Tests
+### Unit Tests - Geometry
 **File**: `tests/unit/helpers.test.js`
 
-**New Tests** (12 total):
+**Tests** (12 total):
 1. ✓ Finds horizontal even spacing between two rectangles
 2. ✓ Finds vertical even spacing between two rectangles
 3. ✓ Ignores gaps where rectangle is too large to fit
@@ -147,6 +202,21 @@ var spacingGuideVertical = null;
 10. ✓ Finds right positioning target for even spacing
 11. ✓ Finds above positioning target for vertical even spacing
 12. ✓ Finds below positioning target for vertical even spacing
+
+### Unit Tests - DOM Rendering
+**File**: `tests/unit/spacing-guides-rendering.test.js`
+
+**Tests** (8 total):
+1. ✓ Creates horizontal spacing guide (vertical line)
+2. ✓ Creates vertical spacing guide (horizontal line)
+3. ✓ Renders multiple guides simultaneously ⭐
+4. ✓ Removes previous guides before creating new ones
+5. ✓ Handles empty guides array (cleanup only)
+6. ✓ Guides have correct z-index and pointer-events
+7. ✓ Positions guides at vertical midpoint for horizontal spacing
+8. ✓ Uses referenceRects when between is null
+
+**Total Test Count**: 72 tests (62 unit, 10 regression)
 
 ### Manual Testing
 **File**: `test-even-spacing.html`
@@ -227,7 +297,7 @@ npm test
 
 Load extension and test manually:
 1. Open `test-even-spacing.html`
-2. Press `D` to enable drawing mode
+2. Press `Alt+A` (Option+A on Mac) to enable drawing mode
 3. Follow test scenarios in the HTML file
 
 ## Summary

@@ -3,7 +3,7 @@ var KEYBOARD_SHORTCUTS = [
   {
     category: "Drawing Mode",
     shortcuts: [
-      { keys: "Alt + F", description: "Toggle drawing mode" },
+      { keys: "Alt + A", description: "Toggle drawing mode" },
       { keys: "Click & Drag", description: "Draw rectangle" },
       { keys: "Alt (during drawing)", description: "Draw from center" },
       { keys: "Cmd/Ctrl (during drawing)", description: "Axis constraint" },
