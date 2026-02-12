@@ -91,9 +91,8 @@ var ANIMATION_DURATION = 300;
 var horizontalGuideLines = [null, null];
 var verticalGuideLines = [null, null];
 
-// Spacing guide lines (for even spacing visualization)
-var spacingGuideHorizontal = null;
-var spacingGuideVertical = null;
+// Spacing guide lines (for even spacing visualization - dynamically created)
+var spacingGuideElements = [];
 
 // Clamp rectangle coordinates to viewport bounds
 function clampToViewport(x, y, width, height) {
@@ -737,6 +736,95 @@ function applySnapping(x, y, width, height, excludeRect) {
   };
 }
 
+/**
+ * Find all gaps of a given size between rectangles.
+ * @param {number} targetGapSize - The gap size to match (px)
+ * @param {string} axis - 'horizontal' or 'vertical'
+ * @param {HTMLElement} excludeRect - Rectangle being moved (to exclude from search)
+ * @param {Object} movedRectBounds - Bounds of the moved rectangle {left, top, width, height}
+ * @param {number} tolerance - Tolerance for gap matching (default 1px)
+ * @returns {Array} Array of gap objects with referenceRects, gapStart, gapEnd, gap
+ */
+function findAllGapsOfSize(targetGapSize, axis, excludeRect, movedRectBounds, tolerance) {
+  tolerance = tolerance || 1;
+  var gaps = [];
+
+  // Collect all rectangles (including the moved rectangle's new position)
+  var allRects = [];
+
+  // Add existing placed rectangles (except the one being moved)
+  for (var i = 0; i < placedRectangles.length; i++) {
+    if (placedRectangles[i] !== excludeRect) {
+      allRects.push({
+        bounds: getRectBounds(placedRectangles[i]),
+        element: placedRectangles[i]
+      });
+    }
+  }
+
+  // Add the moved rectangle at its new position
+  allRects.push({
+    bounds: movedRectBounds,
+    element: null // This is the moving rectangle
+  });
+
+  if (axis === 'horizontal') {
+    // Sort by left edge
+    allRects.sort(function(a, b) {
+      return a.bounds.left - b.bounds.left;
+    });
+
+    // Check gaps between adjacent rectangles
+    for (var i = 0; i < allRects.length - 1; i++) {
+      var rectA = allRects[i];
+      var rectB = allRects[i + 1];
+      var aRight = rectA.bounds.left + rectA.bounds.width;
+      var bLeft = rectB.bounds.left;
+
+      if (bLeft > aRight) {
+        var gapSize = bLeft - aRight;
+        if (Math.abs(gapSize - targetGapSize) < tolerance) {
+          gaps.push({
+            referenceRects: [rectA.bounds, rectB.bounds],
+            gapStart: aRight,
+            gapEnd: bLeft,
+            gap: gapSize,
+            between: [rectA.bounds, rectB.bounds]
+          });
+        }
+      }
+    }
+  } else if (axis === 'vertical') {
+    // Sort by top edge
+    allRects.sort(function(a, b) {
+      return a.bounds.top - b.bounds.top;
+    });
+
+    // Check gaps between adjacent rectangles
+    for (var i = 0; i < allRects.length - 1; i++) {
+      var rectA = allRects[i];
+      var rectB = allRects[i + 1];
+      var aBottom = rectA.bounds.top + rectA.bounds.height;
+      var bTop = rectB.bounds.top;
+
+      if (bTop > aBottom) {
+        var gapSize = bTop - aBottom;
+        if (Math.abs(gapSize - targetGapSize) < tolerance) {
+          gaps.push({
+            referenceRects: [rectA.bounds, rectB.bounds],
+            gapStart: aBottom,
+            gapEnd: bTop,
+            gap: gapSize,
+            between: [rectA.bounds, rectB.bounds]
+          });
+        }
+      }
+    }
+  }
+
+  return gaps;
+}
+
 // Apply snapping for moving rectangles (repositioning/duplicating - only adjusts position, keeps size fixed)
 function applyPositionSnapping(x, y, width, height, excludeRect) {
   var targets = getSnapTargets(excludeRect);
@@ -815,51 +903,48 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
 
   // Check even spacing only if no edge/center snap occurred
   if (!xSnapped) {
-    // Create temporary rectangle with current position for spacing calculation
     var tempRect = { style: { left: x + "px", top: y + "px", width: width + "px", height: height + "px" } };
     var spacingTargets = getEvenSpacingTargets(tempRect, excludeRect);
+
+    // Find closest spacing target
+    var closestHorizontalTarget = null;
+    var closestHorizontalDist = Infinity;
 
     for (var i = 0; i < spacingTargets.horizontal.length; i++) {
       var target = spacingTargets.horizontal[i];
       var dist = Math.abs(left - target.position);
-      if (dist <= SNAP_THRESHOLD) {
-        snappedX = target.position;
+      if (dist <= SNAP_THRESHOLD && dist < closestHorizontalDist) {
+        closestHorizontalDist = dist;
+        closestHorizontalTarget = target;
+      }
+    }
 
-        // For left/right positioning cases, compute moved rectangle bounds
-        // and use it with the adjacent reference rect for visual extent
-        var visualExtentRects = target.between;
-        if (!target.between && target.referenceRects) {
-          // Compute moved rectangle's bounds after snapping
-          var movedRectBounds = {
-            left: target.position,
-            top: y,
-            width: width,
-            height: height
-          };
-          // Use the closer reference rect for visual extent
-          var rectA = target.referenceRects[0];
-          var rectB = target.referenceRects[1];
-          // Determine if moved rect is to the left or right
-          if (target.position < rectA.left) {
-            // Left case: use moved rect and rectA
-            visualExtentRects = [movedRectBounds, rectA];
-          } else {
-            // Right case: use rectB and moved rect
-            visualExtentRects = [rectB, movedRectBounds];
-          }
-        }
+    // If we found a match, snap to it and show guides for ALL gaps of that size
+    if (closestHorizontalTarget) {
+      snappedX = closestHorizontalTarget.position;
+      var snapGapSize = closestHorizontalTarget.gap;
 
-        // Store spacing guide info
+      // Find ALL gaps of this size (including gaps between other rectangles)
+      var movedRectBounds = {
+        left: snappedX,
+        top: y,
+        width: width,
+        height: height
+      };
+      var allMatchingGaps = findAllGapsOfSize(snapGapSize, 'horizontal', excludeRect, movedRectBounds, 1);
+
+      // Add guides for all matching gaps
+      for (var i = 0; i < allMatchingGaps.length; i++) {
+        var gap = allMatchingGaps[i];
         spacingGuides.push({
           axis: 'horizontal',
-          position: target.position + width / 2, // Midpoint of the moved rectangle
-          gapStart: target.gapStart,
-          gapEnd: target.gapEnd,
-          gap: target.gap,
-          between: target.between,
-          referenceRects: visualExtentRects
+          position: (gap.gapStart + gap.gapEnd) / 2, // Midpoint of gap
+          gapStart: gap.gapStart,
+          gapEnd: gap.gapEnd,
+          gap: gap.gap,
+          between: gap.between,
+          referenceRects: gap.referenceRects
         });
-        break; // Use first (closest) spacing target
       }
     }
   }
@@ -924,51 +1009,48 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
 
   // Check even spacing only if no edge/center snap occurred
   if (!ySnapped) {
-    // Create temporary rectangle with current position for spacing calculation
     var tempRect = { style: { left: x + "px", top: y + "px", width: width + "px", height: height + "px" } };
     var spacingTargets = getEvenSpacingTargets(tempRect, excludeRect);
+
+    // Find closest spacing target
+    var closestVerticalTarget = null;
+    var closestVerticalDist = Infinity;
 
     for (var j = 0; j < spacingTargets.vertical.length; j++) {
       var target = spacingTargets.vertical[j];
       var dist = Math.abs(top - target.position);
-      if (dist <= SNAP_THRESHOLD) {
-        snappedY = target.position;
+      if (dist <= SNAP_THRESHOLD && dist < closestVerticalDist) {
+        closestVerticalDist = dist;
+        closestVerticalTarget = target;
+      }
+    }
 
-        // For above/below positioning cases, compute moved rectangle bounds
-        // and use it with the adjacent reference rect for visual extent
-        var visualExtentRects = target.between;
-        if (!target.between && target.referenceRects) {
-          // Compute moved rectangle's bounds after snapping
-          var movedRectBounds = {
-            left: x,
-            top: target.position,
-            width: width,
-            height: height
-          };
-          // Use the closer reference rect for visual extent
-          var rectA = target.referenceRects[0];
-          var rectB = target.referenceRects[1];
-          // Determine if moved rect is above or below
-          if (target.position < rectA.top) {
-            // Above case: use moved rect and rectA
-            visualExtentRects = [movedRectBounds, rectA];
-          } else {
-            // Below case: use rectB and moved rect
-            visualExtentRects = [rectB, movedRectBounds];
-          }
-        }
+    // If we found a match, snap to it and show guides for ALL gaps of that size
+    if (closestVerticalTarget) {
+      snappedY = closestVerticalTarget.position;
+      var snapGapSize = closestVerticalTarget.gap;
 
-        // Store spacing guide info
+      // Find ALL gaps of this size (including gaps between other rectangles)
+      var movedRectBounds = {
+        left: x,
+        top: snappedY,
+        width: width,
+        height: height
+      };
+      var allMatchingGaps = findAllGapsOfSize(snapGapSize, 'vertical', excludeRect, movedRectBounds, 1);
+
+      // Add guides for all matching gaps
+      for (var j = 0; j < allMatchingGaps.length; j++) {
+        var gap = allMatchingGaps[j];
         spacingGuides.push({
           axis: 'vertical',
-          position: target.position + height / 2, // Midpoint of the moved rectangle
-          gapStart: target.gapStart,
-          gapEnd: target.gapEnd,
-          gap: target.gap,
-          between: target.between,
-          referenceRects: visualExtentRects
+          position: (gap.gapStart + gap.gapEnd) / 2, // Midpoint of gap
+          gapStart: gap.gapStart,
+          gapEnd: gap.gapEnd,
+          gap: gap.gap,
+          between: gap.between,
+          referenceRects: gap.referenceRects
         });
-        break; // Use first (closest) spacing target
       }
     }
   }
@@ -1031,26 +1113,6 @@ function createGuideLines() {
     verticalGuideLines[i] = vLine;
   }
 
-  // Create spacing guide lines (shorter, span only the gap)
-  // Horizontal spacing guide (vertical line in horizontal gap)
-  spacingGuideHorizontal = document.createElement("div");
-  spacingGuideHorizontal.style.position = "fixed";
-  spacingGuideHorizontal.style.width = "0";
-  spacingGuideHorizontal.style.borderLeft = "1px solid GrayText";
-  spacingGuideHorizontal.style.pointerEvents = "none";
-  spacingGuideHorizontal.style.zIndex = Z_INDEX_GUIDE;
-  spacingGuideHorizontal.style.display = "none";
-  document.body.appendChild(spacingGuideHorizontal);
-
-  // Vertical spacing guide (horizontal line in vertical gap)
-  spacingGuideVertical = document.createElement("div");
-  spacingGuideVertical.style.position = "fixed";
-  spacingGuideVertical.style.height = "0";
-  spacingGuideVertical.style.borderTop = "1px solid GrayText";
-  spacingGuideVertical.style.pointerEvents = "none";
-  spacingGuideVertical.style.zIndex = Z_INDEX_GUIDE;
-  spacingGuideVertical.style.display = "none";
-  document.body.appendChild(spacingGuideVertical);
 }
 
 // Remove snap guide lines
@@ -1067,14 +1129,12 @@ function removeGuideLines() {
   }
 
   // Remove spacing guide lines
-  if (spacingGuideHorizontal && spacingGuideHorizontal.parentNode) {
-    spacingGuideHorizontal.parentNode.removeChild(spacingGuideHorizontal);
-    spacingGuideHorizontal = null;
+  for (var i = 0; i < spacingGuideElements.length; i++) {
+    if (spacingGuideElements[i] && spacingGuideElements[i].parentNode) {
+      spacingGuideElements[i].parentNode.removeChild(spacingGuideElements[i]);
+    }
   }
-  if (spacingGuideVertical && spacingGuideVertical.parentNode) {
-    spacingGuideVertical.parentNode.removeChild(spacingGuideVertical);
-    spacingGuideVertical = null;
-  }
+  spacingGuideElements = [];
 }
 
 // Show horizontal guide lines at given Y positions (array of 0-2 values)
@@ -1103,52 +1163,58 @@ function showVerticalGuides(positions) {
 
 // Show spacing guide lines
 function showSpacingGuides(guides) {
-  // Hide both spacing guides first
-  if (spacingGuideHorizontal) {
-    spacingGuideHorizontal.style.display = "none";
+  // Remove all existing spacing guide elements
+  for (var i = 0; i < spacingGuideElements.length; i++) {
+    if (spacingGuideElements[i] && spacingGuideElements[i].parentNode) {
+      spacingGuideElements[i].parentNode.removeChild(spacingGuideElements[i]);
+    }
   }
-  if (spacingGuideVertical) {
-    spacingGuideVertical.style.display = "none";
-  }
+  spacingGuideElements = [];
 
-  // Show guides for each spacing match
+  // Create a new guide element for each guide in the array
   for (var i = 0; i < guides.length; i++) {
     var guide = guides[i];
+    var guideElement = document.createElement("div");
+    guideElement.style.position = "fixed";
+    guideElement.style.pointerEvents = "none";
+    guideElement.style.zIndex = Z_INDEX_GUIDE;
+
     if (guide.axis === 'horizontal') {
       // Horizontal spacing = horizontal line spanning the gap
-      if (spacingGuideVertical) {
-        // Position at midpoint vertically (use reference rectangles to determine Y position)
-        var rectsForExtent = guide.between || guide.referenceRects;
-        var topExtent = Math.min(rectsForExtent[0].top, rectsForExtent[1].top);
-        var bottomExtent = Math.max(
-          rectsForExtent[0].top + rectsForExtent[0].height,
-          rectsForExtent[1].top + rectsForExtent[1].height
-        );
-        var midY = (topExtent + bottomExtent) / 2;
-        spacingGuideVertical.style.top = midY + "px";
-        // Span horizontally across the gap
-        spacingGuideVertical.style.left = guide.gapStart + "px";
-        spacingGuideVertical.style.width = (guide.gapEnd - guide.gapStart) + "px";
-        spacingGuideVertical.style.display = "block";
-      }
+      // Position at midpoint vertically (use reference rectangles to determine Y position)
+      var rectsForExtent = guide.between || guide.referenceRects;
+      var topExtent = Math.min(rectsForExtent[0].top, rectsForExtent[1].top);
+      var bottomExtent = Math.max(
+        rectsForExtent[0].top + rectsForExtent[0].height,
+        rectsForExtent[1].top + rectsForExtent[1].height
+      );
+      var midY = (topExtent + bottomExtent) / 2;
+
+      guideElement.style.height = "0";
+      guideElement.style.borderTop = "1px solid GrayText";
+      guideElement.style.top = midY + "px";
+      guideElement.style.left = guide.gapStart + "px";
+      guideElement.style.width = (guide.gapEnd - guide.gapStart) + "px";
     } else if (guide.axis === 'vertical') {
       // Vertical spacing = vertical line spanning the gap
-      if (spacingGuideHorizontal) {
-        // Position at midpoint horizontally (use reference rectangles to determine X position)
-        var rectsForExtent = guide.between || guide.referenceRects;
-        var leftExtent = Math.min(rectsForExtent[0].left, rectsForExtent[1].left);
-        var rightExtent = Math.max(
-          rectsForExtent[0].left + rectsForExtent[0].width,
-          rectsForExtent[1].left + rectsForExtent[1].width
-        );
-        var midX = (leftExtent + rightExtent) / 2;
-        spacingGuideHorizontal.style.left = midX + "px";
-        // Span vertically across the gap
-        spacingGuideHorizontal.style.top = guide.gapStart + "px";
-        spacingGuideHorizontal.style.height = (guide.gapEnd - guide.gapStart) + "px";
-        spacingGuideHorizontal.style.display = "block";
-      }
+      // Position at midpoint horizontally (use reference rectangles to determine X position)
+      var rectsForExtent = guide.between || guide.referenceRects;
+      var leftExtent = Math.min(rectsForExtent[0].left, rectsForExtent[1].left);
+      var rightExtent = Math.max(
+        rectsForExtent[0].left + rectsForExtent[0].width,
+        rectsForExtent[1].left + rectsForExtent[1].width
+      );
+      var midX = (leftExtent + rightExtent) / 2;
+
+      guideElement.style.width = "0";
+      guideElement.style.borderLeft = "1px solid GrayText";
+      guideElement.style.left = midX + "px";
+      guideElement.style.top = guide.gapStart + "px";
+      guideElement.style.height = (guide.gapEnd - guide.gapStart) + "px";
     }
+
+    document.body.appendChild(guideElement);
+    spacingGuideElements.push(guideElement);
   }
 }
 
@@ -1163,13 +1229,13 @@ function hideGuideLines() {
     }
   }
 
-  // Hide spacing guides
-  if (spacingGuideHorizontal) {
-    spacingGuideHorizontal.style.display = "none";
+  // Remove all spacing guide elements
+  for (var i = 0; i < spacingGuideElements.length; i++) {
+    if (spacingGuideElements[i] && spacingGuideElements[i].parentNode) {
+      spacingGuideElements[i].parentNode.removeChild(spacingGuideElements[i]);
+    }
   }
-  if (spacingGuideVertical) {
-    spacingGuideVertical.style.display = "none";
-  }
+  spacingGuideElements = [];
 }
 
 // Snap, clamp to viewport, and show/hide guide lines in one step
@@ -1190,13 +1256,13 @@ function applySnapClampAndGuides(x, y, width, height, excludeRect, snapFn) {
     if (snapped.spacingGuides && snapped.spacingGuides.length > 0) {
       showSpacingGuides(snapped.spacingGuides);
     } else {
-      // Hide spacing guides if no spacing snap
-      if (spacingGuideHorizontal) {
-        spacingGuideHorizontal.style.display = "none";
+      // Remove spacing guides if no spacing snap
+      for (var i = 0; i < spacingGuideElements.length; i++) {
+        if (spacingGuideElements[i] && spacingGuideElements[i].parentNode) {
+          spacingGuideElements[i].parentNode.removeChild(spacingGuideElements[i]);
+        }
       }
-      if (spacingGuideVertical) {
-        spacingGuideVertical.style.display = "none";
-      }
+      spacingGuideElements = [];
     }
   }
 
@@ -1350,8 +1416,7 @@ function getElementAtCursor(x, y) {
     (element.classList && element.classList.contains(RECTANGLE_CLASS)) ||
     horizontalGuideLines.indexOf(element) !== -1 ||
     verticalGuideLines.indexOf(element) !== -1 ||
-    element === spacingGuideHorizontal ||
-    element === spacingGuideVertical
+    spacingGuideElements.indexOf(element) !== -1
   )) {
     hiddenElements.push({ element: element, display: element.style.display });
     element.style.display = 'none';
