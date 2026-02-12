@@ -1616,6 +1616,35 @@ function traverseSibling(direction) {
   updateInspectionRectangle(inspectedElement);
 }
 
+// Update hover cursor classes based on modifier key state and mouse position
+function updateHoverCursors(metaOrCtrl, alt) {
+  if (!isDrawingMode || isCurrentlyDrawing || isDuplicating || isRepositioning) {
+    return;
+  }
+
+  if (metaOrCtrl) {
+    var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
+    if (rectUnderMouse) {
+      document.documentElement.classList.add(REPOSITIONING_MODE_CLASS);
+    } else {
+      document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+    }
+  } else {
+    document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
+  }
+
+  if (alt && !metaOrCtrl) {
+    var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
+    if (rectUnderMouse) {
+      document.documentElement.classList.add(DUPLICATION_HOVER_CLASS);
+    } else {
+      document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
+    }
+  } else {
+    document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
+  }
+}
+
 // Mouse down handler - start drawing, duplication, or repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
@@ -1723,31 +1752,8 @@ function handleMouseMove(event) {
   currentMouseX = event.clientX;
   currentMouseY = event.clientY;
 
-  // Show move cursor when Cmd/Ctrl is held over a rectangle (not actively drawing or repositioning)
-  if (isDrawingMode && !isCurrentlyDrawing && !isDuplicating && !isRepositioning) {
-    if (event.metaKey || event.ctrlKey) {
-      var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
-      if (rectUnderMouse) {
-        document.documentElement.classList.add(REPOSITIONING_MODE_CLASS);
-      } else {
-        document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
-      }
-    } else {
-      document.documentElement.classList.remove(REPOSITIONING_MODE_CLASS);
-    }
-
-    // Show copy cursor when Alt is held over a rectangle (not actively drawing or duplicating)
-    if (event.altKey && !event.metaKey && !event.ctrlKey) {
-      var rectUnderMouse = getRectangleAtPosition(currentMouseX, currentMouseY);
-      if (rectUnderMouse) {
-        document.documentElement.classList.add(DUPLICATION_HOVER_CLASS);
-      } else {
-        document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
-      }
-    } else {
-      document.documentElement.classList.remove(DUPLICATION_HOVER_CLASS);
-    }
-  }
+  // Update hover cursors based on modifier keys and mouse position
+  updateHoverCursors(event.metaKey || event.ctrlKey, event.altKey);
 
   // Handle repositioning mode
   if (isRepositioning && repositioningRectangle) {
@@ -2122,6 +2128,9 @@ function handleKeyDown(event) {
   } else {
     handleSpacebarDown(event);
   }
+
+  // Update hover cursors when modifier keys are pressed (even if mouse isn't moving)
+  updateHoverCursors(event.metaKey || event.ctrlKey, event.altKey);
 }
 
 function handleKeyUp(event) {
@@ -2135,6 +2144,9 @@ function handleKeyUp(event) {
   }
 
   handleSpacebarUp(event);
+
+  // Update hover cursors when modifier keys are released (even if mouse isn't moving)
+  updateHoverCursors(event.metaKey || event.ctrlKey, event.altKey);
 }
 
 // Enable drawing mode
