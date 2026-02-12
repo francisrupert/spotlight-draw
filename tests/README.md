@@ -26,7 +26,8 @@ tests/
 │   ├── qunit.css             # QUnit styles
 │   └── chrome-mock.js        # Chrome API mocks (chrome.storage, chrome.tabs)
 ├── unit/                     # Pure function tests
-│   └── helpers.test.js       # Helper functions (getRectBounds, clampMouse, etc.)
+│   ├── helpers.test.js                  # Helper functions (getRectBounds, clampMouse, etc.)
+│   └── spacing-guides-rendering.test.js # showSpacingGuides() DOM rendering
 ├── integration/              # User flow tests (to be added)
 │   ├── drawing-flow.test.js
 │   ├── duplication-flow.test.js
@@ -44,6 +45,11 @@ tests/
 - **applyAxisLock()** - Applies Shift key axis locking
 - **removeColorClasses()** - Removes color classes from elements
 - **resetDragState()** - Resets dragging state variables
+- **getEvenSpacingTargets()** - Generates even spacing snap targets between rectangle pairs
+- **updateHoverCursors()** - Updates cursor mode classes based on modifier keys and mouse position
+
+### ✅ Unit Tests (spacing-guides-rendering.test.js)
+- **showSpacingGuides()** - Renders visual guide lines for even spacing
 
 ### ✅ Regression Tests
 - **Spacebar Pan Mode Bug** - Ensures spacebar state is not reset by mouseup

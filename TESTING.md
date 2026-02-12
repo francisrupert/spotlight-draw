@@ -24,15 +24,16 @@ tests/
 │   ├── qunit.css (9.7KB)             # QUnit styles
 │   └── chrome-mock.js                # Chrome API mocks with test helpers
 ├── unit/
-│   └── helpers.test.js               # 42 tests for helper functions
+│   ├── helpers.test.js                  # 44 tests for helper functions
+│   └── spacing-guides-rendering.test.js # 8 tests for spacing guide rendering
 └── regression/
-    ├── spacebar-bug.test.js          # 5 tests for spacebar state bug
+    ├── spacebar-bug.test.js          # 4 tests for spacebar state bug
     └── duplication-offset-bug.test.js # 5 tests for offset calculation bug
 ```
 
 ### Test Coverage (Current)
 
-#### ✅ Unit Tests (42 tests)
+#### ✅ Unit Tests - helpers.test.js (44 tests)
 
 **getRectBounds()** - 4 tests
 - Extracts bounds from rectangle elements
@@ -67,9 +68,46 @@ tests/
 - Can be called multiple times safely
 - Resets state when already in reset state
 
-#### ✅ Regression Tests (10 tests)
+**getEvenSpacingTargets()** - 11 tests
+- Finds horizontal even spacing between two rectangles
+- Finds vertical even spacing between two rectangles
+- Ignores gaps where rectangle is too large to fit
+- Handles multiple spacing opportunities
+- Excludes specified rectangle from calculations
+- Handles no rectangles
+- Ignores overlapping rectangles
+- Finds left positioning target for even spacing
+- Finds right positioning target for even spacing
+- Finds above positioning target for vertical even spacing
+- Finds below positioning target for vertical even spacing
 
-**Spacebar Pan Mode Bug** - 5 tests
+**updateHoverCursors()** - 10 tests
+- Adds repositioning class when Cmd/Ctrl held over rectangle
+- Removes repositioning class when not over rectangle
+- Adds duplication class when Alt held over rectangle
+- Removes duplication class when not over rectangle
+- Cmd/Ctrl takes priority over Alt
+- Removes both classes when no modifier keys held
+- No-op when not in drawing mode
+- No-op when currently drawing
+- No-op when duplicating
+- No-op when repositioning
+
+#### ✅ Unit Tests - spacing-guides-rendering.test.js (8 tests)
+
+**showSpacingGuides()** - 8 tests
+- Creates horizontal spacing guide
+- Creates vertical spacing guide
+- Renders multiple guides simultaneously
+- Removes previous guides before creating new ones
+- Handles empty guides array (cleanup only)
+- Guides have correct z-index and pointer-events
+- Positions guides at vertical midpoint for horizontal spacing
+- Uses referenceRects when between is null
+
+#### ✅ Regression Tests (9 tests)
+
+**Spacebar Pan Mode Bug** - 4 tests
 - Spacebar state preserved after mouseup during drawing ⚠️ **CRITICAL BUG FIX**
 - Pan mode class removed independently of drawing state
 - Spacebar press/release without drawing
@@ -82,7 +120,7 @@ tests/
 - Duplication with negative offset values
 - Multiple duplications use correct offsets
 
-### Total Test Count: **52 tests**
+### Total Test Count: **61 tests**
 
 ## Running Tests
 
@@ -98,7 +136,7 @@ Opens `tests/test-runner.html` in your default browser.
 3. Refresh page to re-run tests after code changes
 
 ### Expected Results (Current)
-- ✅ All 52 tests should pass
+- ✅ All 61 tests should pass
 - ⏱️ Execution time: < 5 seconds
 - 🟢 Green status bar in QUnit UI
 
@@ -299,7 +337,7 @@ QUnit.module("Feature Tests", {
 
 ## Conclusion
 
-The SpotlightDraw Extension now has a solid testing foundation with 52 automated tests covering critical helper functions and two major bug fixes. The test suite:
+The SpotlightDraw Extension now has a solid testing foundation with 62 automated tests covering critical helper functions, even spacing, and two major bug fixes. The test suite:
 
 - ✅ Runs in under 5 seconds
 - ✅ Requires zero npm dependencies
@@ -312,6 +350,6 @@ Future work will expand coverage to integration tests for complete user flows an
 ---
 
 **Last Updated**: 2026-02-11
-**Test Count**: 52 tests (42 unit, 10 regression)
+**Test Count**: 61 tests (52 unit, 9 regression)
 **Framework**: QUnit v2.19.4
 **Status**: ✅ All tests passing

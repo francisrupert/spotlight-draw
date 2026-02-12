@@ -7,6 +7,8 @@
  * - applyAxisLock() - Apply Shift key axis locking
  * - removeColorClasses() - Remove all color classes from element
  * - resetDragState() - Reset dragging state variables
+ * - getEvenSpacingTargets() - Generate even spacing snap targets
+ * - updateHoverCursors() - Update cursor classes on modifier key changes
  */
 
 QUnit.module("Helper Functions - getRectBounds", {
@@ -679,4 +681,200 @@ QUnit.test("finds below positioning target for vertical even spacing", function(
   });
   assert.ok(belowTarget, "found below positioning target");
   assert.equal(belowTarget.gap, 200, "gap matches the A-B gap");
+});
+
+// ============================================================================
+// updateHoverCursors() Tests
+// ============================================================================
+
+QUnit.module("Helper Functions - updateHoverCursors", {
+  beforeEach: function() {
+    // Enable drawing mode and reset state
+    isDrawingMode = true;
+    isCurrentlyDrawing = false;
+    isDuplicating = false;
+    isRepositioning = false;
+    currentMouseX = 0;
+    currentMouseY = 0;
+    placedRectangles = [];
+    document.documentElement.classList.remove("spotlight-draw-repositioning-mode");
+    document.documentElement.classList.remove("spotlight-draw-duplication-hover-mode");
+  },
+  afterEach: function() {
+    isDrawingMode = false;
+    isCurrentlyDrawing = false;
+    isDuplicating = false;
+    isRepositioning = false;
+    currentMouseX = 0;
+    currentMouseY = 0;
+    document.documentElement.classList.remove("spotlight-draw-repositioning-mode");
+    document.documentElement.classList.remove("spotlight-draw-duplication-hover-mode");
+    // Clean up rectangles
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i].parentNode) {
+        placedRectangles[i].parentNode.removeChild(placedRectangles[i]);
+      }
+    }
+    placedRectangles = [];
+  }
+});
+
+QUnit.test("adds repositioning class when Cmd/Ctrl held over rectangle", function(assert) {
+  var rect = document.createElement("div");
+  rect.style.cssText = "position:fixed;left:100px;top:100px;width:200px;height:200px;";
+  document.body.appendChild(rect);
+  placedRectangles.push(rect);
+
+  currentMouseX = 150;
+  currentMouseY = 150;
+
+  updateHoverCursors(true, false);
+
+  assert.ok(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "repositioning class added"
+  );
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
+    "duplication class not added"
+  );
+});
+
+QUnit.test("removes repositioning class when Cmd/Ctrl held but not over rectangle", function(assert) {
+  document.documentElement.classList.add("spotlight-draw-repositioning-mode");
+
+  currentMouseX = 500;
+  currentMouseY = 500;
+
+  updateHoverCursors(true, false);
+
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "repositioning class removed"
+  );
+});
+
+QUnit.test("adds duplication class when Alt held over rectangle", function(assert) {
+  var rect = document.createElement("div");
+  rect.style.cssText = "position:fixed;left:100px;top:100px;width:200px;height:200px;";
+  document.body.appendChild(rect);
+  placedRectangles.push(rect);
+
+  currentMouseX = 150;
+  currentMouseY = 150;
+
+  updateHoverCursors(false, true);
+
+  assert.ok(
+    document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
+    "duplication class added"
+  );
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "repositioning class not added"
+  );
+});
+
+QUnit.test("removes duplication class when Alt held but not over rectangle", function(assert) {
+  document.documentElement.classList.add("spotlight-draw-duplication-hover-mode");
+
+  currentMouseX = 500;
+  currentMouseY = 500;
+
+  updateHoverCursors(false, true);
+
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
+    "duplication class removed"
+  );
+});
+
+QUnit.test("Cmd/Ctrl takes priority over Alt (no duplication class)", function(assert) {
+  var rect = document.createElement("div");
+  rect.style.cssText = "position:fixed;left:100px;top:100px;width:200px;height:200px;";
+  document.body.appendChild(rect);
+  placedRectangles.push(rect);
+
+  currentMouseX = 150;
+  currentMouseY = 150;
+
+  updateHoverCursors(true, true);
+
+  assert.ok(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "repositioning class added (Cmd/Ctrl wins)"
+  );
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
+    "duplication class not added when Cmd/Ctrl held"
+  );
+});
+
+QUnit.test("removes both classes when no modifier keys held", function(assert) {
+  document.documentElement.classList.add("spotlight-draw-repositioning-mode");
+  document.documentElement.classList.add("spotlight-draw-duplication-hover-mode");
+
+  updateHoverCursors(false, false);
+
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "repositioning class removed"
+  );
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
+    "duplication class removed"
+  );
+});
+
+QUnit.test("no-op when not in drawing mode", function(assert) {
+  isDrawingMode = false;
+  document.documentElement.classList.add("spotlight-draw-repositioning-mode");
+
+  updateHoverCursors(true, false);
+
+  assert.ok(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "class unchanged when drawing mode disabled"
+  );
+});
+
+QUnit.test("no-op when currently drawing", function(assert) {
+  isCurrentlyDrawing = true;
+
+  var rect = document.createElement("div");
+  rect.style.cssText = "position:fixed;left:100px;top:100px;width:200px;height:200px;";
+  document.body.appendChild(rect);
+  placedRectangles.push(rect);
+
+  currentMouseX = 150;
+  currentMouseY = 150;
+
+  updateHoverCursors(true, false);
+
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "class not added during active drawing"
+  );
+});
+
+QUnit.test("no-op when duplicating", function(assert) {
+  isDuplicating = true;
+
+  updateHoverCursors(true, false);
+
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
+    "class not added during duplication"
+  );
+});
+
+QUnit.test("no-op when repositioning", function(assert) {
+  isRepositioning = true;
+
+  updateHoverCursors(false, true);
+
+  assert.notOk(
+    document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
+    "class not added during repositioning"
+  );
 });

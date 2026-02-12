@@ -23,21 +23,26 @@ Successfully implemented a comprehensive test suite for the Box Highlight Chrome
 4. **tests/lib/qunit.css** (9.7 KB)
    - QUnit UI styles
 
-### Test Files (3 files)
-5. **tests/unit/helpers.test.js** (307 lines, 42 tests)
+### Test Files (4 files)
+5. **tests/unit/helpers.test.js** (44 tests)
    - getRectBounds() - 4 tests
    - clampMouse() - 5 tests
    - applyAxisLock() - 6 tests
    - removeColorClasses() - 5 tests
    - resetDragState() - 3 tests
+   - getEvenSpacingTargets() - 11 tests
+   - updateHoverCursors() - 10 tests
 
-6. **tests/regression/spacebar-bug.test.js** (291 lines, 5 tests)
+6. **tests/unit/spacing-guides-rendering.test.js** (8 tests)
+   - showSpacingGuides() - 8 tests
+
+7. **tests/regression/spacebar-bug.test.js** (4 tests)
    - Spacebar state preserved after mouseup
    - Pan mode class removed independently of drawing state
    - Spacebar press/release without drawing
    - Multiple spacebar cycles during drawing
 
-7. **tests/regression/duplication-offset-bug.test.js** (286 lines, 5 tests)
+8. **tests/regression/duplication-offset-bug.test.js** (286 lines, 5 tests)
    - Offset calculation uses getRectBounds() correctly
    - Duplication at different mouse positions
    - Negative offset values
@@ -60,9 +65,9 @@ Successfully implemented a comprehensive test suite for the Box Highlight Chrome
 
 ## Test Statistics
 
-### Total Test Count: **52 tests**
-- ✅ 42 Unit Tests (helpers.test.js)
-- ✅ 10 Regression Tests (2 files, 5 tests each)
+### Total Test Count: **61 tests**
+- ✅ 52 Unit Tests (helpers.test.js + spacing-guides-rendering.test.js)
+- ✅ 9 Regression Tests (2 files)
 
 ### Code Coverage
 - **Helper Functions**: 100% (all 5 extracted helpers tested)
@@ -71,7 +76,7 @@ Successfully implemented a comprehensive test suite for the Box Highlight Chrome
 
 ### Test Execution
 - ⏱️ **Runtime**: < 5 seconds (all tests)
-- 🟢 **Status**: All 52 tests passing
+- 🟢 **Status**: All 61 tests passing
 - 🔄 **Watch Mode**: Refresh browser to re-run
 
 ## Key Features
@@ -98,7 +103,7 @@ Successfully implemented a comprehensive test suite for the Box Highlight Chrome
 **Bug 1: Spacebar Pan Mode State**
 - ❌ Before: Releasing mouse reset spacebar state → page scroll
 - ✅ After: Spacebar state independent of mouse events
-- 🧪 Test: regression/spacebar-bug.test.js (5 tests)
+- 🧪 Test: regression/spacebar-bug.test.js (4 tests)
 
 **Bug 2: Duplication Offset Calculation**
 - ❌ Before: Used undefined variables after getRectBounds() refactoring
@@ -193,7 +198,7 @@ After editing code:
 
 ## Success Criteria Met
 
-✅ All tests pass (52/52)
+✅ All tests pass (62/62)
 ✅ Tests run in under 5 seconds
 ✅ Zero external dependencies (except QUnit)
 ✅ Tests catch both known regression bugs
@@ -263,12 +268,13 @@ Updated `/Users/francisrupert/.claude/projects/-Users-francisrupert-src-sandbox-
 | lib/chrome-mock.js | 98 | Chrome API mocks |
 | lib/qunit.js | 8,234 | QUnit framework |
 | lib/qunit.css | 298 | QUnit styles |
-| unit/helpers.test.js | 307 | Unit tests (42 tests) |
-| regression/spacebar-bug.test.js | 291 | Regression tests (5 tests) |
-| regression/duplication-offset-bug.test.js | 286 | Regression tests (5 tests) |
+| unit/helpers.test.js | — | Unit tests (44 tests) |
+| unit/spacing-guides-rendering.test.js | — | Unit tests (8 tests) |
+| regression/spacebar-bug.test.js | — | Regression tests (4 tests) |
+| regression/duplication-offset-bug.test.js | — | Regression tests (5 tests) |
 | README.md | 335 | Test documentation |
 | TESTING.md | 600 | Implementation details |
-| **Total** | **10,489 lines** | **52 tests** |
+| **Total** | **10,489 lines** | **61 tests** |
 
 ## Conclusion
 
@@ -284,7 +290,7 @@ The test suite is production-ready and can be expanded to cover integration test
 ---
 
 **Status**: ✅ Complete - Test infrastructure implemented
-**Test Count**: 52 tests (all passing)
+**Test Count**: 61 tests (all passing)
 **Runtime**: < 5 seconds
 **Framework**: QUnit v2.19.4
 **Next Step**: Run tests with `npm test` to verify everything works
