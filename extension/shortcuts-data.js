@@ -15,6 +15,7 @@ var KEYBOARD_SHORTCUTS = [
     shortcuts: [
       { keys: "Alt + Drag (over rectangle)", description: "Duplicate rectangle" },
       { keys: "Cmd/Ctrl + Drag (over rectangle)", description: "Reposition rectangle" },
+      { keys: "Cmd/Ctrl + Drag, then Alt", description: "Switch reposition to duplicate mid-drag" },
       { keys: "Shift + Drag (while repositioning/duplicating)", description: "Lock to horizontal or vertical axis" },
       { keys: "Tab (over rectangle)", description: "Cycle rectangle colors" },
       { keys: "Delete / Backspace (over rectangle)", description: "Remove rectangle" },

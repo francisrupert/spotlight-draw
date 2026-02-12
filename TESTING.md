@@ -86,12 +86,28 @@ tests/
 - Removes repositioning class when not over rectangle
 - Adds duplication class when Alt held over rectangle
 - Removes duplication class when not over rectangle
-- Cmd/Ctrl takes priority over Alt
+- Alt takes priority over Cmd/Ctrl
 - Removes both classes when no modifier keys held
 - No-op when not in drawing mode
 - No-op when currently drawing
 - No-op when duplicating
 - No-op when repositioning
+
+#### ✅ Unit Tests - mode-switch.test.js (10 tests)
+
+**switchRepositionToDuplicate()** - 8 tests
+- Reverts original rectangle to starting position
+- Creates a clone with correct size
+- Creates a clone with correct color
+- Clone is appended to document body
+- Flips state flags correctly
+- Transfers offsets from repositioning to duplication
+- Transfers axis lock state
+- Swaps CSS cursor classes
+
+**updateHoverCursors() Cmd+Alt priority** - 2 tests
+- Cmd+Alt over rectangle shows copy cursor (Alt wins)
+- Cmd+Alt not over rectangle removes both classes
 
 #### ✅ Unit Tests - spacing-guides-rendering.test.js (8 tests)
 
@@ -120,7 +136,7 @@ tests/
 - Duplication with negative offset values
 - Multiple duplications use correct offsets
 
-### Total Test Count: **61 tests**
+### Total Test Count: **71 tests**
 
 ## Running Tests
 
@@ -136,7 +152,7 @@ Opens `tests/test-runner.html` in your default browser.
 3. Refresh page to re-run tests after code changes
 
 ### Expected Results (Current)
-- ✅ All 61 tests should pass
+- ✅ All 71 tests should pass
 - ⏱️ Execution time: < 5 seconds
 - 🟢 Green status bar in QUnit UI
 
@@ -350,6 +366,6 @@ Future work will expand coverage to integration tests for complete user flows an
 ---
 
 **Last Updated**: 2026-02-11
-**Test Count**: 61 tests (52 unit, 9 regression)
+**Test Count**: 71 tests (62 unit, 9 regression)
 **Framework**: QUnit v2.19.4
 **Status**: ✅ All tests passing

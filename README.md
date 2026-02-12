@@ -14,6 +14,7 @@ A Chrome extension for annotating web pages during screensharing and recording s
   - **Cmd/Ctrl (drawing)**: Constrain to horizontal/vertical axis
   - **Cmd/Ctrl (over rectangle)**: Shows default cursor on hover; click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
   - **Alt (over rectangle)**: Shows copy cursor on hover; click and drag to duplicate (cursor hidden while dragging, hold Shift to constrain axis)
+  - **Cmd/Ctrl + Alt (over rectangle)**: Alt wins — enters duplicate mode (press Alt mid-reposition to switch)
   - **Shift**: Multi-rectangle mode
   - **Tab**: Cycle through colors (orange → green → blue → purple → gray)
   - **Delete/Backspace**: Remove rectangle under cursor
@@ -106,6 +107,7 @@ spotlight-draw/
 7. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
 8. **Hold Cmd/Ctrl** and hover over a rectangle to see the default cursor, then click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
 9. **Hold Alt** and hover over a rectangle to see the copy cursor, then click and drag to duplicate (cursor hidden while dragging, hold Shift to constrain axis)
+9a. While repositioning with Cmd/Ctrl, **press Alt** to switch to duplicate mode mid-drag (original rectangle snaps back, clone appears under cursor)
 10. **Press Tab** while hovering over a rectangle (or while drawing/dragging) to cycle through colors (orange → green → blue → purple → gray)
 11. **Press Delete or Backspace** while hovering over a rectangle to remove it
 12. Release spacebar/alt/cmd to continue normal resizing

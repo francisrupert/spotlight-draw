@@ -46,9 +46,10 @@ If you prefer to work with relative paths:
 9. **Hold Cmd/Ctrl** during drawing to constrain to horizontal or vertical axis.
 10. **Hold Cmd/Ctrl** and drag over existing rectangle to reposition it.
 11. **Hold Alt** and drag over existing rectangle to duplicate it.
-12. **Press Delete/Backspace** while hovering over a rectangle to remove it.
-13. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor).
-14. Press **Alt+A** again to also exit drawing mode.
+12. While repositioning with Cmd/Ctrl, **press Alt** mid-drag to switch to duplicate mode.
+13. **Press Delete/Backspace** while hovering over a rectangle to remove it.
+14. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor).
+15. Press **Alt+A** again to also exit drawing mode.
 
 ## Configuring settings
 
