@@ -87,6 +87,18 @@ function setupButtonGroup(container, groupId, onChange) {
   }
 }
 
+// Update the toggle shortcut display in the first shortcuts table
+function updateToggleShortcutDisplay(container, shortcutText) {
+  if (!container || !shortcutText) return;
+  var tables = container.querySelectorAll(".shortcuts-table");
+  if (tables.length > 0) {
+    var firstCell = tables[0].querySelector(".shortcut-keys");
+    if (firstCell) {
+      firstCell.textContent = shortcutText;
+    }
+  }
+}
+
 // Shared preference defaults
 var DEFAULT_PREFERENCES = {
   borderSize: "1",

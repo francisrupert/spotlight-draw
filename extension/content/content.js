@@ -454,6 +454,15 @@ function initHelpSystem() {
 
   // Load current settings into form
   loadSettingsIntoDialog();
+
+  // Fetch and display actual configured shortcut
+  if (chrome.runtime && chrome.runtime.sendMessage) {
+    chrome.runtime.sendMessage({ type: "GET_SHORTCUT" }, function(response) {
+      if (response && response.shortcut) {
+        updateToggleShortcutDisplay(helpDialog, response.shortcut);
+      }
+    });
+  }
 }
 
 // Update rectangle position and size

@@ -54,6 +54,18 @@ function loadOptions() {
 function renderShortcuts() {
   var container = document.getElementById("shortcuts-container");
   renderShortcutsInto(container, "h2", "shortcuts-section");
+
+  // Display actual configured shortcut
+  if (chrome.commands && chrome.commands.getAll) {
+    chrome.commands.getAll(function(commands) {
+      for (var i = 0; i < commands.length; i++) {
+        if (commands[i].name === "toggle-drawing-mode" && commands[i].shortcut) {
+          updateToggleShortcutDisplay(container, commands[i].shortcut);
+          break;
+        }
+      }
+    });
+  }
 }
 
 // Initialize

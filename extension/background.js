@@ -1,9 +1,41 @@
+function checkShortcutStatus() {
+  if (!chrome.commands || !chrome.commands.getAll) return;
+
+  chrome.commands.getAll(function(commands) {
+    var toggleCommand = null;
+    for (var i = 0; i < commands.length; i++) {
+      if (commands[i].name === "toggle-drawing-mode") {
+        toggleCommand = commands[i];
+        break;
+      }
+    }
+
+    if (!toggleCommand || !toggleCommand.shortcut) {
+      // No shortcut set — warn the user
+      chrome.action.setBadgeText({ text: "!" });
+      chrome.action.setBadgeBackgroundColor({ color: "#E67700" });
+      chrome.action.setTitle({
+        title: "SpotlightDraw - No shortcut set! Click to draw, or set one in chrome://extensions/shortcuts"
+      });
+    } else {
+      // Shortcut is configured — clear badge, show shortcut in tooltip
+      chrome.action.setBadgeText({ text: "" });
+      chrome.action.setTitle({
+        title: "SpotlightDraw - Toggle drawing mode (" + toggleCommand.shortcut + ")"
+      });
+    }
+  });
+}
+
 function handleInstalled(details) {
-  if (!details || details.reason !== "install") {
-    return;
+  if (!details || !details.reason) return;
+
+  if (details.reason === "install") {
+    console.log("SpotlightDraw extension installed");
+    chrome.tabs.create({ url: "welcome/welcome.html" });
   }
 
-  console.log("SpotlightDraw extension installed");
+  checkShortcutStatus();
 }
 
 function sendToggleMessage(tab) {
@@ -40,3 +72,33 @@ if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onInstalle
 if (typeof chrome !== "undefined" && chrome.commands && chrome.commands.onCommand) {
   chrome.commands.onCommand.addListener(handleCommand);
 }
+
+if (typeof chrome !== "undefined" && chrome.action && chrome.action.onClicked) {
+  chrome.action.onClicked.addListener(function(tab) {
+    sendToggleMessage(tab);
+  });
+}
+
+if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (message && message.type === "GET_SHORTCUT") {
+      if (chrome.commands && chrome.commands.getAll) {
+        chrome.commands.getAll(function(commands) {
+          var shortcut = "";
+          for (var i = 0; i < commands.length; i++) {
+            if (commands[i].name === "toggle-drawing-mode") {
+              shortcut = commands[i].shortcut || "";
+              break;
+            }
+          }
+          sendResponse({ shortcut: shortcut });
+        });
+        return true; // async sendResponse
+      }
+      sendResponse({ shortcut: "" });
+    }
+  });
+}
+
+// Check shortcut status on service worker startup
+checkShortcutStatus();
