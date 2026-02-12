@@ -901,7 +901,7 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     }
   }
 
-  // Check even spacing only if no edge/center snap occurred
+  // Check even spacing for SNAPPING only if no edge/center snap occurred
   if (!xSnapped) {
     var tempRect = { style: { left: x + "px", top: y + "px", width: width + "px", height: height + "px" } };
     var spacingTargets = getEvenSpacingTargets(tempRect, excludeRect);
@@ -919,33 +919,55 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
       }
     }
 
-    // If we found a match, snap to it and show guides for ALL gaps of that size
+    // If we found a match, snap to it
     if (closestHorizontalTarget) {
       snappedX = closestHorizontalTarget.position;
-      var snapGapSize = closestHorizontalTarget.gap;
+    }
+  }
 
-      // Find ALL gaps of this size (including gaps between other rectangles)
-      var movedRectBounds = {
-        left: snappedX,
-        top: y,
-        width: width,
-        height: height
-      };
-      var allMatchingGaps = findAllGapsOfSize(snapGapSize, 'horizontal', excludeRect, movedRectBounds, 1);
+  // Always check for spacing GUIDES (even if we snapped to edge/center)
+  // This ensures guides appear whenever equal spacing exists, regardless of snap type
+  var tempRectForGuides = { style: { left: snappedX + "px", top: y + "px", width: width + "px", height: height + "px" } };
+  var spacingTargetsForGuides = getEvenSpacingTargets(tempRectForGuides, excludeRect);
 
-      // Add guides for all matching gaps
-      for (var i = 0; i < allMatchingGaps.length; i++) {
-        var gap = allMatchingGaps[i];
-        spacingGuides.push({
-          axis: 'horizontal',
-          position: (gap.gapStart + gap.gapEnd) / 2, // Midpoint of gap
-          gapStart: gap.gapStart,
-          gapEnd: gap.gapEnd,
-          gap: gap.gap,
-          between: gap.between,
-          referenceRects: gap.referenceRects
-        });
-      }
+  // Check if current position matches any horizontal spacing pattern
+  var closestHorizontalSpacingGuide = null;
+  var closestHorizontalSpacingDist = Infinity;
+
+  for (var i = 0; i < spacingTargetsForGuides.horizontal.length; i++) {
+    var target = spacingTargetsForGuides.horizontal[i];
+    var dist = Math.abs(snappedX - target.position);
+    if (dist <= SNAP_THRESHOLD && dist < closestHorizontalSpacingDist) {
+      closestHorizontalSpacingDist = dist;
+      closestHorizontalSpacingGuide = target;
+    }
+  }
+
+  // Show guides for all matching gaps
+  if (closestHorizontalSpacingGuide) {
+    var snapGapSize = closestHorizontalSpacingGuide.gap;
+
+    // Find ALL gaps of this size (including gaps between other rectangles)
+    var movedRectBounds = {
+      left: snappedX,
+      top: y,
+      width: width,
+      height: height
+    };
+    var allMatchingGaps = findAllGapsOfSize(snapGapSize, 'horizontal', excludeRect, movedRectBounds, 1);
+
+    // Add guides for all matching gaps
+    for (var i = 0; i < allMatchingGaps.length; i++) {
+      var gap = allMatchingGaps[i];
+      spacingGuides.push({
+        axis: 'horizontal',
+        position: (gap.gapStart + gap.gapEnd) / 2, // Midpoint of gap
+        gapStart: gap.gapStart,
+        gapEnd: gap.gapEnd,
+        gap: gap.gap,
+        between: gap.between,
+        referenceRects: gap.referenceRects
+      });
     }
   }
 
@@ -1007,7 +1029,7 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
     }
   }
 
-  // Check even spacing only if no edge/center snap occurred
+  // Check even spacing for SNAPPING only if no edge/center snap occurred
   if (!ySnapped) {
     var tempRect = { style: { left: x + "px", top: y + "px", width: width + "px", height: height + "px" } };
     var spacingTargets = getEvenSpacingTargets(tempRect, excludeRect);
@@ -1025,33 +1047,55 @@ function applyPositionSnapping(x, y, width, height, excludeRect) {
       }
     }
 
-    // If we found a match, snap to it and show guides for ALL gaps of that size
+    // If we found a match, snap to it
     if (closestVerticalTarget) {
       snappedY = closestVerticalTarget.position;
-      var snapGapSize = closestVerticalTarget.gap;
+    }
+  }
 
-      // Find ALL gaps of this size (including gaps between other rectangles)
-      var movedRectBounds = {
-        left: x,
-        top: snappedY,
-        width: width,
-        height: height
-      };
-      var allMatchingGaps = findAllGapsOfSize(snapGapSize, 'vertical', excludeRect, movedRectBounds, 1);
+  // Always check for spacing GUIDES (even if we snapped to edge/center)
+  // This ensures guides appear whenever equal spacing exists, regardless of snap type
+  var tempRectForVerticalGuides = { style: { left: snappedX + "px", top: snappedY + "px", width: width + "px", height: height + "px" } };
+  var spacingTargetsForVerticalGuides = getEvenSpacingTargets(tempRectForVerticalGuides, excludeRect);
 
-      // Add guides for all matching gaps
-      for (var j = 0; j < allMatchingGaps.length; j++) {
-        var gap = allMatchingGaps[j];
-        spacingGuides.push({
-          axis: 'vertical',
-          position: (gap.gapStart + gap.gapEnd) / 2, // Midpoint of gap
-          gapStart: gap.gapStart,
-          gapEnd: gap.gapEnd,
-          gap: gap.gap,
-          between: gap.between,
-          referenceRects: gap.referenceRects
-        });
-      }
+  // Check if current position matches any vertical spacing pattern
+  var closestVerticalSpacingGuide = null;
+  var closestVerticalSpacingDist = Infinity;
+
+  for (var j = 0; j < spacingTargetsForVerticalGuides.vertical.length; j++) {
+    var target = spacingTargetsForVerticalGuides.vertical[j];
+    var dist = Math.abs(snappedY - target.position);
+    if (dist <= SNAP_THRESHOLD && dist < closestVerticalSpacingDist) {
+      closestVerticalSpacingDist = dist;
+      closestVerticalSpacingGuide = target;
+    }
+  }
+
+  // Show guides for all matching gaps
+  if (closestVerticalSpacingGuide) {
+    var snapGapSize = closestVerticalSpacingGuide.gap;
+
+    // Find ALL gaps of this size (including gaps between other rectangles)
+    var movedRectBounds = {
+      left: snappedX,
+      top: snappedY,
+      width: width,
+      height: height
+    };
+    var allMatchingGaps = findAllGapsOfSize(snapGapSize, 'vertical', excludeRect, movedRectBounds, 1);
+
+    // Add guides for all matching gaps
+    for (var j = 0; j < allMatchingGaps.length; j++) {
+      var gap = allMatchingGaps[j];
+      spacingGuides.push({
+        axis: 'vertical',
+        position: (gap.gapStart + gap.gapEnd) / 2, // Midpoint of gap
+        gapStart: gap.gapStart,
+        gapEnd: gap.gapEnd,
+        gap: gap.gap,
+        between: gap.between,
+        referenceRects: gap.referenceRects
+      });
     }
   }
 
