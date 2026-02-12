@@ -924,7 +924,32 @@ function applyResizeSnapping(x, y, width, height, excludeRect) {
     }
   }
 
-  // --- Horizontal gap snapping (fallback when no edge alignment) ---
+  // --- Horizontal dimension snapping (fallback when no edge alignment) ---
+  if (!xEdgeSnapped && (movesLeft || movesRight)) {
+    var bestDimDist = Infinity;
+    var bestMatchWidth = null;
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i] === excludeRect) continue;
+      var b = getRectBounds(placedRectangles[i]);
+      var diff = Math.abs(snappedWidth - b.width);
+      if (diff <= SNAP_THRESHOLD && diff < bestDimDist) {
+        bestDimDist = diff;
+        bestMatchWidth = b.width;
+      }
+    }
+    if (bestMatchWidth !== null) {
+      if (movesRight) {
+        snappedWidth = bestMatchWidth;
+      } else {
+        var fixedRight = snappedX + snappedWidth;
+        snappedWidth = bestMatchWidth;
+        snappedX = fixedRight - snappedWidth;
+      }
+      xEdgeSnapped = true;
+    }
+  }
+
+  // --- Horizontal gap snapping (fallback when no edge/dimension alignment) ---
   if (!xEdgeSnapped && (movesLeft || movesRight)) {
     var existingHGaps = collectExistingGaps('horizontal', excludeRect);
     if (existingHGaps.length > 0) {
@@ -1019,7 +1044,32 @@ function applyResizeSnapping(x, y, width, height, excludeRect) {
     }
   }
 
-  // --- Vertical gap snapping (fallback when no edge alignment) ---
+  // --- Vertical dimension snapping (fallback when no edge alignment) ---
+  if (!yEdgeSnapped && (movesTop || movesBottom)) {
+    var bestDimDist = Infinity;
+    var bestMatchHeight = null;
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i] === excludeRect) continue;
+      var b = getRectBounds(placedRectangles[i]);
+      var diff = Math.abs(snappedHeight - b.height);
+      if (diff <= SNAP_THRESHOLD && diff < bestDimDist) {
+        bestDimDist = diff;
+        bestMatchHeight = b.height;
+      }
+    }
+    if (bestMatchHeight !== null) {
+      if (movesBottom) {
+        snappedHeight = bestMatchHeight;
+      } else {
+        var fixedBottom = snappedY + snappedHeight;
+        snappedHeight = bestMatchHeight;
+        snappedY = fixedBottom - snappedHeight;
+      }
+      yEdgeSnapped = true;
+    }
+  }
+
+  // --- Vertical gap snapping (fallback when no edge/dimension alignment) ---
   if (!yEdgeSnapped && (movesTop || movesBottom)) {
     var existingVGaps = collectExistingGaps('vertical', excludeRect);
     if (existingVGaps.length > 0) {
@@ -1172,6 +1222,32 @@ function applyResizeSnapping(x, y, width, height, excludeRect) {
           });
         }
       }
+    }
+  }
+
+  // --- Dimension matching guides (always, after all snapping) ---
+  for (var i = 0; i < placedRectangles.length; i++) {
+    if (placedRectangles[i] === excludeRect) continue;
+    var b = getRectBounds(placedRectangles[i]);
+
+    if ((movesLeft || movesRight) && Math.abs(snappedWidth - b.width) <= 1) {
+      spacingGuides.push({
+        axis: 'horizontal',
+        gapStart: b.left,
+        gapEnd: b.left + b.width,
+        between: [b, b],
+        referenceRects: [b, b]
+      });
+    }
+
+    if ((movesTop || movesBottom) && Math.abs(snappedHeight - b.height) <= 1) {
+      spacingGuides.push({
+        axis: 'vertical',
+        gapStart: b.top,
+        gapEnd: b.top + b.height,
+        between: [b, b],
+        referenceRects: [b, b]
+      });
     }
   }
 
@@ -1869,8 +1945,8 @@ function calculateResizeBounds(mouseX, mouseY, handle, startBounds, altHeld) {
 
 // Set resize cursor via inline style on <html>
 function setResizeCursor(handle) {
-  var map = { n: "n-resize", s: "s-resize", e: "e-resize", w: "w-resize",
-              ne: "ne-resize", nw: "nw-resize", se: "se-resize", sw: "sw-resize" };
+  var map = { n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize",
+              ne: "nesw-resize", nw: "nwse-resize", se: "nwse-resize", sw: "nesw-resize" };
   document.documentElement.style.setProperty("--sd-cursor", map[handle]);
 }
 

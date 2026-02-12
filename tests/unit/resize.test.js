@@ -268,8 +268,8 @@ QUnit.module("Resize - Cursor Helpers", {
 
 QUnit.test("setResizeCursor sets correct --sd-cursor value", function(assert) {
   var handles = {
-    n: "n-resize", s: "s-resize", e: "e-resize", w: "w-resize",
-    ne: "ne-resize", nw: "nw-resize", se: "se-resize", sw: "sw-resize"
+    n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize",
+    ne: "nesw-resize", nw: "nwse-resize", se: "nwse-resize", sw: "nesw-resize"
   };
   for (var handle in handles) {
     setResizeCursor(handle);
@@ -279,7 +279,7 @@ QUnit.test("setResizeCursor sets correct --sd-cursor value", function(assert) {
 });
 
 QUnit.test("clearResizeCursor removes inline --sd-cursor property", function(assert) {
-  document.documentElement.style.setProperty("--sd-cursor", "se-resize");
+  document.documentElement.style.setProperty("--sd-cursor", "nwse-resize");
   clearResizeCursor();
   var value = document.documentElement.style.getPropertyValue("--sd-cursor");
   assert.equal(value, "", "property removed");
@@ -335,7 +335,7 @@ QUnit.test("shows resize cursor on edge with no modifiers", function(assert) {
   updateHoverCursors(false, false);
 
   var cursor = document.documentElement.style.getPropertyValue("--sd-cursor");
-  assert.equal(cursor, "n-resize", "resize cursor set for north edge");
+  assert.equal(cursor, "ns-resize", "resize cursor set for north edge");
   assert.notOk(
     document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
     "repositioning class not added"
@@ -354,7 +354,7 @@ QUnit.test("shows resize cursor on edge even when Cmd held (edge wins)", functio
   updateHoverCursors(true, false); // Cmd held
 
   var cursor = document.documentElement.style.getPropertyValue("--sd-cursor");
-  assert.equal(cursor, "e-resize", "resize cursor set even with Cmd");
+  assert.equal(cursor, "ew-resize", "resize cursor set even with Cmd");
   assert.notOk(
     document.documentElement.classList.contains("spotlight-draw-repositioning-mode"),
     "repositioning class NOT added (edge wins)"
@@ -373,7 +373,7 @@ QUnit.test("shows resize cursor when Alt on edge (not duplication)", function(as
   updateHoverCursors(false, true); // Alt held
 
   var cursor = document.documentElement.style.getPropertyValue("--sd-cursor");
-  assert.equal(cursor, "w-resize", "resize cursor set on edge with Alt");
+  assert.equal(cursor, "ew-resize", "resize cursor set on edge with Alt");
   assert.notOk(
     document.documentElement.classList.contains("spotlight-draw-duplication-hover-mode"),
     "duplication class NOT added (edge wins)"
@@ -704,4 +704,192 @@ QUnit.test("guides show in all matching gaps (3+ rects with equal spacing)", fun
   var result = applyResizeSnapping(450, 100, 100, 50, rectR);
   // Gaps: A-B=50, B-C=50, C-R=50, R-D=50 → all 4 gaps match
   assert.ok(result.spacingGuides.length >= 4, "guides in all matching gaps: " + result.spacingGuides.length);
+});
+
+
+// ============================================================================
+// applyResizeSnapping() Dimension Snapping Tests
+// ============================================================================
+
+QUnit.module("Resize - applyResizeSnapping dimension snapping", {
+  beforeEach: function() {
+    placedRectangles = [];
+    resizeHandle = null;
+  },
+  afterEach: function() {
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i].parentNode) {
+        placedRectangles[i].parentNode.removeChild(placedRectangles[i]);
+      }
+    }
+    placedRectangles = [];
+    resizeHandle = null;
+  }
+});
+
+QUnit.test("'e' handle: width snaps to matching rect's width; left stays fixed", function(assert) {
+  // Target rect width=200
+  createPlacedRect(500, 50, 200, 100);
+  resizeHandle = "e";
+  // Resizing rect: left=100, width=196 → right=296 (no edge alignment target nearby)
+  var result = applyResizeSnapping(100, 100, 196, 150, null);
+  assert.equal(result.x, 100, "left unchanged");
+  assert.equal(result.width, 200, "width snapped to 200");
+});
+
+QUnit.test("'w' handle: width snaps to matching rect's width; right stays fixed", function(assert) {
+  // Target rect width=200
+  createPlacedRect(500, 50, 200, 100);
+  resizeHandle = "w";
+  // Resizing rect: left=100, width=196 → right=296
+  var result = applyResizeSnapping(100, 100, 196, 150, null);
+  assert.equal(result.x + result.width, 296, "right stays fixed");
+  assert.equal(result.width, 200, "width snapped to 200");
+  assert.equal(result.x, 96, "left adjusted to maintain right edge");
+});
+
+QUnit.test("'s' handle: height snaps to matching rect's height; top stays fixed", function(assert) {
+  // Target rect height=200
+  createPlacedRect(500, 50, 100, 200);
+  resizeHandle = "s";
+  // Resizing rect: top=100, height=196
+  var result = applyResizeSnapping(100, 100, 150, 196, null);
+  assert.equal(result.y, 100, "top unchanged");
+  assert.equal(result.height, 200, "height snapped to 200");
+});
+
+QUnit.test("'se' corner: both width and height snap independently", function(assert) {
+  // Two targets with different dimensions
+  createPlacedRect(500, 50, 200, 100);  // width=200
+  createPlacedRect(50, 500, 100, 300);  // height=300
+  resizeHandle = "se";
+  var result = applyResizeSnapping(100, 100, 196, 296, null);
+  assert.equal(result.x, 100, "left unchanged");
+  assert.equal(result.y, 100, "top unchanged");
+  assert.equal(result.width, 200, "width snapped to 200");
+  assert.equal(result.height, 300, "height snapped to 300");
+});
+
+QUnit.test("edge alignment takes priority over dimension snap", function(assert) {
+  // Edge target at 305 (within 8px of right edge at 300)
+  // AND a rect with width=200 (within 8px of 196)
+  createPlacedRect(305, 50, 200, 100); // left edge at 305, width=200
+  resizeHandle = "e";
+  // Resizing rect: left=100, width=196 → right=296, close to 305
+  var result = applyResizeSnapping(100, 100, 196, 150, null);
+  // Edge alignment to 305 should win → width = 305-100 = 205 (not 200)
+  assert.equal(result.x + result.width, 305, "right edge snapped to 305");
+  assert.equal(result.width, 205, "width set by edge alignment, not dimension snap");
+});
+
+QUnit.test("dimension snap takes priority over gap snap", function(assert) {
+  // Set up a gap scenario: two rects with a 50px gap
+  createPlacedRect(0, 100, 100, 50);   // A: 0-100
+  createPlacedRect(150, 100, 100, 50);  // B: 150-250, gap=50
+  // Target rect far away (no edge alignment), width=193
+  createPlacedRect(800, 100, 193, 50);
+  // Resizing rect: left=300, width=195 → right=495
+  // Nearest rect to right: none close enough for gap snap
+  // But width 195 is within 8px of 193
+  var rectR = createPlacedRect(300, 100, 195, 50);
+  resizeHandle = "e";
+  var result = applyResizeSnapping(300, 100, 195, 50, rectR);
+  assert.equal(result.width, 193, "width snapped to dimension match (193), not gap snap");
+});
+
+
+// ============================================================================
+// applyResizeSnapping() Dimension Guide Tests
+// ============================================================================
+
+QUnit.module("Resize - applyResizeSnapping dimension guides", {
+  beforeEach: function() {
+    placedRectangles = [];
+    resizeHandle = null;
+  },
+  afterEach: function() {
+    for (var i = 0; i < placedRectangles.length; i++) {
+      if (placedRectangles[i].parentNode) {
+        placedRectangles[i].parentNode.removeChild(placedRectangles[i]);
+      }
+    }
+    placedRectangles = [];
+    resizeHandle = null;
+  }
+});
+
+QUnit.test("width match shows horizontal guide on matching rect", function(assert) {
+  // Target rect: left=500, width=200
+  createPlacedRect(500, 50, 200, 100);
+  resizeHandle = "e";
+  // After snapping, width should be 200 → guide on matching rect
+  var result = applyResizeSnapping(100, 100, 196, 150, null);
+  assert.equal(result.width, 200, "width snapped");
+  var hGuides = result.spacingGuides.filter(function(g) { return g.axis === 'horizontal'; });
+  assert.ok(hGuides.length >= 1, "at least one horizontal guide");
+  assert.equal(hGuides[0].gapStart, 500, "guide starts at matching rect left");
+  assert.equal(hGuides[0].gapEnd, 700, "guide ends at matching rect right");
+});
+
+QUnit.test("height match shows vertical guide on matching rect", function(assert) {
+  // Target rect: top=400, height=300
+  createPlacedRect(50, 400, 100, 300);
+  resizeHandle = "s";
+  // After snapping, height should be 300 → guide on matching rect
+  var result = applyResizeSnapping(100, 100, 150, 296, null);
+  assert.equal(result.height, 300, "height snapped");
+  var vGuides = result.spacingGuides.filter(function(g) { return g.axis === 'vertical'; });
+  assert.ok(vGuides.length >= 1, "at least one vertical guide");
+  assert.equal(vGuides[0].gapStart, 400, "guide starts at matching rect top");
+  assert.equal(vGuides[0].gapEnd, 700, "guide ends at matching rect bottom");
+});
+
+QUnit.test("no guide when no dimensions match", function(assert) {
+  // Target rect: width=300, height=300 — far from our 150x150
+  createPlacedRect(500, 500, 300, 300);
+  resizeHandle = "se";
+  var result = applyResizeSnapping(100, 100, 150, 150, null);
+  var dimGuides = result.spacingGuides.filter(function(g) {
+    return g.between[0] === g.between[1]; // dimension guides use same rect twice
+  });
+  assert.equal(dimGuides.length, 0, "no dimension guides");
+});
+
+QUnit.test("multiple rects with same width → guide on each", function(assert) {
+  // Two rects with width=200
+  createPlacedRect(500, 50, 200, 100);
+  createPlacedRect(500, 300, 200, 100);
+  resizeHandle = "e";
+  var result = applyResizeSnapping(100, 100, 196, 150, null);
+  assert.equal(result.width, 200, "width snapped");
+  var hGuides = result.spacingGuides.filter(function(g) { return g.axis === 'horizontal'; });
+  assert.ok(hGuides.length >= 2, "guides on both matching rects: " + hGuides.length);
+});
+
+QUnit.test("guide appears even when edge alignment snapped", function(assert) {
+  // Rect with left edge at 300 AND width=200
+  createPlacedRect(300, 50, 200, 100);
+  resizeHandle = "e";
+  // Resizing rect: left=100, width=195 → right=295 (snaps to edge 300 → width=200)
+  // After edge snap, width=200 matches target → dimension guide should appear
+  var result = applyResizeSnapping(100, 100, 195, 150, null);
+  assert.equal(result.x + result.width, 300, "edge snapped to 300");
+  assert.equal(result.width, 200, "width happens to be 200");
+  var hGuides = result.spacingGuides.filter(function(g) { return g.axis === 'horizontal'; });
+  assert.ok(hGuides.length >= 1, "dimension guide shows even after edge alignment");
+  assert.equal(hGuides[0].gapStart, 300, "guide at matching rect");
+});
+
+QUnit.test("width and height guides appear simultaneously (corner handle)", function(assert) {
+  // One rect with width=200, another with height=300
+  createPlacedRect(500, 50, 200, 100);
+  createPlacedRect(50, 500, 100, 300);
+  resizeHandle = "se";
+  var result = applyResizeSnapping(100, 100, 196, 296, null);
+  assert.equal(result.width, 200, "width snapped");
+  assert.equal(result.height, 300, "height snapped");
+  var hGuides = result.spacingGuides.filter(function(g) { return g.axis === 'horizontal'; });
+  var vGuides = result.spacingGuides.filter(function(g) { return g.axis === 'vertical'; });
+  assert.ok(hGuides.length >= 1, "horizontal guide for width match");
+  assert.ok(vGuides.length >= 1, "vertical guide for height match");
 });
