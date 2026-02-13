@@ -6,6 +6,7 @@ var KEYBOARD_SHORTCUTS = [
       { keys: "Alt + F", description: "Toggle drawing mode" },
       { keys: "Click & Drag", description: "Draw rectangle" },
       { keys: "Alt (during drawing)", description: "Draw from center" },
+      { keys: "Shift (during drawing)", description: "Constrain to square" },
       { keys: "Cmd/Ctrl (during drawing)", description: "Axis constraint" },
       { keys: "Spacebar (hold during drawing)", description: "Pan mode - move rectangle" }
     ]

@@ -25,7 +25,8 @@ tests/
 │   └── chrome-mock.js                # Chrome API mocks with test helpers
 ├── unit/
 │   ├── helpers.test.js                  # 44 tests for helper functions
-│   └── spacing-guides-rendering.test.js # 8 tests for spacing guide rendering
+│   ├── spacing-guides-rendering.test.js # 8 tests for spacing guide rendering
+│   └── drawing-square.test.js           # 10 tests for Shift square constraint
 └── regression/
     ├── spacebar-bug.test.js          # 4 tests for spacebar state bug
     └── duplication-offset-bug.test.js # 5 tests for offset calculation bug
@@ -136,7 +137,18 @@ tests/
 - Duplication with negative offset values
 - Multiple duplications use correct offsets
 
-### Total Test Count: **71 tests**
+#### ✅ Unit Tests - drawing-square.test.js (10 tests)
+
+**calculateRectCoords() square constraint** - 10 tests
+- No constraint when Shift is not held
+- Square uses larger dimension when dragging wider
+- Square uses larger dimension when dragging taller
+- Direction preserved: right-down, left-up, right-up, left-down
+- Composes with Alt: center-outward square
+- Equal deltas produce square
+- Mid-drag toggle: Shift off returns to free-form
+
+### Total Test Count: **159 tests**
 
 ## Running Tests
 
@@ -365,7 +377,7 @@ Future work will expand coverage to integration tests for complete user flows an
 
 ---
 
-**Last Updated**: 2026-02-11
-**Test Count**: 71 tests (62 unit, 9 regression)
+**Last Updated**: 2026-02-13
+**Test Count**: 159 tests (150 unit, 9 regression)
 **Framework**: QUnit v2.19.4
 **Status**: ✅ All tests passing

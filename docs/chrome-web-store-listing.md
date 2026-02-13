@@ -47,6 +47,7 @@ SpotlightDraw is the perfect companion for presentations, demos, and screen reco
 • Adjustable border thickness (0.5px - 3px)
 • Multi-rectangle mode with Shift key
 • Draw from center with Alt key
+• Constrain to square with Shift key
 • Reposition and duplicate rectangles
 • Axis-lock drawing with Cmd/Ctrl
 • Quick color cycling with Tab key

@@ -27,7 +27,12 @@ tests/
 │   └── chrome-mock.js        # Chrome API mocks (chrome.storage, chrome.tabs)
 ├── unit/                     # Pure function tests
 │   ├── helpers.test.js                  # Helper functions (getRectBounds, clampMouse, etc.)
-│   └── spacing-guides-rendering.test.js # showSpacingGuides() DOM rendering
+│   ├── spacing-guides-rendering.test.js # showSpacingGuides() DOM rendering
+│   ├── drawing-snap.test.js             # Drawing dimension snap tests
+│   ├── drawing-square.test.js           # Shift square constraint tests
+│   ├── discoverability.test.js          # Discoverability tests
+│   ├── mode-switch.test.js              # Mode switch tests
+│   └── resize.test.js                   # Resize tests
 ├── integration/              # User flow tests (to be added)
 │   ├── drawing-flow.test.js
 │   ├── duplication-flow.test.js
