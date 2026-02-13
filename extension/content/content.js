@@ -704,11 +704,30 @@ function applySnapping(x, y, width, height, excludeRect) {
   }
 
   // Center snap only if neither edge snapped
-  if (bestLeftSnap === null && bestRightSnap === null) {
+  var xEdgeSnapped = (bestLeftSnap !== null || bestRightSnap !== null);
+  if (!xEdgeSnapped) {
     var centerXSnap = findClosestEdge(centerX, targets.centerX);
     if (centerXSnap !== null) {
       snappedX = x + (centerXSnap - centerX);
       verticalSnapPositions.push(centerXSnap);
+      xEdgeSnapped = true; // center counts as alignment
+    }
+  }
+
+  // Width dimension matching — only if no edge/center X snapped
+  if (!xEdgeSnapped) {
+    var bestWidthDiff = SNAP_THRESHOLD + 1;
+    var bestWidthMatch = null;
+    for (var i = 0; i < placedRectangles.length; i++) {
+      var b = getRectBounds(placedRectangles[i]);
+      var diff = Math.abs(snappedWidth - b.width);
+      if (diff <= SNAP_THRESHOLD && diff < bestWidthDiff) {
+        bestWidthDiff = diff;
+        bestWidthMatch = b.width;
+      }
+    }
+    if (bestWidthMatch !== null) {
+      snappedWidth = bestWidthMatch;
     }
   }
 
@@ -738,11 +757,54 @@ function applySnapping(x, y, width, height, excludeRect) {
   }
 
   // Center snap only if neither edge snapped
-  if (bestTopSnap === null && bestBottomSnap === null) {
+  var yEdgeSnapped = (bestTopSnap !== null || bestBottomSnap !== null);
+  if (!yEdgeSnapped) {
     var centerYSnap = findClosestEdge(centerY, targets.centerY);
     if (centerYSnap !== null) {
       snappedY = y + (centerYSnap - centerY);
       horizontalSnapPositions.push(centerYSnap);
+      yEdgeSnapped = true; // center counts as alignment
+    }
+  }
+
+  // Height dimension matching — only if no edge/center Y snapped
+  if (!yEdgeSnapped) {
+    var bestHeightDiff = SNAP_THRESHOLD + 1;
+    var bestHeightMatch = null;
+    for (var i = 0; i < placedRectangles.length; i++) {
+      var b = getRectBounds(placedRectangles[i]);
+      var diff = Math.abs(snappedHeight - b.height);
+      if (diff <= SNAP_THRESHOLD && diff < bestHeightDiff) {
+        bestHeightDiff = diff;
+        bestHeightMatch = b.height;
+      }
+    }
+    if (bestHeightMatch !== null) {
+      snappedHeight = bestHeightMatch;
+    }
+  }
+
+  // --- Dimension matching guides (always, after all snapping) ---
+  var spacingGuides = [];
+  for (var i = 0; i < placedRectangles.length; i++) {
+    var b = getRectBounds(placedRectangles[i]);
+    if (Math.abs(snappedWidth - b.width) <= 1) {
+      spacingGuides.push({
+        axis: 'horizontal',
+        gapStart: b.left,
+        gapEnd: b.left + b.width,
+        between: [b, b],
+        referenceRects: [b, b]
+      });
+    }
+    if (Math.abs(snappedHeight - b.height) <= 1) {
+      spacingGuides.push({
+        axis: 'vertical',
+        gapStart: b.top,
+        gapEnd: b.top + b.height,
+        between: [b, b],
+        referenceRects: [b, b]
+      });
     }
   }
 
@@ -753,7 +815,7 @@ function applySnapping(x, y, width, height, excludeRect) {
     height: snappedHeight,
     verticalSnapPositions: verticalSnapPositions,
     horizontalSnapPositions: horizontalSnapPositions,
-    spacingGuides: [] // No spacing guides for drawing mode
+    spacingGuides: spacingGuides
   };
 }
 
