@@ -18,7 +18,7 @@ var KEYBOARD_SHORTCUTS = [
       { keys: "Cmd/Ctrl + Drag (over rectangle)", description: "Reposition rectangle" },
       { keys: "Cmd/Ctrl + Drag, then Alt", description: "Switch reposition to duplicate mid-drag" },
       { keys: "Shift + Drag (while repositioning/duplicating)", description: "Lock to horizontal or vertical axis" },
-      { keys: "Tab (over rectangle)", description: "Cycle rectangle colors" },
+      { keys: "Tab", description: "Cycle rectangle colors" },
       { keys: "Delete / Backspace (over rectangle)", description: "Remove rectangle" },
       { keys: "U (in drawing mode)", description: "Undo last deleted rectangle" },
       { keys: "Right-click + Drag", description: "Multi-rectangle mode (like Shift)" }
@@ -30,8 +30,9 @@ var KEYBOARD_SHORTCUTS = [
       { keys: "F (hold)", description: "Element inspection mode" },
       { keys: "Arrow Up (in inspection)", description: "Highlight parent element" },
       { keys: "Arrow Down (in inspection)", description: "Highlight child element" },
-      { keys: "Tab (in inspection)", description: "Highlight next sibling element" },
-      { keys: "Shift + Tab (in inspection)", description: "Highlight previous sibling element" }
+      { keys: "Arrow Left (in inspection)", description: "Highlight previous sibling element" },
+      { keys: "Arrow Right (in inspection)", description: "Highlight next sibling element" },
+      { keys: "Tab (in inspection)", description: "Cycle rectangle colors" }
     ]
   },
   {

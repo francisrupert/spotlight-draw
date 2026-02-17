@@ -2741,15 +2741,6 @@ function handleSpacebarUp(event) {
 
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
-  // Handle Tab during inspection FIRST to prevent default focus behavior
-  if (isInspecting && (event.key === "Tab" || event.keyCode === 9)) {
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    traverseSibling(event.shiftKey ? -1 : 1);
-    return;
-  }
-
   // Handle '?' key for help dialog (Shift+/)
   if (event.key === "?" && isDrawingMode) {
     event.preventDefault();
@@ -2779,6 +2770,14 @@ function handleKeyDown(event) {
     } else if (event.key === "ArrowDown") {
       event.preventDefault();
       traverseDown();
+      return;
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      traverseSibling(-1);  // Previous sibling
+      return;
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      traverseSibling(1);   // Next sibling
       return;
     }
   }
@@ -2837,7 +2836,7 @@ function handleKeyDown(event) {
         targetRect = repositioningRectangle;
       } else if (isResizing && resizingRectangle) {
         targetRect = resizingRectangle;
-      } else if (!isInspecting) { // Exclude inspection mode
+      } else {
         // Not actively dragging, check if hovering over a rectangle
         targetRect = getRectangleAtPosition(currentMouseX, currentMouseY);
       }
