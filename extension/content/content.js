@@ -6,7 +6,6 @@ var isRepositioning = false;
 var isSpacebarHeld = false;
 var isAltHeld = false;
 var isCmdCtrlHeld = false;
-var isShiftHeld = false;
 var startX = 0;
 var startY = 0;
 var currentMouseX = 0;
@@ -176,7 +175,6 @@ function resetDragState() {
   isCurrentlyDrawing = false;
   isAltHeld = false;
   isCmdCtrlHeld = false;
-  isShiftHeld = false;
   axisConstraintMode = null;
   duplicateAxisLocked = null;
   repositionAxisLocked = null;
@@ -1848,15 +1846,6 @@ function calculateRectCoords(currentX, currentY) {
     }
   }
 
-  // Apply Shift constraint for square drawing
-  if (isShiftHeld) {
-    var deltaX = effectiveCurrentX - startX;
-    var deltaY = effectiveCurrentY - startY;
-    var maxDelta = Math.max(Math.abs(deltaX), Math.abs(deltaY));
-    effectiveCurrentX = startX + maxDelta * (deltaX >= 0 ? 1 : -1);
-    effectiveCurrentY = startY + maxDelta * (deltaY >= 0 ? 1 : -1);
-  }
-
   if (isAltHeld) {
     // Alt held: draw from center outward
     var halfWidth = Math.abs(effectiveCurrentX - startX);
@@ -2462,7 +2451,6 @@ function handleMouseDown(event) {
   isSpacebarHeld = false; // Reset spacebar state
   isAltHeld = event.altKey; // Capture initial Alt state
   isCmdCtrlHeld = false; // Reset Cmd/Ctrl state
-  isShiftHeld = event.shiftKey; // Capture initial Shift state
   axisConstraintMode = null; // Reset axis constraint
   startX = event.clientX;
   startY = event.clientY;
@@ -2563,9 +2551,8 @@ function handleMouseMove(event) {
     return;
   }
 
-  // Update Alt and Shift state during drawing
+  // Update Alt state during drawing
   isAltHeld = event.altKey;
-  isShiftHeld = event.shiftKey;
 
   // Handle Cmd/Ctrl for axis constraint (only during drawing, not on initial mousedown)
   var wasCmdCtrlHeld = isCmdCtrlHeld;

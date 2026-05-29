@@ -10,7 +10,6 @@ A Chrome extension for annotating web pages during screensharing and recording s
 - 🛡️ Complete interaction blocking: prevents all clicks, hovers, and text selection while drawing
 - ⚡ Click-and-drag interface with modifier keys:
   - **Alt**: Draw from center outward
-  - **Shift**: Constrain to square
   - **Spacebar**: Reposition while drawing (cursor hidden)
   - **Cmd/Ctrl (drawing)**: Constrain to horizontal/vertical axis
   - **Cmd/Ctrl (over rectangle)**: Shows default cursor on hover; click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
@@ -103,17 +102,16 @@ spotlight-draw/
 2. Your cursor changes to a crosshair and the page becomes non-interactive
 3. Click and drag anywhere on the page to draw a rectangle
 4. **Hold Alt** while dragging to draw from center outward
-5. **Hold Shift** while dragging to constrain to a square (combine with Alt for square from center)
-6. **Hold Spacebar** while dragging to reposition the rectangle without resizing (cursor hidden)
-7. **Hold Cmd/Ctrl** during drawing to constrain to horizontal or vertical axis
-8. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
-9. **Hold Cmd/Ctrl** and hover over a rectangle to see the default cursor, then click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
-10. **Hold Alt** and hover over a rectangle to see the copy cursor, then click and drag to duplicate (cursor hidden while dragging, hold Shift to constrain axis)
-10a. While repositioning with Cmd/Ctrl, **press Alt** to switch to duplicate mode mid-drag (original rectangle snaps back, clone appears under cursor)
+5. **Hold Spacebar** while dragging to reposition the rectangle without resizing (cursor hidden)
+6. **Hold Cmd/Ctrl** during drawing to constrain to horizontal or vertical axis
+7. **Hold Shift** when starting a new draw to keep previous rectangles (multi-rectangle mode)
+8. **Hold Cmd/Ctrl** and hover over a rectangle to see the default cursor, then click and drag to reposition (cursor hidden while dragging, hold Shift to constrain axis)
+9. **Hold Alt** and hover over a rectangle to see the copy cursor, then click and drag to duplicate (cursor hidden while dragging, hold Shift to constrain axis)
+10. While repositioning with Cmd/Ctrl, **press Alt** to switch to duplicate mode mid-drag (original rectangle snaps back, clone appears under cursor)
 11. **Press Tab** while hovering over a rectangle (or while drawing/dragging) to cycle through colors (orange → green → blue → purple → gray)
 12. **Press Delete or Backspace** while hovering over a rectangle to remove it
 13. **Hold F** to inspect an element, then click the highlighted element to freeze that outline as a removable overlay
-14. Release spacebar/alt/cmd/shift to continue normal resizing
+14. Release spacebar/alt/cmd to continue normal resizing
 15. Release mouse to place the rectangle
 16. Click without Shift to clear all rectangles and draw a new one
 17. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)

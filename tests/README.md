@@ -29,7 +29,7 @@ tests/
 │   ├── helpers.test.js                  # Helper functions (getRectBounds, clampMouse, etc.)
 │   ├── spacing-guides-rendering.test.js # showSpacingGuides() DOM rendering
 │   ├── drawing-snap.test.js             # Drawing dimension snap tests
-│   ├── drawing-square.test.js           # Shift square constraint tests
+│   ├── drawing-shift-freeform.test.js   # Shift free-form drawing tests
 │   ├── discoverability.test.js          # Discoverability tests
 │   ├── mode-switch.test.js              # Mode switch tests
 │   └── resize.test.js                   # Resize tests

@@ -26,7 +26,7 @@ tests/
 ├── unit/
 │   ├── helpers.test.js                  # 44 tests for helper functions
 │   ├── spacing-guides-rendering.test.js # 8 tests for spacing guide rendering
-│   └── drawing-square.test.js           # 10 tests for Shift square constraint
+│   └── drawing-shift-freeform.test.js   # 9 tests for Shift free-form drawing
 └── regression/
     ├── spacebar-bug.test.js          # 4 tests for spacebar state bug
     └── duplication-offset-bug.test.js # 5 tests for offset calculation bug
@@ -137,16 +137,14 @@ tests/
 - Duplication with negative offset values
 - Multiple duplications use correct offsets
 
-#### ✅ Unit Tests - drawing-square.test.js (10 tests)
+#### ✅ Unit Tests - drawing-shift-freeform.test.js (9 tests)
 
-**calculateRectCoords() square constraint** - 10 tests
+**calculateRectCoords() and mousemove Shift free-form behavior** - 9 tests
 - No constraint when Shift is not held
-- Square uses larger dimension when dragging wider
-- Square uses larger dimension when dragging taller
+- Shift does not constrain wider or taller drags
 - Direction preserved: right-down, left-up, right-up, left-down
-- Composes with Alt: center-outward square
-- Equal deltas produce square
-- Mid-drag toggle: Shift off returns to free-form
+- Composes with Alt: center-outward free-form drawing
+- Shift mousemove keeps active drawing free-form
 
 ### Total Test Count: **159 tests**
 
