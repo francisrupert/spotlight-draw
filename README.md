@@ -5,7 +5,7 @@ A Chrome extension for annotating web pages during screensharing and recording s
 ## Features
 
 - ✏️ Draw custom rectangles anywhere on any webpage
-- ⌨️ Activate with **Alt+A** keyboard shortcut (Option+A on Mac)
+- ⌨️ Activate with **Alt+F** keyboard shortcut (`Option+F` on Mac)
 - 🎨 Customizable colors and border sizes via options page
 - 🛡️ Complete interaction blocking: prevents all clicks, hovers, and text selection while drawing
 - ⚡ Click-and-drag interface with modifier keys:
