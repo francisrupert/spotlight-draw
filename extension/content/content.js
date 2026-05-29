@@ -50,6 +50,7 @@ var resizeStartBounds = null;  // { left, top, width, height }
 
 // Element inspection state (when 'f' key is held)
 var isInspecting = false;
+var isInspectionKeyHeld = false;
 var inspectionRectangle = null;
 var inspectedElement = null;
 var inspectionTraversalPath = []; // Stack of elements for up/down navigation
@@ -2153,7 +2154,7 @@ function updateInspectionRectangle(element) {
 
 // Enter inspection mode when 'f' is pressed
 function enterInspectionMode() {
-  if (!isDrawingMode || isCurrentlyDrawing || isDuplicating || isRepositioning) {
+  if (!isDrawingMode || isInspecting || isCurrentlyDrawing || isDuplicating || isRepositioning) {
     return false; // Block during other operations
   }
 
@@ -2180,15 +2181,8 @@ function enterInspectionMode() {
   return true;
 }
 
-// Exit inspection mode when 'f' is released
-function exitInspectionMode() {
-  if (!isInspecting) return;
-
+function clearInspectionState() {
   isInspecting = false;
-
-  if (inspectionRectangle && inspectionRectangle.parentNode) {
-    inspectionRectangle.parentNode.removeChild(inspectionRectangle);
-  }
   inspectionRectangle = null;
 
   inspectedElement = null;
@@ -2197,6 +2191,31 @@ function exitInspectionMode() {
   inspectionCurrentIndex = -1;
 
   document.documentElement.classList.remove('box-highlight-inspection-mode');
+}
+
+// Exit inspection mode when 'f' is released
+function exitInspectionMode() {
+  if (!isInspecting) return;
+
+  if (inspectionRectangle && inspectionRectangle.parentNode) {
+    inspectionRectangle.parentNode.removeChild(inspectionRectangle);
+  }
+  clearInspectionState();
+}
+
+function freezeInspectionHighlightAtPoint(x, y) {
+  if (!isInspecting || !inspectedElement || !inspectionRectangle) {
+    return false;
+  }
+
+  var rect = inspectedElement.getBoundingClientRect();
+  if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+    return false;
+  }
+
+  placedRectangles.push(inspectionRectangle);
+  clearInspectionState();
+  return true;
 }
 
 // Traverse up to parent element
@@ -2341,6 +2360,12 @@ function handleMouseDown(event) {
 
   // Allow clicks on help UI elements to pass through
   if (isHelpUIElement(event.target)) {
+    return;
+  }
+
+  if (isInspecting) {
+    freezeInspectionHighlightAtPoint(event.clientX, event.clientY);
+    event.preventDefault();
     return;
   }
 
@@ -2754,9 +2779,12 @@ function handleKeyDown(event) {
 
   // Handle 'f' key for element inspection
   if (event.key === "f" || event.key === "F") {
-    if (isDrawingMode && !isInspecting) {
+    if (isDrawingMode) {
       event.preventDefault();
-      enterInspectionMode();
+      if (!isInspectionKeyHeld) {
+        isInspectionKeyHeld = true;
+        enterInspectionMode();
+      }
       return;
     }
   }
@@ -2891,6 +2919,7 @@ function handleKeyDown(event) {
 function handleKeyUp(event) {
   // Handle 'f' key release - exit inspection mode
   if (event.key === "f" || event.key === "F") {
+    isInspectionKeyHeld = false;
     if (isInspecting) {
       event.preventDefault();
       exitInspectionMode();
@@ -2954,6 +2983,7 @@ function disableDrawingMode() {
 
   isDrawingMode = false;
   isSpacebarHeld = false;
+  isInspectionKeyHeld = false;
   resetDragState();
   isDuplicating = false;
   isRepositioning = false;

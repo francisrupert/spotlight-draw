@@ -112,11 +112,12 @@ spotlight-draw/
 10a. While repositioning with Cmd/Ctrl, **press Alt** to switch to duplicate mode mid-drag (original rectangle snaps back, clone appears under cursor)
 11. **Press Tab** while hovering over a rectangle (or while drawing/dragging) to cycle through colors (orange → green → blue → purple → gray)
 12. **Press Delete or Backspace** while hovering over a rectangle to remove it
-13. Release spacebar/alt/cmd/shift to continue normal resizing
-14. Release mouse to place the rectangle
-15. Click without Shift to clear all rectangles and draw a new one
-16. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
-17. Press **Alt+A** again to also exit drawing mode
+13. **Hold F** to inspect an element, then click the highlighted element to freeze that outline as a removable overlay
+14. Release spacebar/alt/cmd/shift to continue normal resizing
+15. Release mouse to place the rectangle
+16. Click without Shift to clear all rectangles and draw a new one
+17. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
+18. Press **Alt+A** again to also exit drawing mode
 
 No permanent page modifications are made—just visual overlays using positioned div elements. While in drawing mode, all page interactions (clicks, hovers, text selection) are blocked to prevent accidental navigation.
 

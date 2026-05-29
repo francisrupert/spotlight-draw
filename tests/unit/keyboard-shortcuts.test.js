@@ -12,6 +12,7 @@ QUnit.module("Keyboard Shortcuts", function(hooks) {
     // Save original state
     originalState = {
       isInspecting: window.isInspecting,
+      isInspectionKeyHeld: window.isInspectionKeyHeld,
       isDrawingMode: window.isDrawingMode,
       currentMouseX: window.currentMouseX,
       currentMouseY: window.currentMouseY,
@@ -19,6 +20,13 @@ QUnit.module("Keyboard Shortcuts", function(hooks) {
       isDuplicating: window.isDuplicating,
       isRepositioning: window.isRepositioning,
       isResizing: window.isResizing,
+      currentRectangle: window.currentRectangle,
+      placedRectangles: window.placedRectangles,
+      inspectionRectangle: window.inspectionRectangle,
+      inspectedElement: window.inspectedElement,
+      inspectionTraversalPath: window.inspectionTraversalPath,
+      inspectionCurrentIndex: window.inspectionCurrentIndex,
+      inspectionOriginElement: window.inspectionOriginElement,
       traverseSibling: window.traverseSibling,
       cycleRectangleColor: window.cycleRectangleColor,
       getRectangleAtPosition: window.getRectangleAtPosition
@@ -26,10 +34,18 @@ QUnit.module("Keyboard Shortcuts", function(hooks) {
 
     // Set default state
     window.isDrawingMode = true;
+    window.isInspectionKeyHeld = false;
     window.isCurrentlyDrawing = false;
     window.isDuplicating = false;
     window.isRepositioning = false;
     window.isResizing = false;
+    window.currentRectangle = null;
+    window.placedRectangles = [];
+    window.inspectionRectangle = null;
+    window.inspectedElement = null;
+    window.inspectionTraversalPath = [];
+    window.inspectionCurrentIndex = -1;
+    window.inspectionOriginElement = null;
     window.currentMouseX = 100;
     window.currentMouseY = 100;
 
@@ -63,6 +79,12 @@ QUnit.module("Keyboard Shortcuts", function(hooks) {
     });
 
     // Clean up DOM
+    document.querySelectorAll(".spotlight-draw-rectangle").forEach(function(rect) {
+      if (rect.parentNode) {
+        rect.parentNode.removeChild(rect);
+      }
+    });
+    document.documentElement.classList.remove("box-highlight-inspection-mode");
     if (container && container.parentNode) {
       container.parentNode.removeChild(container);
     }
@@ -147,6 +169,114 @@ QUnit.module("Keyboard Shortcuts", function(hooks) {
 
     assert.ok(preventDefaultCalledLeft, "preventDefault should be called for ArrowLeft");
     assert.ok(preventDefaultCalledRight, "preventDefault should be called for ArrowRight");
+  });
+
+  // =========================================================================
+  // Inspection Freeze (3 tests)
+  // =========================================================================
+
+  function createInspectableElement() {
+    var element = document.createElement("button");
+    element.textContent = "Inspectable";
+    element.getBoundingClientRect = function() {
+      return {
+        left: 50,
+        top: 60,
+        right: 170,
+        bottom: 140,
+        width: 120,
+        height: 80
+      };
+    };
+    container.appendChild(element);
+    return element;
+  }
+
+  function startInspectionFor(element) {
+    window.isInspecting = true;
+    window.inspectedElement = element;
+    window.inspectionOriginElement = element;
+    window.inspectionTraversalPath = [element];
+    window.inspectionCurrentIndex = 0;
+    window.inspectionRectangle = window.createInspectionRectangle(element);
+    document.body.appendChild(window.inspectionRectangle);
+  }
+
+  QUnit.test("mousedown inside inspected element freezes inspection rectangle", function(assert) {
+    var inspected = createInspectableElement();
+    startInspectionFor(inspected);
+    var frozenRect = window.inspectionRectangle;
+
+    var event = new MouseEvent("mousedown", {
+      clientX: 80,
+      clientY: 90,
+      bubbles: true,
+      cancelable: true
+    });
+    var preventDefaultCalled = false;
+    event.preventDefault = function() { preventDefaultCalled = true; };
+
+    window.handleMouseDown(event);
+
+    assert.strictEqual(window.placedRectangles.length, 1, "one rectangle is placed");
+    assert.strictEqual(window.placedRectangles[0], frozenRect, "inspection rectangle becomes the placed rectangle");
+    assert.ok(document.body.contains(frozenRect), "frozen rectangle remains in the DOM");
+    assert.notOk(window.isInspecting, "inspection mode exits after freezing");
+    assert.strictEqual(window.inspectionRectangle, null, "inspection rectangle state is cleared");
+    assert.notOk(window.isCurrentlyDrawing, "freezing does not start a draw operation");
+    assert.ok(preventDefaultCalled, "preventDefault is called");
+  });
+
+  QUnit.test("mousedown outside inspected element does not freeze or draw", function(assert) {
+    var inspected = createInspectableElement();
+    startInspectionFor(inspected);
+
+    var event = new MouseEvent("mousedown", {
+      clientX: 250,
+      clientY: 250,
+      bubbles: true,
+      cancelable: true
+    });
+    var preventDefaultCalled = false;
+    event.preventDefault = function() { preventDefaultCalled = true; };
+
+    window.handleMouseDown(event);
+
+    assert.strictEqual(window.placedRectangles.length, 0, "no rectangle is placed");
+    assert.ok(window.isInspecting, "inspection mode stays active");
+    assert.notOk(window.isCurrentlyDrawing, "normal drawing does not start while inspecting");
+    assert.ok(preventDefaultCalled, "preventDefault is called");
+  });
+
+  QUnit.test("Delete removes frozen inspection rectangle while hovering it", function(assert) {
+    var inspected = createInspectableElement();
+    startInspectionFor(inspected);
+
+    var mouseEvent = new MouseEvent("mousedown", {
+      clientX: 80,
+      clientY: 90,
+      bubbles: true,
+      cancelable: true
+    });
+    window.handleMouseDown(mouseEvent);
+
+    window.currentMouseX = 80;
+    window.currentMouseY = 90;
+    var frozenRect = window.placedRectangles[0];
+
+    var deleteEvent = new KeyboardEvent("keydown", {
+      key: "Delete",
+      bubbles: true,
+      cancelable: true
+    });
+    var preventDefaultCalled = false;
+    deleteEvent.preventDefault = function() { preventDefaultCalled = true; };
+
+    window.handleKeyDown(deleteEvent);
+
+    assert.strictEqual(window.placedRectangles.length, 0, "frozen rectangle is removed from placed rectangles");
+    assert.notOk(document.body.contains(frozenRect), "frozen rectangle is removed from the DOM");
+    assert.ok(preventDefaultCalled, "Delete prevents default when removing frozen rectangle");
   });
 
   // =========================================================================

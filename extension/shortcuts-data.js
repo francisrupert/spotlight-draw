@@ -28,6 +28,7 @@ var KEYBOARD_SHORTCUTS = [
     category: "Element Inspection",
     shortcuts: [
       { keys: "F (hold)", description: "Element inspection mode" },
+      { keys: "F + Click (highlighted element)", description: "Freeze highlighted element outline" },
       { keys: "Arrow Up (in inspection)", description: "Highlight parent element" },
       { keys: "Arrow Down (in inspection)", description: "Highlight child element" },
       { keys: "Arrow Left (in inspection)", description: "Highlight previous sibling element" },
