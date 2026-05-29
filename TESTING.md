@@ -26,7 +26,8 @@ tests/
 ├── unit/
 │   ├── helpers.test.js                  # 44 tests for helper functions
 │   ├── spacing-guides-rendering.test.js # 8 tests for spacing guide rendering
-│   └── drawing-shift-freeform.test.js   # 9 tests for Shift free-form drawing
+│   ├── drawing-shift-freeform.test.js   # 9 tests for Shift free-form drawing
+│   └── quick-draw.test.js               # 9 tests for temporary quick draw
 └── regression/
     ├── spacebar-bug.test.js          # 4 tests for spacebar state bug
     └── duplication-offset-bug.test.js # 5 tests for offset calculation bug
@@ -127,7 +128,7 @@ tests/
 **Spacebar Pan Mode Bug** - 4 tests
 - Spacebar state preserved after mouseup during drawing ⚠️ **CRITICAL BUG FIX**
 - Pan mode class removed independently of drawing state
-- Spacebar press/release without drawing
+- Spacebar press/release without drawing leaves pan inactive
 - Multiple spacebar press/release cycles during drawing
 
 **Duplication Offset Bug** - 5 tests
@@ -146,7 +147,20 @@ tests/
 - Composes with Alt: center-outward free-form drawing
 - Shift mousemove keeps active drawing free-form
 
-### Total Test Count: **159 tests**
+#### ✅ Unit Tests - quick-draw.test.js (9 tests)
+
+**Ctrl+Option+Cmd temporary drawing gesture** - 9 tests
+- Draws without entering drawing mode
+- Uses stored border size and default color
+- Removes the temporary rectangle on mouseup
+- Keeps the temporary rectangle until mouseup when a chord modifier is released
+- Moves the temporary rectangle with Spacebar after chord modifiers are released
+- Starts moving if Spacebar is already held when chord modifiers are released
+- Handles macOS secondary-button reporting for Control-click
+- Prevents the macOS context menu for the full chord
+- Shows the crosshair cursor while the chord is held
+
+### Total Test Count: **193 tests**
 
 ## Running Tests
 

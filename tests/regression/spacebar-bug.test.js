@@ -31,14 +31,14 @@ QUnit.module("Regression: Spacebar Pan Mode Bug", {
     startY = 0;
 
     // Clear any rectangles from previous tests
-    var existingRects = document.querySelectorAll(".box-highlight-rectangle");
+    var existingRects = document.querySelectorAll(".spotlight-draw-rectangle");
     existingRects.forEach(function(rect) {
       rect.parentNode.removeChild(rect);
     });
 
     // Remove any lingering CSS classes
-    document.documentElement.classList.remove("box-highlight-drawing-mode");
-    document.documentElement.classList.remove("box-highlight-pan-mode");
+    document.documentElement.classList.remove("spotlight-draw-drawing-mode");
+    document.documentElement.classList.remove("spotlight-draw-pan-mode");
   },
 
   afterEach: function() {
@@ -46,11 +46,11 @@ QUnit.module("Regression: Spacebar Pan Mode Bug", {
       disableDrawingMode();
     }
     // Clean up any test rectangles
-    var rects = document.querySelectorAll(".box-highlight-rectangle");
+    var rects = document.querySelectorAll(".spotlight-draw-rectangle");
     rects.forEach(function(rect) {
       rect.parentNode.removeChild(rect);
     });
-    document.documentElement.classList.remove("box-highlight-pan-mode");
+    document.documentElement.classList.remove("spotlight-draw-pan-mode");
   }
 });
 
@@ -88,7 +88,7 @@ QUnit.test("spacebar state preserved after mouseup during drawing", function(ass
 
     assert.equal(isSpacebarHeld, true, "pan mode active");
     assert.ok(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode CSS class added"
     );
 
@@ -108,7 +108,7 @@ QUnit.test("spacebar state preserved after mouseup during drawing", function(ass
 
     // ASSERTION: Pan mode class should still be present
     assert.ok(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode CSS class still present after mouseup"
     );
 
@@ -122,7 +122,7 @@ QUnit.test("spacebar state preserved after mouseup during drawing", function(ass
 
     assert.equal(isSpacebarHeld, false, "spacebar state cleared on keyup");
     assert.notOk(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode CSS class removed on spacebar release"
     );
 
@@ -157,7 +157,7 @@ QUnit.test("pan mode class removed independently of drawing state", function(ass
     });
 
     assert.ok(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode class added"
     );
 
@@ -172,7 +172,7 @@ QUnit.test("pan mode class removed independently of drawing state", function(ass
 
     // Pan mode class should still be present even though not drawing
     assert.ok(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode class present even when not drawing (BUG FIX)"
     );
 
@@ -185,7 +185,7 @@ QUnit.test("pan mode class removed independently of drawing state", function(ass
     });
 
     assert.notOk(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode class removed on spacebar release"
     );
 
@@ -193,7 +193,7 @@ QUnit.test("pan mode class removed independently of drawing state", function(ass
   }, 50);
 });
 
-QUnit.test("spacebar press/release without drawing works correctly", function(assert) {
+QUnit.test("spacebar press/release without drawing leaves pan inactive", function(assert) {
   var done = assert.async();
 
   enableDrawingMode();
@@ -207,10 +207,10 @@ QUnit.test("spacebar press/release without drawing works correctly", function(as
       stopPropagation: function() {}
     });
 
-    assert.equal(isSpacebarHeld, true, "spacebar held without drawing");
-    assert.ok(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
-      "pan mode class added without drawing"
+    assert.equal(isSpacebarHeld, false, "spacebar is ignored without drawing");
+    assert.notOk(
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
+      "pan mode class is not added without drawing"
     );
 
     // Release spacebar
@@ -223,7 +223,7 @@ QUnit.test("spacebar press/release without drawing works correctly", function(as
 
     assert.equal(isSpacebarHeld, false, "spacebar released");
     assert.notOk(
-      document.documentElement.classList.contains("box-highlight-pan-mode"),
+      document.documentElement.classList.contains("spotlight-draw-pan-mode"),
       "pan mode class removed"
     );
 

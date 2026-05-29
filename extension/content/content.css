@@ -1,5 +1,6 @@
 /* Cursor modes — each mode class sets --sd-cursor, drawing-mode base applies it */
 html.spotlight-draw-drawing-mode { --sd-cursor: crosshair; }
+html.spotlight-draw-quick-draw-mode { --sd-cursor: crosshair; }
 html.spotlight-draw-pan-mode { --sd-cursor: none; }
 html.spotlight-draw-repositioning-mode { --sd-cursor: var(--cursor-default); }
 html.spotlight-draw-duplication-hover-mode { --sd-cursor: var(--cursor-copy); }
@@ -10,8 +11,22 @@ html.spotlight-draw-inspection-mode { --sd-cursor: default; }
 html.spotlight-draw-drawing-mode,
 html.spotlight-draw-drawing-mode *,
 html.spotlight-draw-drawing-mode body,
-html.spotlight-draw-drawing-mode body * {
+html.spotlight-draw-drawing-mode body *,
+html.spotlight-draw-quick-draw-mode,
+html.spotlight-draw-quick-draw-mode *,
+html.spotlight-draw-quick-draw-mode body,
+html.spotlight-draw-quick-draw-mode body *,
+html.spotlight-draw-pan-mode,
+html.spotlight-draw-pan-mode *,
+html.spotlight-draw-pan-mode body,
+html.spotlight-draw-pan-mode body * {
   cursor: var(--sd-cursor) !important;
+}
+
+html.spotlight-draw-drawing-mode,
+html.spotlight-draw-drawing-mode *,
+html.spotlight-draw-drawing-mode body,
+html.spotlight-draw-drawing-mode body * {
   pointer-events: none !important;
   user-select: none !important;
 }

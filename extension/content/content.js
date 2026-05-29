@@ -6,11 +6,19 @@ var isRepositioning = false;
 var isSpacebarHeld = false;
 var isAltHeld = false;
 var isCmdCtrlHeld = false;
+var isQuickDrawing = false;
+var isQuickDrawSpacebarDown = false;
 var startX = 0;
 var startY = 0;
 var currentMouseX = 0;
 var currentMouseY = 0;
 var currentRectangle = null;
+var quickDrawRectangle = null;
+var quickDrawStartX = 0;
+var quickDrawStartY = 0;
+var quickDrawCurrentX = 0;
+var quickDrawCurrentY = 0;
+var quickDrawSuppressClickUntil = 0;
 var duplicatingRectangle = null;
 var repositioningRectangle = null;
 var placedRectangles = []; // Array to hold multiple rectangles (when Shift is used)
@@ -67,6 +75,7 @@ var REPOSITIONING_MODE_CLASS = "spotlight-draw-repositioning-mode";
 var DUPLICATION_HOVER_CLASS = "spotlight-draw-duplication-hover-mode";
 var DUPLICATION_DRAGGING_CLASS = "spotlight-draw-duplication-dragging-mode";
 var DRAGGING_MODE_CLASS = "spotlight-draw-dragging-mode";
+var QUICK_DRAW_MODE_CLASS = "spotlight-draw-quick-draw-mode";
 var RECTANGLE_CLASS = "spotlight-draw-rectangle";
 
 // Color cycling (order: orange, green, blue, purple, plain)
@@ -2341,6 +2350,219 @@ function switchRepositionToDuplicate() {
   repositionAxisLocked = null;
 }
 
+function isQuickDrawChord(event) {
+  return event.ctrlKey && event.altKey && event.metaKey;
+}
+
+function isSpaceKey(event) {
+  return event.key === " " || event.keyCode === 32;
+}
+
+function stopQuickDrawEvent(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
+function updateQuickDrawCursor(event) {
+  document.documentElement.classList.toggle(QUICK_DRAW_MODE_CLASS, isQuickDrawChord(event));
+}
+
+function calculateQuickDrawCoords(currentX, currentY) {
+  return {
+    x: Math.min(quickDrawStartX, currentX),
+    y: Math.min(quickDrawStartY, currentY),
+    width: Math.abs(currentX - quickDrawStartX),
+    height: Math.abs(currentY - quickDrawStartY)
+  };
+}
+
+function updateQuickDrawRectangle() {
+  if (!quickDrawRectangle) {
+    return;
+  }
+
+  var cm = clampMouse(quickDrawCurrentX, quickDrawCurrentY);
+  var coords = calculateQuickDrawCoords(cm.x, cm.y);
+  updateRectangle(quickDrawRectangle, coords.x, coords.y, coords.width, coords.height);
+}
+
+function updateQuickDrawPanRectangle() {
+  if (!quickDrawRectangle) {
+    return;
+  }
+
+  var cm = clampMouse(quickDrawCurrentX, quickDrawCurrentY);
+  var clamped = clampToViewport(
+    cm.x + panOffsetX,
+    cm.y + panOffsetY,
+    panModeWidth,
+    panModeHeight
+  );
+  updateRectangle(quickDrawRectangle, clamped.x, clamped.y, clamped.width, clamped.height);
+}
+
+function resetQuickDrawAnchorFromRectangle() {
+  if (!quickDrawRectangle) {
+    return;
+  }
+
+  var b = getRectBounds(quickDrawRectangle);
+
+  if (quickDrawCurrentX >= b.left + b.width / 2) {
+    quickDrawStartX = b.left;
+  } else {
+    quickDrawStartX = b.left + b.width;
+  }
+
+  if (quickDrawCurrentY >= b.top + b.height / 2) {
+    quickDrawStartY = b.top;
+  } else {
+    quickDrawStartY = b.top + b.height;
+  }
+}
+
+function clearQuickDrawPanMode() {
+  isSpacebarHeld = false;
+  document.documentElement.classList.remove(PAN_MODE_CLASS);
+}
+
+function startQuickDrawPanMode() {
+  if (!quickDrawRectangle || isSpacebarHeld) {
+    return;
+  }
+
+  isSpacebarHeld = true;
+  document.documentElement.classList.add(PAN_MODE_CLASS);
+
+  var b = getRectBounds(quickDrawRectangle);
+  panModeWidth = b.width;
+  panModeHeight = b.height;
+  panOffsetX = b.left - quickDrawCurrentX;
+  panOffsetY = b.top - quickDrawCurrentY;
+}
+
+function stopQuickDrawPanMode() {
+  if (!isSpacebarHeld) {
+    return;
+  }
+
+  clearQuickDrawPanMode();
+  resetQuickDrawAnchorFromRectangle();
+}
+
+function clearQuickDrawRectangle() {
+  if (quickDrawRectangle && quickDrawRectangle.parentNode) {
+    quickDrawRectangle.parentNode.removeChild(quickDrawRectangle);
+  }
+  quickDrawRectangle = null;
+  isQuickDrawing = false;
+  isQuickDrawSpacebarDown = false;
+  clearQuickDrawPanMode();
+}
+
+function startQuickDraw(event) {
+  clearQuickDrawPanMode();
+  isQuickDrawing = true;
+  isQuickDrawSpacebarDown = false;
+  quickDrawStartX = event.clientX;
+  quickDrawStartY = event.clientY;
+  quickDrawCurrentX = event.clientX;
+  quickDrawCurrentY = event.clientY;
+
+  loadPreferences(function() {
+    if (!isQuickDrawing) {
+      return;
+    }
+
+    quickDrawRectangle = createRectangle(quickDrawStartX, quickDrawStartY, 0, 0);
+    document.body.appendChild(quickDrawRectangle);
+    updateQuickDrawRectangle();
+  });
+}
+
+function handleQuickDrawMouseDown(event) {
+  updateQuickDrawCursor(event);
+  if ((event.button !== 0 && event.button !== 2) || !isQuickDrawChord(event) || isHelpUIElement(event.target)) {
+    return;
+  }
+
+  startQuickDraw(event);
+  stopQuickDrawEvent(event);
+}
+
+function handleQuickDrawMouseMove(event) {
+  updateQuickDrawCursor(event);
+  if (!isQuickDrawing) {
+    return;
+  }
+
+  quickDrawCurrentX = event.clientX;
+  quickDrawCurrentY = event.clientY;
+  if (isSpacebarHeld) {
+    updateQuickDrawPanRectangle();
+  } else {
+    updateQuickDrawRectangle();
+  }
+  stopQuickDrawEvent(event);
+}
+
+function handleQuickDrawMouseUp(event) {
+  updateQuickDrawCursor(event);
+  if (!isQuickDrawing) {
+    return;
+  }
+
+  clearQuickDrawRectangle();
+  quickDrawSuppressClickUntil = Date.now() + 250;
+  stopQuickDrawEvent(event);
+}
+
+function handleQuickDrawKeyDown(event) {
+  updateQuickDrawCursor(event);
+  if (!isQuickDrawing || !isSpaceKey(event)) {
+    return;
+  }
+
+  isQuickDrawSpacebarDown = true;
+  if (!isQuickDrawChord(event)) {
+    startQuickDrawPanMode();
+  }
+  stopQuickDrawEvent(event);
+}
+
+function handleQuickDrawKeyUp(event) {
+  updateQuickDrawCursor(event);
+  if (!isQuickDrawing) {
+    return;
+  }
+
+  if (isSpaceKey(event)) {
+    isQuickDrawSpacebarDown = false;
+    stopQuickDrawPanMode();
+  } else if (isQuickDrawSpacebarDown && !isQuickDrawChord(event)) {
+    startQuickDrawPanMode();
+  }
+  stopQuickDrawEvent(event);
+}
+
+function handleQuickDrawClick(event) {
+  if (Date.now() > quickDrawSuppressClickUntil) {
+    return;
+  }
+
+  quickDrawSuppressClickUntil = 0;
+  stopQuickDrawEvent(event);
+}
+
+function handleQuickDrawContextMenu(event) {
+  if (!isQuickDrawChord(event) && !isQuickDrawing) {
+    return;
+  }
+
+  stopQuickDrawEvent(event);
+}
+
 // Mouse down handler - start drawing, duplication, or repositioning
 function handleMouseDown(event) {
   if (!isDrawingMode) {
@@ -3026,6 +3248,14 @@ function toggleDrawingMode() {
     enableDrawingMode();
   }
 }
+
+document.addEventListener("mousedown", handleQuickDrawMouseDown, true);
+document.addEventListener("mousemove", handleQuickDrawMouseMove, true);
+document.addEventListener("mouseup", handleQuickDrawMouseUp, true);
+document.addEventListener("keydown", handleQuickDrawKeyDown, true);
+document.addEventListener("keyup", handleQuickDrawKeyUp, true);
+document.addEventListener("click", handleQuickDrawClick, true);
+document.addEventListener("contextmenu", handleQuickDrawContextMenu, true);
 
 // Listen for messages from popup
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {

@@ -6,6 +6,7 @@ A Chrome extension for annotating web pages during screensharing and recording s
 
 - ✏️ Draw custom rectangles anywhere on any webpage
 - ⌨️ Activate with **Alt+F** keyboard shortcut (`Option+F` on Mac)
+- ⚡ Hold **Ctrl+Option+Cmd** and drag for a temporary rectangle without entering drawing mode
 - 🎨 Customizable colors and border sizes via options page
 - 🛡️ Complete interaction blocking: prevents all clicks, hovers, and text selection while drawing
 - ⚡ Click-and-drag interface with modifier keys:
@@ -97,6 +98,8 @@ spotlight-draw/
 ```
 
 ## How It Works
+
+Hold **Ctrl+Option+Cmd** and drag to show a temporary rectangle without entering drawing mode. Release the mouse to remove it. After releasing the modifier keys during the drag, hold **Spacebar** to move the temporary rectangle instead of resizing it.
 
 1. Press **Alt+A** (Option+A on Mac) to activate drawing mode
 2. Your cursor changes to a crosshair and the page becomes non-interactive
