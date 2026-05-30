@@ -1,6 +1,6 @@
 {
   "name": "spotlight-draw",
-  "version": "0.1.3",
+  "version": "0.2.3",
   "description": "Chrome extension for annotating web pages during screensharing and recording sessions",
   "private": true,
   "scripts": {
