@@ -4,7 +4,8 @@ var KEYBOARD_SHORTCUTS = [
     category: "Drawing Mode",
     shortcuts: [
       { keys: "Alt + F", description: "Toggle drawing mode" },
-      { keys: "Ctrl + Option + Cmd + Drag", description: "Temporary quick draw; Space moves after modifier release" },
+      { keys: "Ctrl + Option + Cmd + Drag", description: "Temporary quick draw" },
+      { keys: "Spacebar (during quick draw)", description: "Move temporary rectangle" },
       { keys: "Click & Drag", description: "Draw rectangle" },
       { keys: "Alt (during drawing)", description: "Draw from center" },
       { keys: "Cmd/Ctrl (during drawing)", description: "Axis constraint" },

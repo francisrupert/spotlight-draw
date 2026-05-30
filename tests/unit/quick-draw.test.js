@@ -40,7 +40,7 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
       isDrawingMode: window.isDrawingMode,
       isCurrentlyDrawing: window.isCurrentlyDrawing,
       isQuickDrawing: window.isQuickDrawing,
-      isQuickDrawSpacebarDown: window.isQuickDrawSpacebarDown,
+      isQuickDrawSpacebarHeld: window.isQuickDrawSpacebarHeld,
       isSpacebarHeld: window.isSpacebarHeld,
       currentRectangle: window.currentRectangle,
       quickDrawRectangle: window.quickDrawRectangle,
@@ -66,7 +66,7 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
 
     window.isDrawingMode = false;
     window.isCurrentlyDrawing = false;
-    window.isQuickDrawSpacebarDown = false;
+    window.isQuickDrawSpacebarHeld = false;
     window.isSpacebarHeld = false;
     window.currentRectangle = null;
     window.placedRectangles = [];
@@ -84,7 +84,7 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
     window.isDrawingMode = originalState.isDrawingMode;
     window.isCurrentlyDrawing = originalState.isCurrentlyDrawing;
     window.isQuickDrawing = originalState.isQuickDrawing;
-    window.isQuickDrawSpacebarDown = originalState.isQuickDrawSpacebarDown;
+    window.isQuickDrawSpacebarHeld = originalState.isQuickDrawSpacebarHeld;
     window.isSpacebarHeld = originalState.isSpacebarHeld;
     window.currentRectangle = originalState.currentRectangle;
     window.quickDrawRectangle = originalState.quickDrawRectangle;
@@ -240,8 +240,8 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
 
       assert.strictEqual(rect.style.left, "140px", "resize continues from moved left edge");
       assert.strictEqual(rect.style.top, "140px", "resize continues from moved top edge");
-      assert.strictEqual(rect.style.width, "200px", "resize continues after moving");
-      assert.strictEqual(rect.style.height, "110px", "resize continues after moving");
+      assert.strictEqual(rect.style.width, "200px", "resize width continues after moving");
+      assert.strictEqual(rect.style.height, "110px", "resize height continues after moving");
 
       document.dispatchEvent(quickKeyEvent("keydown", " ", {
         ctrlKey: false,
@@ -255,8 +255,8 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
         metaKey: false
       }));
 
-      assert.strictEqual(rect.style.left, "160px", "spacebar can move the resized rectangle again");
-      assert.strictEqual(rect.style.top, "160px", "spacebar can move the resized rectangle again");
+      assert.strictEqual(rect.style.left, "160px", "second spacebar move updates left");
+      assert.strictEqual(rect.style.top, "160px", "second spacebar move updates top");
       assert.strictEqual(rect.style.width, "200px", "second move keeps width");
       assert.strictEqual(rect.style.height, "110px", "second move keeps height");
 

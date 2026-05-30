@@ -42,7 +42,7 @@ SpotlightDraw is the perfect companion for presentations, demos, and screen reco
 
 ✨ Key Features:
 • Activate instantly with Alt+A (Option+A on Mac)
-• Temporary quick draw with Ctrl+Option+Cmd+drag, with Spacebar move before mouseup
+• Temporary quick draw with Ctrl+Option+Cmd+drag and Spacebar repositioning
 • Draw custom rectangles anywhere on the page
 • Five customizable colors (orange, green, blue, purple, gray)
 • Adjustable border thickness (0.5px - 3px)

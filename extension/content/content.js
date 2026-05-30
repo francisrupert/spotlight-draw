@@ -7,7 +7,7 @@ var isSpacebarHeld = false;
 var isAltHeld = false;
 var isCmdCtrlHeld = false;
 var isQuickDrawing = false;
-var isQuickDrawSpacebarDown = false;
+var isQuickDrawSpacebarHeld = false;
 var startX = 0;
 var startY = 0;
 var currentMouseX = 0;
@@ -2457,14 +2457,14 @@ function clearQuickDrawRectangle() {
   }
   quickDrawRectangle = null;
   isQuickDrawing = false;
-  isQuickDrawSpacebarDown = false;
+  isQuickDrawSpacebarHeld = false;
   clearQuickDrawPanMode();
 }
 
 function startQuickDraw(event) {
   clearQuickDrawPanMode();
   isQuickDrawing = true;
-  isQuickDrawSpacebarDown = false;
+  isQuickDrawSpacebarHeld = false;
   quickDrawStartX = event.clientX;
   quickDrawStartY = event.clientY;
   quickDrawCurrentX = event.clientX;
@@ -2524,7 +2524,7 @@ function handleQuickDrawKeyDown(event) {
     return;
   }
 
-  isQuickDrawSpacebarDown = true;
+  isQuickDrawSpacebarHeld = true;
   if (!isQuickDrawChord(event)) {
     startQuickDrawPanMode();
   }
@@ -2538,9 +2538,9 @@ function handleQuickDrawKeyUp(event) {
   }
 
   if (isSpaceKey(event)) {
-    isQuickDrawSpacebarDown = false;
+    isQuickDrawSpacebarHeld = false;
     stopQuickDrawPanMode();
-  } else if (isQuickDrawSpacebarDown && !isQuickDrawChord(event)) {
+  } else if (isQuickDrawSpacebarHeld && !isQuickDrawChord(event)) {
     startQuickDrawPanMode();
   }
   stopQuickDrawEvent(event);
@@ -2917,7 +2917,7 @@ function handleContextMenu(event) {
 
 // Spacebar keydown - enter pan mode during drawing
 function handleSpacebarDown(event) {
-  if (event.key === " " || event.keyCode === 32) {
+  if (isSpaceKey(event)) {
     // Prevent page scroll when spacebar is pressed during drawing or while pan mode is active
     if (isCurrentlyDrawing || isSpacebarHeld) {
       event.preventDefault();
@@ -2942,7 +2942,7 @@ function handleSpacebarDown(event) {
 
 // Spacebar keyup - exit pan mode and recalculate start position
 function handleSpacebarUp(event) {
-  if (event.key === " " || event.keyCode === 32) {
+  if (isSpaceKey(event)) {
     if (isSpacebarHeld) {
       isSpacebarHeld = false;
 
