@@ -36,7 +36,7 @@ If you prefer to work with relative paths:
 ## Using the extension
 
 1. Open any page served over `http` or `https`.
-2. Press **Alt+A** (Option+A on Mac) to activate drawing mode.
+2. Press **Alt+F** (Option+F on Mac) to activate drawing mode.
 3. Your cursor will change to a crosshair and the page becomes non-interactive.
 4. Click and drag anywhere on the page to draw a rectangle.
 5. **Press Tab** to cycle through colors (orange → green → blue → purple → gray).
@@ -49,7 +49,7 @@ If you prefer to work with relative paths:
 12. While repositioning with Cmd/Ctrl, **press Alt** mid-drag to switch to duplicate mode.
 13. **Press Delete/Backspace** while hovering over a rectangle to remove it.
 14. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor).
-15. Press **Alt+A** again to also exit drawing mode.
+15. Press **Alt+F** (Option+F on Mac) again to also exit drawing mode.
 
 ## Configuring settings
 

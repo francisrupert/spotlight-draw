@@ -16,14 +16,6 @@
     },
     "default_title": "SpotlightDraw - Toggle drawing mode"
   },
-  "commands": {
-    "toggle-drawing-mode": {
-      "suggested_key": {
-        "default": "Alt+F"
-      },
-      "description": "Toggle rectangle drawing mode"
-    }
-  },
   "background": {
     "service_worker": "background.js"
   },

@@ -33,7 +33,7 @@ A Chrome extension for annotating web pages during screensharing and recording s
 3. Enable **Developer mode** (top-right corner)
 4. Click **Load unpacked**
 5. Select the `extension/` directory from this project
-6. Open any webpage and press **Alt+A** to start drawing
+6. Open any webpage and press **Alt+F** (`Option+F` on Mac) to start drawing
 
 For detailed instructions, see [Running the Extension Locally](docs/running-spotlight-draw-extension-locally.md).
 
@@ -101,7 +101,7 @@ spotlight-draw/
 
 Hold **Ctrl+Option+Cmd** and drag to show a temporary rectangle without entering drawing mode. Release the mouse to remove it. After releasing the modifier keys during the drag, hold **Spacebar** to move the temporary rectangle instead of resizing it.
 
-1. Press **Alt+A** (Option+A on Mac) to activate drawing mode
+1. Press **Alt+F** (Option+F on Mac) to activate drawing mode
 2. Your cursor changes to a crosshair and the page becomes non-interactive
 3. Click and drag anywhere on the page to draw a rectangle
 4. **Hold Alt** while dragging to draw from center outward
@@ -118,7 +118,7 @@ Hold **Ctrl+Option+Cmd** and drag to show a temporary rectangle without entering
 15. Release mouse to place the rectangle
 16. Click without Shift to clear all rectangles and draw a new one
 17. Press **ESC** to exit drawing mode (clears all rectangles and restores normal cursor)
-18. Press **Alt+A** again to also exit drawing mode
+18. Press **Alt+F** (Option+F on Mac) again to also exit drawing mode
 
 No permanent page modifications are made—just visual overlays using positioned div elements. While in drawing mode, all page interactions (clicks, hovers, text selection) are blocked to prevent accidental navigation.
 

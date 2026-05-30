@@ -91,7 +91,9 @@ var COLOR_CLASSES = [
 var userPreferences = {
   borderSize: DEFAULT_PREFERENCES.borderSize,
   defaultColor: DEFAULT_PREFERENCES.defaultColor,
-  snapToEdges: DEFAULT_PREFERENCES.snapToEdges
+  snapToEdges: DEFAULT_PREFERENCES.snapToEdges,
+  toggleShortcut: DEFAULT_PREFERENCES.toggleShortcut,
+  quickDrawShortcut: DEFAULT_PREFERENCES.quickDrawShortcut
 };
 
 // Snap-to-edge configuration
@@ -200,6 +202,8 @@ function loadPreferences(callback) {
       userPreferences.borderSize = items.borderSize;
       userPreferences.defaultColor = items.defaultColor;
       userPreferences.snapToEdges = items.snapToEdges;
+      userPreferences.toggleShortcut = items.toggleShortcut;
+      userPreferences.quickDrawShortcut = items.quickDrawShortcut;
       if (callback) {
         callback();
       }
@@ -209,6 +213,22 @@ function loadPreferences(callback) {
     if (callback) {
       callback();
     }
+  }
+}
+
+function handlePreferenceChange(changes, areaName) {
+  if (areaName !== "sync") {
+    return;
+  }
+
+  Object.keys(DEFAULT_PREFERENCES).forEach(function(key) {
+    if (changes[key]) {
+      userPreferences[key] = changes[key].newValue;
+    }
+  });
+
+  if (helpDialog) {
+    loadSettingsIntoDialog();
   }
 }
 
@@ -302,6 +322,22 @@ function createHelpDialog() {
         <input type="checkbox" id="dialog-snap-to-edges">
         <span>Snap to Edges</span>
       </label>
+    </div>
+
+    <div class="spotlight-draw-help__setting">
+      <label for="dialog-toggle-shortcut">Drawing Mode Shortcut</label>
+      <div class="shortcut-control">
+        <input type="text" id="dialog-toggle-shortcut" class="shortcut-input" readonly>
+        <button type="button" id="dialog-reset-toggle-shortcut" class="shortcut-reset-button">Reset</button>
+      </div>
+    </div>
+
+    <div class="spotlight-draw-help__setting">
+      <label for="dialog-quick-draw-shortcut">Temporary Quick Draw Shortcut</label>
+      <div class="shortcut-control">
+        <input type="text" id="dialog-quick-draw-shortcut" class="shortcut-input" readonly>
+        <button type="button" id="dialog-reset-quick-draw-shortcut" class="shortcut-reset-button">Reset</button>
+      </div>
     </div>
   `;
   content.appendChild(settingsSection);
@@ -422,6 +458,11 @@ function loadSettingsIntoDialog() {
   if (snapCheckbox) {
     snapCheckbox.checked = userPreferences.snapToEdges;
   }
+
+  updateShortcutInput(helpDialog, "dialog-toggle-shortcut", userPreferences.toggleShortcut);
+  updateShortcutInput(helpDialog, "dialog-quick-draw-shortcut", userPreferences.quickDrawShortcut);
+
+  updateCustomShortcutDisplays(helpDialog, userPreferences);
 }
 
 // Save a setting to chrome.storage
@@ -473,17 +514,27 @@ function initHelpSystem() {
     snapCheckbox.addEventListener("change", handleSnapToEdgesChange, true);
   }
 
+  setupShortcutInput(helpDialog, "dialog-toggle-shortcut", "keyboard", function(shortcut) {
+    saveSetting("toggleShortcut", shortcut);
+    updateCustomShortcutDisplays(helpDialog, userPreferences);
+  });
+  setupShortcutInput(helpDialog, "dialog-quick-draw-shortcut", "modifiers", function(shortcut) {
+    saveSetting("quickDrawShortcut", shortcut);
+    updateCustomShortcutDisplays(helpDialog, userPreferences);
+  });
+  setupShortcutResetButton(helpDialog, "dialog-reset-toggle-shortcut", "dialog-toggle-shortcut", "toggleShortcut", function(shortcut) {
+    saveSetting("toggleShortcut", shortcut);
+    updateCustomShortcutDisplays(helpDialog, userPreferences);
+  });
+  setupShortcutResetButton(helpDialog, "dialog-reset-quick-draw-shortcut", "dialog-quick-draw-shortcut", "quickDrawShortcut", function(shortcut) {
+    saveSetting("quickDrawShortcut", shortcut);
+    updateCustomShortcutDisplays(helpDialog, userPreferences);
+  });
+
   // Load current settings into form
   loadSettingsIntoDialog();
 
-  // Fetch and display actual configured shortcut
-  if (chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage({ type: "GET_SHORTCUT" }, function(response) {
-      if (response && response.shortcut) {
-        updateToggleShortcutDisplay(helpDialog, response.shortcut);
-      }
-    });
-  }
+  updateCustomShortcutDisplays(helpDialog, userPreferences);
 }
 
 // Update rectangle position and size
@@ -2351,7 +2402,7 @@ function switchRepositionToDuplicate() {
 }
 
 function isQuickDrawChord(event) {
-  return event.ctrlKey && event.altKey && event.metaKey;
+  return eventMatchesShortcut(event, userPreferences.quickDrawShortcut);
 }
 
 function isSpaceKey(event) {
@@ -2560,6 +2611,28 @@ function handleQuickDrawContextMenu(event) {
     return;
   }
 
+  stopQuickDrawEvent(event);
+}
+
+function isEditableTarget(target) {
+  if (!target || !target.tagName) {
+    return false;
+  }
+
+  var tagName = target.tagName.toLowerCase();
+  return target.isContentEditable || tagName === "input" || tagName === "textarea" || tagName === "select";
+}
+
+function handleGlobalShortcutKeyDown(event) {
+  if (event.defaultPrevented || event.repeat || isEditableTarget(event.target)) {
+    return;
+  }
+
+  if (!eventMatchesShortcut(event, userPreferences.toggleShortcut)) {
+    return;
+  }
+
+  toggleDrawingMode();
   stopQuickDrawEvent(event);
 }
 
@@ -2975,6 +3048,10 @@ function handleSpacebarUp(event) {
 
 // ESC key handler - clear rectangle and exit drawing mode
 function handleKeyDown(event) {
+  if (isEditableTarget(event.target)) {
+    return;
+  }
+
   // Handle '?' key for help dialog (Shift+/)
   if (event.key === "?" && isDrawingMode) {
     event.preventDefault();
@@ -3126,6 +3203,10 @@ function handleKeyDown(event) {
 }
 
 function handleKeyUp(event) {
+  if (isEditableTarget(event.target)) {
+    return;
+  }
+
   // Handle 'f' key release - exit inspection mode
   if (event.key === "f" || event.key === "F") {
     isInspectionKeyHeld = false;
@@ -3252,10 +3333,17 @@ function toggleDrawingMode() {
 document.addEventListener("mousedown", handleQuickDrawMouseDown, true);
 document.addEventListener("mousemove", handleQuickDrawMouseMove, true);
 document.addEventListener("mouseup", handleQuickDrawMouseUp, true);
+document.addEventListener("keydown", handleGlobalShortcutKeyDown, true);
 document.addEventListener("keydown", handleQuickDrawKeyDown, true);
 document.addEventListener("keyup", handleQuickDrawKeyUp, true);
 document.addEventListener("click", handleQuickDrawClick, true);
 document.addEventListener("contextmenu", handleQuickDrawContextMenu, true);
+
+loadPreferences();
+
+if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener(handlePreferenceChange);
+}
 
 // Listen for messages from popup
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {

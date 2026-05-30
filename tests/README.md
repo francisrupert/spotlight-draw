@@ -31,7 +31,6 @@ tests/
 │   ├── drawing-snap.test.js             # Drawing dimension snap tests
 │   ├── drawing-shift-freeform.test.js   # Shift free-form drawing tests
 │   ├── quick-draw.test.js               # Temporary quick draw gesture tests
-│   ├── discoverability.test.js          # Discoverability tests
 │   ├── mode-switch.test.js              # Mode switch tests
 │   └── resize.test.js                   # Resize tests
 ├── integration/              # User flow tests (to be added)

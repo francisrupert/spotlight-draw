@@ -98,6 +98,65 @@
   user-select: none;
 }
 
+.shortcut-control {
+  display: flex;
+  align-items: stretch;
+  gap: var(--size-8);
+}
+
+.shortcut-input {
+  box-sizing: border-box;
+  inline-size: 100%;
+  padding-block: var(--size-8);
+  padding-inline: var(--size-12);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-14);
+  color: CanvasText;
+  background: Canvas;
+  border: var(--size-1) solid ButtonBorder;
+  border-radius: var(--size-4);
+  cursor: pointer;
+}
+
+.shortcut-control .shortcut-input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.shortcut-input:focus {
+  outline: var(--size-2) solid Highlight;
+  outline-offset: var(--size-2);
+}
+
+.shortcut-reset-button {
+  flex: 0 0 auto;
+  padding-block: var(--size-8);
+  font-size: var(--font-size-12);
+  color: CanvasText;
+  background: Canvas;
+  border: var(--size-1) solid ButtonBorder;
+  border-radius: var(--size-4);
+  cursor: pointer;
+}
+
+.shortcut-reset-button:hover {
+  background-color: color-mix(in srgb, CanvasText 5%, Canvas);
+}
+
+.shortcut-reset-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.shortcut-reset-button:disabled:hover {
+  background-color: Canvas;
+}
+
+.shortcut-reset-button:focus {
+  outline: var(--size-2) solid Highlight;
+  outline-offset: var(--size-2);
+}
+
 /* Shortcuts table */
 .shortcuts-table {
   inline-size: 100%;
@@ -114,13 +173,11 @@
 
 .shortcut-keys {
   font-family: var(--font-mono);
-  font-size: var(--font-size-12);
+  font-size: var(--font-size-10);
   font-weight: 600;
   color: CanvasText;
   padding-block: var(--size-8);
   padding-inline: 0 var(--size-16);
-  white-space: nowrap;
-  inline-size: 45%;
   opacity: 0.8;
 }
 

@@ -297,7 +297,7 @@ npm test
 
 Load extension and test manually:
 1. Open `test-even-spacing.html`
-2. Press `Alt+A` (Option+A on Mac) to enable drawing mode
+2. Press `Alt+F` (Option+F on Mac) to enable drawing mode
 3. Follow test scenarios in the HTML file
 
 ## Summary

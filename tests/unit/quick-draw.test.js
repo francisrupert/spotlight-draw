@@ -53,7 +53,9 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
       userPreferences: {
         borderSize: window.userPreferences.borderSize,
         defaultColor: window.userPreferences.defaultColor,
-        snapToEdges: window.userPreferences.snapToEdges
+        snapToEdges: window.userPreferences.snapToEdges,
+        toggleShortcut: window.userPreferences.toggleShortcut,
+        quickDrawShortcut: window.userPreferences.quickDrawShortcut
       }
     };
 
@@ -61,7 +63,9 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
     window.setChromeStorage({
       borderSize: "3",
       defaultColor: "spotlight-draw-rectangle--blue",
-      snapToEdges: false
+      snapToEdges: false,
+      toggleShortcut: "Alt+F",
+      quickDrawShortcut: "Ctrl+Alt+Meta"
     });
 
     window.isDrawingMode = false;
@@ -97,6 +101,8 @@ QUnit.module("Quick Draw Gesture", function(hooks) {
     window.userPreferences.borderSize = originalState.userPreferences.borderSize;
     window.userPreferences.defaultColor = originalState.userPreferences.defaultColor;
     window.userPreferences.snapToEdges = originalState.userPreferences.snapToEdges;
+    window.userPreferences.toggleShortcut = originalState.userPreferences.toggleShortcut;
+    window.userPreferences.quickDrawShortcut = originalState.userPreferences.quickDrawShortcut;
     window.resetChromeStorage();
   });
 
