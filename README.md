@@ -24,6 +24,24 @@ A Chrome extension for annotating web pages during screensharing and recording s
 - 🔒 Privacy-focused (no data collection, settings sync across devices)
 - 🚀 Lightweight and fast (Manifest V3)
 
+## Screencasts
+
+### Settings
+
+https://github.com/user-attachments/assets/df45cdd0-f8af-4dcd-b967-e13660f93807
+
+### Quick Highlight
+
+https://github.com/user-attachments/assets/8d04a61c-e4b4-4152-a634-970cfb76308d
+
+### Highlight Options
+
+https://github.com/user-attachments/assets/537b948b-4e09-4c62-a142-73fce23f5645
+
+### Inspection
+
+https://github.com/user-attachments/assets/00e3fdbf-508b-4658-bc47-8f1a04123b91
+
 ## Quick Start
 
 ### Running Locally
