@@ -1,29 +1,29 @@
 body {
-  font-family: var(--font-system);
-  padding: var(--size-16);
+  font-family: var(--spotlight-draw-font-system);
+  padding: var(--spotlight-draw-size-16);
   margin: 0;
   background-color: Canvas;
   color: CanvasText;
 }
 
 .container {
-  max-inline-size: var(--size-512);
+  max-inline-size: var(--spotlight-draw-size-512);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--size-16);
+  gap: var(--spotlight-draw-size-16);
 }
 
 h1 {
   margin-block-start: 0;
-  font-size: var(--font-size-24);
+  font-size: var(--spotlight-draw-font-size-24);
   color: CanvasText;
 }
 
 label {
   display: block;
-  margin-block-end: var(--size-8);
-  font-size: var(--font-size-14);
+  margin-block-end: var(--spotlight-draw-size-8);
+  font-size: var(--spotlight-draw-font-size-14);
   font-weight: 500;
   color: CanvasText;
   opacity: 0.8;
@@ -31,13 +31,13 @@ label {
 
 /* Shortcuts section */
 .shortcuts-section {
-  margin-block-end: var(--size-32);
+  margin-block-end: var(--spotlight-draw-size-32);
 }
 
 .shortcuts-section h2 {
-  font-size: var(--font-size-16);
+  font-size: var(--spotlight-draw-font-size-16);
   font-weight: 600;
   color: CanvasText;
-  margin-block: 0 var(--size-16);
+  margin-block: 0 var(--spotlight-draw-size-16);
 }
 

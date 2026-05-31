@@ -110,6 +110,38 @@ QUnit.module("Custom Shortcut Preferences", function(hooks) {
     assert.equal(shortcut, "Ctrl+Alt+Meta", "quick draw shortcut stores only modifiers");
   });
 
+  QUnit.test("storage read errors are handled through the error callback", function(assert) {
+    var done = assert.async();
+
+    window.setChromeStorageError("Extension context invalidated.");
+    readSyncStorage(DEFAULT_PREFERENCES, function() {
+      assert.ok(false, "success callback is skipped when storage fails");
+      done();
+    }, function(error) {
+      assert.equal(error.message, "Extension context invalidated.", "storage error is reported");
+      done();
+    });
+  });
+
+  QUnit.test("storage write errors are handled through the error callback", function(assert) {
+    var done = assert.async();
+
+    window.setChromeStorageError("This request exceeds the MAX_WRITE_OPERATIONS_PER_MINUTE quota.");
+    var didStartWrite = writeSyncStorage({ borderSize: "2" }, function(error) {
+      assert.equal(
+        error.message,
+        "This request exceeds the MAX_WRITE_OPERATIONS_PER_MINUTE quota.",
+        "storage write error is reported"
+      );
+    });
+
+    assert.strictEqual(didStartWrite, true, "storage write was attempted");
+    setTimeout(function() {
+      assert.equal(window.getChromeStorage().borderSize, "1", "failed write does not update storage");
+      done();
+    }, 10);
+  });
+
   QUnit.test("matches custom keyboard and mouse shortcuts", function(assert) {
     assert.ok(
       eventMatchesShortcut(keyboardEvent("f", { altKey: true }), "Alt+F"),

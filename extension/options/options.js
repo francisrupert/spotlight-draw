@@ -1,33 +1,48 @@
-// Save options to chrome.storage.sync
-function saveOptions() {
-  // Get selected border size from active button
+var currentOptions = Object.assign({}, DEFAULT_PREFERENCES);
+
+function getSelectedOptions() {
   var borderSizeGroup = document.getElementById("borderSize");
   var activeBorderButton = borderSizeGroup.querySelector(".button-group-item.active");
-  var borderSize = activeBorderButton ? activeBorderButton.getAttribute("data-value") : "1";
-
-  // Get selected color from active button
   var colorGroup = document.getElementById("defaultColor");
   var activeColorButton = colorGroup.querySelector(".button-group-item.active");
-  var defaultColor = activeColorButton ? activeColorButton.getAttribute("data-value") : "";
-
-  // Get checkbox value
-  var snapToEdges = document.getElementById("snapToEdges").checked;
-
   var toggleInput = document.getElementById("toggleShortcut");
   var quickDrawInput = document.getElementById("quickDrawShortcut");
 
-  chrome.storage.sync.set({
-    borderSize: borderSize,
-    defaultColor: defaultColor,
-    snapToEdges: snapToEdges,
+  return {
+    borderSize: activeBorderButton ? activeBorderButton.getAttribute("data-value") : DEFAULT_PREFERENCES.borderSize,
+    defaultColor: activeColorButton ? activeColorButton.getAttribute("data-value") : DEFAULT_PREFERENCES.defaultColor,
+    snapToEdges: document.getElementById("snapToEdges").checked,
     toggleShortcut: toggleInput.getAttribute("data-shortcut") || DEFAULT_PREFERENCES.toggleShortcut,
     quickDrawShortcut: quickDrawInput.getAttribute("data-shortcut") || DEFAULT_PREFERENCES.quickDrawShortcut
+  };
+}
+
+function saveChangedOptions(nextOptions) {
+  var changedOptions = {};
+  Object.keys(DEFAULT_PREFERENCES).forEach(function(key) {
+    if (currentOptions[key] !== nextOptions[key]) {
+      changedOptions[key] = nextOptions[key];
+    }
   });
+
+  if (Object.keys(changedOptions).length === 0) {
+    return;
+  }
+
+  currentOptions = Object.assign({}, currentOptions, nextOptions);
+  writeSyncStorage(changedOptions);
+}
+
+// Save options to chrome.storage.sync
+function saveOptions() {
+  saveChangedOptions(getSelectedOptions());
 }
 
 // Load saved options from chrome.storage.sync
 function loadOptions() {
-  chrome.storage.sync.get(DEFAULT_PREFERENCES, function(items) {
+  readSyncStorage(DEFAULT_PREFERENCES, function(items) {
+    currentOptions = Object.assign({}, DEFAULT_PREFERENCES, items);
+
     // Set active border size button
     var borderButtons = document.querySelectorAll("#borderSize .button-group-item");
     borderButtons.forEach(function(button) {
@@ -70,9 +85,12 @@ function getShortcutPreferencesFromInputs() {
 }
 
 function saveShortcutOption(key, value) {
-  var settings = {};
-  settings[key] = value;
-  chrome.storage.sync.set(settings);
+  if (currentOptions[key] !== value) {
+    var settings = {};
+    currentOptions[key] = value;
+    settings[key] = value;
+    writeSyncStorage(settings);
+  }
 
   updateShortcutInput(document, key, value);
   updateCustomShortcutDisplays(document, getShortcutPreferencesFromInputs());
@@ -82,7 +100,7 @@ function saveShortcutOption(key, value) {
 function renderShortcuts() {
   var container = document.getElementById("shortcuts-container");
   renderShortcutsInto(container, "h2", "shortcuts-section");
-  chrome.storage.sync.get(DEFAULT_PREFERENCES, function(items) {
+  readSyncStorage(DEFAULT_PREFERENCES, function(items) {
     updateCustomShortcutDisplays(container, items);
   });
 }

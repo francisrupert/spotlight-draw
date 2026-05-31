@@ -10,6 +10,19 @@
 
   // In-memory storage for test isolation
   var storage = {};
+  var nextStorageError = null;
+
+  function withStorageError(callback) {
+    if (!nextStorageError) {
+      callback();
+      return;
+    }
+
+    window.chrome.runtime.lastError = { message: nextStorageError };
+    nextStorageError = null;
+    callback();
+    delete window.chrome.runtime.lastError;
+  }
 
   window.chrome = {
     storage: {
@@ -22,7 +35,9 @@
           var result = Object.assign({}, defaults, storage);
           // Async to match real API behavior
           setTimeout(function() {
-            callback(result);
+            withStorageError(function() {
+              callback(result);
+            });
           }, 0);
         },
 
@@ -31,10 +46,14 @@
          * Persists items to in-memory storage
          */
         set: function(items, callback) {
-          Object.assign(storage, items);
-          if (callback) {
-            setTimeout(callback, 0);
-          }
+          setTimeout(function() {
+            withStorageError(function() {
+              if (!window.chrome.runtime.lastError) {
+                Object.assign(storage, items);
+              }
+              if (callback) callback();
+            });
+          }, 0);
         },
 
         /**
@@ -121,6 +140,8 @@
    */
   window.resetChromeStorage = function() {
     storage = {};
+    nextStorageError = null;
+    delete window.chrome.runtime.lastError;
   };
 
   /**
@@ -135,6 +156,10 @@
    */
   window.setChromeStorage = function(items) {
     storage = Object.assign({}, items);
+  };
+
+  window.setChromeStorageError = function(message) {
+    nextStorageError = message;
   };
 
 })();

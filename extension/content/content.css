@@ -1,12 +1,12 @@
-/* Cursor modes — each mode class sets --sd-cursor, drawing-mode base applies it */
-html.spotlight-draw-drawing-mode { --sd-cursor: crosshair; }
-html.spotlight-draw-quick-draw-mode { --sd-cursor: crosshair; }
-html.spotlight-draw-pan-mode { --sd-cursor: none; }
-html.spotlight-draw-repositioning-mode { --sd-cursor: var(--cursor-default); }
-html.spotlight-draw-duplication-hover-mode { --sd-cursor: var(--cursor-copy); }
-html.spotlight-draw-duplication-dragging-mode { --sd-cursor: var(--cursor-copy); }
-html.spotlight-draw-dragging-mode { --sd-cursor: var(--cursor-default); }
-html.spotlight-draw-inspection-mode { --sd-cursor: default; }
+/* Cursor modes — each mode class sets --spotlight-draw-active-cursor, drawing-mode base applies it */
+html.spotlight-draw-drawing-mode { --spotlight-draw-active-cursor: crosshair; }
+html.spotlight-draw-quick-draw-mode { --spotlight-draw-active-cursor: crosshair; }
+html.spotlight-draw-pan-mode { --spotlight-draw-active-cursor: none; }
+html.spotlight-draw-repositioning-mode { --spotlight-draw-active-cursor: var(--spotlight-draw-cursor-default); }
+html.spotlight-draw-duplication-hover-mode { --spotlight-draw-active-cursor: var(--spotlight-draw-cursor-copy); }
+html.spotlight-draw-duplication-dragging-mode { --spotlight-draw-active-cursor: var(--spotlight-draw-cursor-copy); }
+html.spotlight-draw-dragging-mode { --spotlight-draw-active-cursor: var(--spotlight-draw-cursor-default); }
+html.spotlight-draw-inspection-mode { --spotlight-draw-active-cursor: default; }
 
 html.spotlight-draw-drawing-mode,
 html.spotlight-draw-drawing-mode *,
@@ -20,7 +20,7 @@ html.spotlight-draw-pan-mode,
 html.spotlight-draw-pan-mode *,
 html.spotlight-draw-pan-mode body,
 html.spotlight-draw-pan-mode body * {
-  cursor: var(--sd-cursor) !important;
+  cursor: var(--spotlight-draw-active-cursor) !important;
 }
 
 html.spotlight-draw-drawing-mode,
@@ -32,33 +32,33 @@ html.spotlight-draw-drawing-mode body * {
 }
 
 :root {
-  --spotlight-draw-color: color-mix(in srgb, var(--color-orange) 90%, transparent);
+  --spotlight-draw-color: color-mix(in srgb, var(--spotlight-draw-color-orange) 90%, transparent);
 }
 
 /* Rectangle style */
 .spotlight-draw-rectangle {
   /* orange */
-  border: var(--size-1) solid var(--spotlight-draw-color);
+  border: var(--spotlight-draw-size-1) solid var(--spotlight-draw-color);
   background-color: color-mix(in srgb, var(--spotlight-draw-color) 15%, transparent);
   box-sizing: border-box;
   pointer-events: none;
-  border-radius: var(--size-4);
+  border-radius: var(--spotlight-draw-size-4);
 }
 .spotlight-draw-rectangle--plain {
   /* gray */
-  --spotlight-draw-color: var(--color-plain);
+  --spotlight-draw-color: var(--spotlight-draw-color-plain);
 }
 .spotlight-draw-rectangle--blue {
   /* blue */
-  --spotlight-draw-color: var(--color-blue);
+  --spotlight-draw-color: var(--spotlight-draw-color-blue);
 }
 .spotlight-draw-rectangle--purple {
   /* purple */
-  --spotlight-draw-color: var(--color-purple);
+  --spotlight-draw-color: var(--spotlight-draw-color-purple);
 }
 .spotlight-draw-rectangle--green {
   /* green */
-  --spotlight-draw-color: var(--color-green);
+  --spotlight-draw-color: var(--spotlight-draw-color-green);
 }
 /* Help Button - must override pointer-events: none from drawing mode */
 /* Use high specificity to beat html.spotlight-draw-drawing-mode body * */
@@ -72,10 +72,10 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__trigger,
 
   /* Positioning */
   position: fixed;
-  inset-block-end: var(--size-16);
-  inset-inline-start: var(--size-16);
-  inline-size: var(--size-32);
-  block-size: var(--size-32);
+  inset-block-end: var(--spotlight-draw-size-16);
+  inset-inline-start: var(--spotlight-draw-size-16);
+  inline-size: var(--spotlight-draw-size-32);
+  block-size: var(--spotlight-draw-size-32);
   z-index: 2147483647;
 
   /* Visual styling */
@@ -84,8 +84,8 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__trigger,
   border-radius: 50%;
 
   /* Typography - system font stack */
-  font-family: var(--font-system);
-  font-size: var(--font-size-14);
+  font-family: var(--spotlight-draw-font-system);
+  font-size: var(--spotlight-draw-font-size-14);
   font-weight: 600;
   color: white;
   line-height: 1;
@@ -98,7 +98,7 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__trigger,
 
 /* Hidden state - off-screen to the left */
 .spotlight-draw-help__trigger--hidden {
-  transform: translateX(calc(-1 * var(--size-64))) !important;
+  transform: translateX(calc(-1 * var(--spotlight-draw-size-64))) !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
@@ -129,26 +129,26 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__dialog,
 
   /* Basic dialog styling with color-scheme support */
   /* Browser centers modal dialogs automatically - we just set sizing and reset margin */
-  inline-size: var(--size-512);
+  inline-size: var(--spotlight-draw-size-512);
   max-inline-size: 90vw;
   max-block-size: 80vh;
   margin: auto !important;
-  border: var(--size-1) solid ButtonBorder;
-  border-radius: var(--size-8);
+  border: var(--spotlight-draw-size-1) solid ButtonBorder;
+  border-radius: var(--spotlight-draw-size-8);
   padding: 0;
   background: Canvas;
   color: CanvasText;
-  box-shadow: 0 var(--size-4) var(--size-16) var(--shadow-dialog);
+  box-shadow: 0 var(--spotlight-draw-size-4) var(--spotlight-draw-size-16) var(--spotlight-draw-shadow-dialog);
   z-index: 2147483647;
   overflow-block: auto;
 
   /* System font stack */
-  font-family: var(--font-system);
+  font-family: var(--spotlight-draw-font-system);
 }
 
 /* Dialog backdrop */
 .spotlight-draw-help__dialog::backdrop {
-  background: var(--backdrop-overlay);
+  background: var(--spotlight-draw-backdrop-overlay);
   pointer-events: auto !important;
 }
 
@@ -166,25 +166,25 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__dialog *,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--size-16);
-  border-block-end: var(--size-1) solid ButtonBorder;
+  padding: var(--spotlight-draw-size-16);
+  border-block-end: var(--spotlight-draw-size-1) solid ButtonBorder;
 }
 
 .spotlight-draw-help__header h2 {
   margin: 0;
-  font-size: var(--font-size-16);
+  font-size: var(--spotlight-draw-font-size-16);
   font-weight: 600;
   color: CanvasText;
 }
 
 .spotlight-draw-help__body {
-  padding: var(--size-16);
+  padding: var(--spotlight-draw-size-16);
   color: CanvasText;
 }
 
 .spotlight-draw-help__body h3 {
-  margin-block: var(--size-16) var(--size-8);
-  font-size: var(--font-size-14);
+  margin-block: var(--spotlight-draw-size-16) var(--spotlight-draw-size-8);
+  font-size: var(--spotlight-draw-font-size-14);
   font-weight: 600;
   color: CanvasText;
 }
@@ -199,14 +199,14 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__close,
 .spotlight-draw-help__close {
   background: none;
   border: none;
-  font-size: var(--font-size-32);
+  font-size: var(--spotlight-draw-font-size-32);
   line-height: 1;
   color: CanvasText;
   cursor: pointer !important;
   pointer-events: auto !important;
   padding: 0;
-  inline-size: var(--size-32);
-  block-size: var(--size-32);
+  inline-size: var(--spotlight-draw-size-32);
+  block-size: var(--spotlight-draw-size-32);
   opacity: 0.6;
   transition: opacity 0.2s ease;
 }
@@ -217,34 +217,34 @@ html.spotlight-draw-drawing-mode .spotlight-draw-help__close,
 
 /* Settings Section */
 .spotlight-draw-help__settings {
-  margin-block-end: var(--size-32);
+  margin-block-end: var(--spotlight-draw-size-32);
 }
 
 .spotlight-draw-help__setting {
-  margin-block: var(--size-16);
+  margin-block: var(--spotlight-draw-size-16);
 }
 
 .spotlight-draw-help__setting label {
   display: block;
-  font-size: var(--font-size-14);
+  font-size: var(--spotlight-draw-font-size-14);
   font-weight: 600;
   color: CanvasText;
-  margin-block-end: var(--size-8);
+  margin-block-end: var(--spotlight-draw-size-8);
 }
 
 /* Shortcuts Section */
 .spotlight-draw-help__shortcuts {
-  padding-block-start: var(--size-16);
-  border-block-start: var(--size-1) solid ButtonBorder;
+  padding-block-start: var(--spotlight-draw-size-16);
+  border-block-start: var(--spotlight-draw-size-1) solid ButtonBorder;
 }
 
 .shortcuts-category {
-  margin-block-end: var(--size-16);
+  margin-block-end: var(--spotlight-draw-size-16);
 }
 
 .shortcuts-category h4 {
-  font-size: var(--font-size-14);
+  font-size: var(--spotlight-draw-font-size-14);
   font-weight: 600;
   color: CanvasText;
-  margin-block: 0 var(--size-8);
+  margin-block: 0 var(--spotlight-draw-size-8);
 }

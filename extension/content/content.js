@@ -197,23 +197,16 @@ function resetDragState() {
 
 // Load user preferences from chrome.storage
 function loadPreferences(callback) {
-  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
-    chrome.storage.sync.get(DEFAULT_PREFERENCES, function(items) {
-      userPreferences.borderSize = items.borderSize;
-      userPreferences.defaultColor = items.defaultColor;
-      userPreferences.snapToEdges = items.snapToEdges;
-      userPreferences.toggleShortcut = items.toggleShortcut;
-      userPreferences.quickDrawShortcut = items.quickDrawShortcut;
-      if (callback) {
-        callback();
-      }
-    });
-  } else {
-    // Fallback if chrome.storage is not available
+  readSyncStorage(DEFAULT_PREFERENCES, function(items) {
+    userPreferences.borderSize = items.borderSize;
+    userPreferences.defaultColor = items.defaultColor;
+    userPreferences.snapToEdges = items.snapToEdges;
+    userPreferences.toggleShortcut = items.toggleShortcut;
+    userPreferences.quickDrawShortcut = items.quickDrawShortcut;
     if (callback) {
       callback();
     }
-  }
+  });
 }
 
 function handlePreferenceChange(changes, areaName) {
@@ -467,13 +460,16 @@ function loadSettingsIntoDialog() {
 
 // Save a setting to chrome.storage
 function saveSetting(key, value) {
-  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
-    var settings = {};
-    settings[key] = value;
-    chrome.storage.sync.set(settings);
+  if (userPreferences[key] === value) {
+    return;
   }
+
   // Update local preferences
   userPreferences[key] = value;
+
+  var settings = {};
+  settings[key] = value;
+  writeSyncStorage(settings);
 }
 
 // Setup button groups in dialog using shared helper
@@ -2070,12 +2066,12 @@ function calculateResizeBounds(mouseX, mouseY, handle, startBounds, altHeld) {
 function setResizeCursor(handle) {
   var map = { n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize",
               ne: "nesw-resize", nw: "nwse-resize", se: "nwse-resize", sw: "nesw-resize" };
-  document.documentElement.style.setProperty("--sd-cursor", map[handle]);
+  document.documentElement.style.setProperty("--spotlight-draw-active-cursor", map[handle]);
 }
 
 // Clear resize cursor (remove inline override, class value takes over)
 function clearResizeCursor() {
-  document.documentElement.style.removeProperty("--sd-cursor");
+  document.documentElement.style.removeProperty("--spotlight-draw-active-cursor");
 }
 
 // Cycle through rectangle colors

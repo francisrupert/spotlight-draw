@@ -2,18 +2,18 @@
 .button-group {
   display: flex;
   inline-size: 100%;
-  gap: var(--size-2);
+  gap: var(--spotlight-draw-size-2);
 }
 
 .button-group-item {
   flex: 1;
-  padding-block: var(--size-8);
-  padding-inline: var(--size-16);
-  font-size: var(--font-size-14);
+  padding-block: var(--spotlight-draw-size-8);
+  padding-inline: var(--spotlight-draw-size-16);
+  font-size: var(--spotlight-draw-font-size-14);
   color: CanvasText;
   background: Canvas;
-  border: var(--size-1) solid ButtonBorder;
-  border-radius: var(--size-4);
+  border: var(--spotlight-draw-size-1) solid ButtonBorder;
+  border-radius: var(--spotlight-draw-size-4);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
@@ -32,8 +32,8 @@
 }
 
 .button-group-item:focus {
-  outline: var(--size-2) solid Highlight;
-  outline-offset: var(--size-2);
+  outline: var(--spotlight-draw-size-2) solid Highlight;
+  outline-offset: var(--spotlight-draw-size-2);
   position: relative;
   z-index: 1;
 }
@@ -41,40 +41,40 @@
 /* Color buttons */
 .color-button {
   inline-size: 100%;
-  block-size: var(--size-32);
+  block-size: var(--spotlight-draw-size-32);
   padding: 0;
   position: relative;
 }
 
 .color-button[data-color="orange"] {
-  background-color: var(--color-orange);
+  background-color: var(--spotlight-draw-color-orange);
 }
 
 .color-button[data-color="green"] {
-  background-color: var(--color-green);
+  background-color: var(--spotlight-draw-color-green);
 }
 
 .color-button[data-color="blue"] {
-  background-color: var(--color-blue);
+  background-color: var(--spotlight-draw-color-blue);
 }
 
 .color-button[data-color="purple"] {
-  background-color: var(--color-purple);
+  background-color: var(--spotlight-draw-color-purple);
 }
 
 .color-button[data-color="plain"] {
-  background-color: var(--color-plain);
+  background-color: var(--spotlight-draw-color-plain);
 }
 
 .color-button.active::after {
   content: '✓';
-  font-family: var(--font-system);
+  font-family: var(--spotlight-draw-font-system);
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: var(--font-size-16);
+  font-size: var(--spotlight-draw-font-size-16);
   font-weight: bold;
 }
 
@@ -82,15 +82,15 @@
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: var(--size-8);
+  gap: var(--spotlight-draw-size-8);
   cursor: pointer;
   font-weight: normal;
   margin-block-end: 0;
 }
 
 .checkbox-label input[type="checkbox"] {
-  inline-size: var(--size-16);
-  block-size: var(--size-16);
+  inline-size: var(--spotlight-draw-size-16);
+  block-size: var(--spotlight-draw-size-16);
   cursor: pointer;
 }
 
@@ -101,20 +101,20 @@
 .shortcut-control {
   display: flex;
   align-items: stretch;
-  gap: var(--size-8);
+  gap: var(--spotlight-draw-size-8);
 }
 
 .shortcut-input {
   box-sizing: border-box;
   inline-size: 100%;
-  padding-block: var(--size-8);
-  padding-inline: var(--size-12);
-  font-family: var(--font-mono);
-  font-size: var(--font-size-14);
+  padding-block: var(--spotlight-draw-size-8);
+  padding-inline: var(--spotlight-draw-size-12);
+  font-family: var(--spotlight-draw-font-mono);
+  font-size: var(--spotlight-draw-font-size-14);
   color: CanvasText;
   background: Canvas;
-  border: var(--size-1) solid ButtonBorder;
-  border-radius: var(--size-4);
+  border: var(--spotlight-draw-size-1) solid ButtonBorder;
+  border-radius: var(--spotlight-draw-size-4);
   cursor: pointer;
 }
 
@@ -124,18 +124,18 @@
 }
 
 .shortcut-input:focus {
-  outline: var(--size-2) solid Highlight;
-  outline-offset: var(--size-2);
+  outline: var(--spotlight-draw-size-2) solid Highlight;
+  outline-offset: var(--spotlight-draw-size-2);
 }
 
 .shortcut-reset-button {
   flex: 0 0 auto;
-  padding-block: var(--size-8);
-  font-size: var(--font-size-12);
+  padding-block: var(--spotlight-draw-size-8);
+  font-size: var(--spotlight-draw-font-size-12);
   color: CanvasText;
   background: Canvas;
-  border: var(--size-1) solid ButtonBorder;
-  border-radius: var(--size-4);
+  border: var(--spotlight-draw-size-1) solid ButtonBorder;
+  border-radius: var(--spotlight-draw-size-4);
   cursor: pointer;
 }
 
@@ -153,8 +153,8 @@
 }
 
 .shortcut-reset-button:focus {
-  outline: var(--size-2) solid Highlight;
-  outline-offset: var(--size-2);
+  outline: var(--spotlight-draw-size-2) solid Highlight;
+  outline-offset: var(--spotlight-draw-size-2);
 }
 
 /* Shortcuts table */
@@ -164,7 +164,7 @@
 }
 
 .shortcuts-table tr {
-  border-block-end: var(--size-1) solid color-mix(in srgb, CanvasText 10%, Canvas);
+  border-block-end: var(--spotlight-draw-size-1) solid color-mix(in srgb, CanvasText 10%, Canvas);
 }
 
 .shortcuts-table tr:last-child {
@@ -172,18 +172,18 @@
 }
 
 .shortcut-keys {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-10);
+  font-family: var(--spotlight-draw-font-mono);
+  font-size: var(--spotlight-draw-font-size-10);
   font-weight: 600;
   color: CanvasText;
-  padding-block: var(--size-8);
-  padding-inline: 0 var(--size-16);
+  padding-block: var(--spotlight-draw-size-8);
+  padding-inline: 0 var(--spotlight-draw-size-16);
   opacity: 0.8;
 }
 
 .shortcut-description {
-  font-size: var(--font-size-14);
+  font-size: var(--spotlight-draw-font-size-14);
   color: CanvasText;
-  padding-block: var(--size-8);
+  padding-block: var(--spotlight-draw-size-8);
   opacity: 0.8;
 }

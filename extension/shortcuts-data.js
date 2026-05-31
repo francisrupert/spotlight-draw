@@ -266,6 +266,68 @@ function setupButtonGroup(container, groupId, onChange) {
   }
 }
 
+function getStorageLastError() {
+  if (typeof chrome === "undefined") return null;
+
+  try {
+    return (chrome.runtime && chrome.runtime.lastError) || null;
+  } catch (error) {
+    return error;
+  }
+}
+
+function getSyncStorage() {
+  if (typeof chrome === "undefined") return null;
+
+  try {
+    return chrome.storage && chrome.storage.sync;
+  } catch (error) {
+    return null;
+  }
+}
+
+function readSyncStorage(defaults, onSuccess, onError) {
+  var storage = getSyncStorage();
+  if (!storage) {
+    onSuccess(defaults);
+    return;
+  }
+
+  try {
+    storage.get(defaults, function(items) {
+      var error = getStorageLastError();
+      if (error) {
+        if (onError) onError(error);
+        return;
+      }
+
+      onSuccess(items || defaults);
+    });
+  } catch (error) {
+    if (onError) onError(error);
+  }
+}
+
+function writeSyncStorage(settings, onError) {
+  var storage = getSyncStorage();
+  if (!storage) {
+    return false;
+  }
+
+  try {
+    storage.set(settings, function() {
+      var error = getStorageLastError();
+      if (error && onError) {
+        onError(error);
+      }
+    });
+    return true;
+  } catch (error) {
+    if (onError) onError(error);
+    return false;
+  }
+}
+
 // Shared preference defaults
 var DEFAULT_PREFERENCES = {
   borderSize: "1",
